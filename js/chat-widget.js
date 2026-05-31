@@ -1,12 +1,16 @@
 // Chat Widget JavaScript
 
+console.log('AICS Chat Widget script loaded!');
+
 class AICSChatWidget {
     constructor() {
+        console.log('AICS Chat Widget constructor called');
         this.suggestedFaqs = [];
         this.init();
     }
 
     init() {
+        console.log('AICS Chat Widget init() called');
         this.createWidget();
         this.attachEventListeners();
         this.setupSocketIO();
