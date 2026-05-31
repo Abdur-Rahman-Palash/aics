@@ -209,6 +209,7 @@
     <script>
         let businessId = null;
         let faqCounter = 1;
+        let isBusinessValid = true;
         
         // Get business ID from URL
         function getBusinessId() {
@@ -263,6 +264,11 @@
         document.getElementById('upload-faqs').addEventListener('click', async () => {
             if (!businessId) {
                 showMessage('Business ID is required. Please go back to the dashboard and select a business.', 'error');
+                return;
+            }
+            
+            if (!isBusinessValid) {
+                showMessage('Invalid business selected. Please go back to the dashboard and select a valid business.', 'error');
                 return;
             }
             
@@ -342,6 +348,14 @@
             try {
                 const response = await fetch(`/api/businesses/${businessId}/faqs`);
                 const data = await response.json();
+                
+                if (!response.ok) {
+                    isBusinessValid = false;
+                    showMessage('Error loading business FAQs: ' + (data.error || 'Unknown error'), 'error');
+                    document.getElementById('upload-faqs').disabled = true;
+                    document.getElementById('faqs-container').innerHTML = '<p style="color:#666;">Unable to load FAQs for this business. Please go back to the dashboard and select a valid business.</p>';
+                    return;
+                }
                 
                 if (data.success) {
                     const container = document.getElementById('existing-faqs-container');

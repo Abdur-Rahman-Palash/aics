@@ -23,7 +23,7 @@ class AICSChatWidget {
         
         this.createWidget();
         this.attachEventListeners();
-        this.renderDefaultSuggestions();
+        await this.loadSuggestedFAQs();
     }
 
     async loadWidgetSettings() {
@@ -180,17 +180,34 @@ class AICSChatWidget {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
-    renderDefaultSuggestions() {
+    async loadSuggestedFAQs() {
         const defaultQuestions = [
             'What are your business hours?',
             'Do you offer refunds?',
             'How can I contact support?',
             'Where are you located?'
         ];
-        
+
+        let questions = defaultQuestions;
+
+        if (this.businessId) {
+            try {
+                const response = await fetch(`/api/businesses/${this.businessId}/faqs`);
+                const data = await response.json();
+                if (data.success && Array.isArray(data.faqs) && data.faqs.length > 0) {
+                    questions = data.faqs
+                        .slice(0, 6)
+                        .map(faq => faq.questionEn || faq.questionBn)
+                        .filter(Boolean);
+                }
+            } catch (error) {
+                console.error('Error loading suggested FAQs:', error);
+            }
+        }
+
         this.suggestedContainer.innerHTML = '';
-        
-        defaultQuestions.forEach(q => {
+
+        questions.forEach(q => {
             const btn = document.createElement('button');
             btn.className = 'aics-suggested-btn';
             btn.textContent = q;

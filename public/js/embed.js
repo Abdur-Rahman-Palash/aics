@@ -2,12 +2,17 @@
 // Copy this script and paste anywhere on your website!
 // Example usage:
 /*
-<script src="https://your-domain.com/js/embed.js" data-widget-id="default"></script>
+<script src="https://your-domain.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
 */
 
 (function() {
     // Inject Chat Widget
     function initAICSWidget() {
+        const scriptTags = document.querySelectorAll('script[data-business-id]');
+        const scriptTag = scriptTags[scriptTags.length - 1];
+        const businessId = scriptTag ? scriptTag.getAttribute('data-business-id') : null;
+        const scriptSrc = scriptTag ? scriptTag.src : null;
+
         // Inject Styles
         const css = `
             .aics-float-btn { position: fixed; bottom: 24px; right: 24px; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); cursor: pointer; font-size: 28px; z-index: 999999; transition: transform 0.2s; }
@@ -130,17 +135,27 @@
             inputField.value = '';
             sendBtn.disabled = true;
             showTypingIndicator();
-            // TODO: Call your server endpoint here!
-            // Replace 'http://localhost:3000/api/chat' with your actual domain in production!
+
+            const apiOrigin = scriptSrc ? new URL(scriptSrc).origin : window.location.origin;
+            const apiUrl = `${apiOrigin}/api/chat`;
+            const payload = { message };
+            if (businessId) {
+                payload.businessId = businessId;
+            }
+
             try {
-                const response = await fetch('http://localhost:3000/api/chat', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message })
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
                 });
                 const data = await response.json();
                 hideTypingIndicator();
                 addMessage(data.success ? data.response : 'Sorry, something went wrong.', 'ai');
-            } catch (err) { hideTypingIndicator(); addMessage('Sorry, check internet connection.', 'ai'); }
+            } catch (err) {
+                hideTypingIndicator();
+                addMessage('Sorry, check internet connection.', 'ai');
+            }
             sendBtn.disabled = false;
         }
         // Add listeners to suggested buttons

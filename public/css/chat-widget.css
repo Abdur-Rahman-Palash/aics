@@ -248,7 +248,7 @@
 /* Typing Indicator */
 .aics-typing-indicator {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     padding: 12px 16px;
     background: white;
     border-radius: 16px;
@@ -259,42 +259,168 @@
 }
 
 .aics-typing-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: #667eea;
-    animation: typingBounce 1.4s infinite ease-in-out both;
-}
-
-.aics-typing-dot:nth-child(1) {
-    animation-delay: -0.32s;
+    opacity: 0.4;
+    animation: aics-typing 1.2s infinite ease-in-out;
 }
 
 .aics-typing-dot:nth-child(2) {
-    animation-delay: -0.16s;
+    animation-delay: 0.2s;
 }
 
-@keyframes typingBounce {
-    0%, 80%, 100% {
-        transform: scale(0);
+.aics-typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes aics-typing {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media only screen and (max-width: 600px) {
+    .aics-float-btn {
+        bottom: 18px;
+        right: 18px;
+        width: 54px;
+        height: 54px;
+        font-size: 22px;
     }
-    40% {
-        transform: scale(1);
+
+    .aics-chat-container {
+        width: calc(100vw - 24px);
+        right: 12px;
+        bottom: 90px;
+        max-height: calc(100vh - 120px);
+        height: auto;
+        border-radius: 18px;
+    }
+
+    .aics-chat-header {
+        padding: 14px 16px;
+    }
+
+    .aics-suggested-header,
+    .aics-suggested-questions {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .aics-suggested-questions {
+        gap: 6px;
+    }
+
+    .aics-suggested-btn {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    .aics-chat-messages {
+        padding: 14px;
+    }
+
+    .aics-chat-input {
+        padding: 12px;
+    }
+
+    .aics-chat-input input {
+        font-size: 14px;
+    }
+
+    .aics-send-btn {
+        width: 44px;
+        height: 44px;
     }
 }
 
-/* Responsive Design */
+@media only screen and (max-width: 360px) {
+    .aics-float-btn {
+        bottom: 14px;
+        right: 14px;
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+    .aics-chat-container {
+        width: calc(100vw - 16px);
+        right: 8px;
+        bottom: 78px;
+        max-height: calc(100vh - 100px);
+        height: 90vh;
+        border-radius: 16px;
+        min-width: 260px;
+    }
+
+    .aics-chat-header {
+        padding: 12px 14px;
+    }
+
+    .aics-suggested-header,
+    .aics-suggested-questions {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .aics-suggested-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .aics-chat-messages {
+        padding: 12px;
+    }
+
+    .aics-chat-input {
+        padding: 10px;
+    }
+
+    .aics-chat-input input {
+        font-size: 13px;
+    }
+
+    .aics-send-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+.aics-typing-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #667eea;
+    opacity: 0.4;
+    animation: aics-typing 1.2s infinite ease-in-out;
+}
+
+.aics-typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.aics-typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes aics-typing {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(-3px); }
+}
+
 @media (max-width: 480px) {
     .aics-chat-container {
-        width: calc(100% - 20px);
-        height: 100%;
-        bottom: 0;
-        right: 0;
-        border-radius: 0;
+        width: calc(100vw - 16px);
+        right: 8px;
+        bottom: 72px;
+        max-height: calc(100vh - 90px);
+        height: 88vh;
+        border-radius: 16px;
     }
     
     .aics-float-btn {
-        bottom: 20px;
-        right: 20px;
+        bottom: 18px;
+        right: 18px;
     }
 }
