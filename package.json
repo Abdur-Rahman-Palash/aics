@@ -1,0 +1,28 @@
+{
+  "name": "aics",
+  "version": "1.0.0",
+  "description": "AI Customer Support SaaS",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "vercel-dev": "vercel dev"
+  },
+  "keywords": [
+    "ai",
+    "customer-support",
+    "saas"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.12.0",
+    "@qdrant/js-client-rest": "^1.8.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "vercel": "^34.2.0"
+  }
+}
