@@ -14,15 +14,20 @@ class AICSChatWidget {
     }
 
     setupSocketIO() {
-        // Connect to Socket.IO server
-        this.socket = io();
-
-        // Listen for AI responses
-        this.socket.on('ai response', (response) => {
-            this.hideTypingIndicator();
-            this.addMessage(response, 'ai');
-            this.sendBtn.disabled = false;
-        });
+        // Socket.IO is only for LOCAL DEV (Vercel serverless doesn't support it well)
+        // So we'll use REST API by default!
+        this.socket = null;
+        // Try to connect for local dev, but don't break if it fails
+        try {
+            this.socket = io();
+            this.socket.on('ai response', (response) => {
+                this.hideTypingIndicator();
+                this.addMessage(response, 'ai');
+                this.sendBtn.disabled = false;
+            });
+        } catch (e) {
+            console.log('Socket.IO not available, using REST API');
+        }
     }
 
     createWidget() {
@@ -93,7 +98,7 @@ class AICSChatWidget {
         }
     }
 
-    sendMessage() {
+    async sendMessage() {
         const message = this.inputField.value.trim();
         if (!message) return;
 
@@ -105,8 +110,31 @@ class AICSChatWidget {
         // Show typing indicator
         this.showTypingIndicator();
 
-        // Send message via Socket.IO
-        this.socket.emit('send message', message);
+        // Use REST API (works on Vercel)
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+
+            const data = await response.json();
+            this.hideTypingIndicator();
+            
+            if (data.success) {
+                this.addMessage(data.response, 'ai');
+            } else {
+                this.addMessage('Sorry, something went wrong. Please try again.', 'ai');
+            }
+        } catch (error) {
+            this.hideTypingIndicator();
+            this.addMessage('Sorry, I\'m having trouble connecting. Please check your internet.', 'ai');
+            console.error('API error:', error);
+        }
+
+        this.sendBtn.disabled = false;
     }
 
     addMessage(text, type) {
