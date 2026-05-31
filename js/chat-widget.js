@@ -21,16 +21,19 @@ class AICSChatWidget {
         // Socket.IO is only for LOCAL DEV (Vercel serverless doesn't support it well)
         // So we'll use REST API by default!
         this.socket = null;
-        // Try to connect for local dev, but don't break if it fails
-        try {
-            this.socket = io();
-            this.socket.on('ai response', (response) => {
-                this.hideTypingIndicator();
-                this.addMessage(response, 'ai');
-                this.sendBtn.disabled = false;
-            });
-        } catch (e) {
-            console.log('Socket.IO not available, using REST API');
+        // Only try Socket.IO if running on localhost!
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            try {
+                console.log('Attempting Socket.IO connection (local dev only)');
+                this.socket = io();
+                this.socket.on('ai response', (response) => {
+                    this.hideTypingIndicator();
+                    this.addMessage(response, 'ai');
+                    this.sendBtn.disabled = false;
+                });
+            } catch (e) {
+                console.log('Socket.IO not available, using REST API');
+            }
         }
     }
 
