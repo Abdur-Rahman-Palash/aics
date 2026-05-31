@@ -6,6 +6,7 @@ node_modules/
 
 # Local data storage
 data/
+!data/db.json
 
 # Vercel
 .vercel/

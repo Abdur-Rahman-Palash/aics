@@ -1,0 +1,77 @@
+{
+  "businesses": [
+    {
+      "id": "698f150e-fc65-4371-8bb0-ab1aa272c874",
+      "name": "neubyte",
+      "domain": "neubyte.tech",
+      "createdAt": "2026-05-31T10:25:11.542Z",
+      "qdrantCollection": "aics_neubyte",
+      "widgetSettings": {
+        "title": "neubyte Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "faqs": [
+        {
+          "id": "c367b530-1b0b-40b1-a7c0-f0a6d084e9b2",
+          "questionEn": "apnader office  koi?",
+          "questionBn": null,
+          "answerEn": "Dhaka",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T10:45:10.484Z"
+        },
+        {
+          "id": "934019d9-fa5b-4103-9157-424b1d91330c",
+          "questionEn": "What are your business hours?",
+          "questionBn": null,
+          "answerEn": "9.00 AM - 10.00 PM",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T10:58:04.696Z"
+        },
+        {
+          "id": "9dcb0bb3-c830-47f0-a9e6-48c0082f9141",
+          "questionEn": "how many products do you have?",
+          "questionBn": null,
+          "answerEn": "4000",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T10:58:27.491Z"
+        },
+        {
+          "id": "32c106ec-ddac-45be-9ca0-e09554e5b1bf",
+          "questionEn": "Do you offer refunds?",
+          "questionBn": null,
+          "answerEn": "YES, WITHIN 30 DAYS",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T10:58:54.575Z"
+        },
+        {
+          "id": "45cbc686-053e-4552-82f5-303356648abd",
+          "questionEn": "Where are you located?",
+          "questionBn": null,
+          "answerEn": "Dhaka",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T10:59:42.512Z"
+        },
+        {
+          "id": "869c6f0d-08af-48e8-83a0-d9a96c8b5616",
+          "questionEn": "How can I contact support?",
+          "questionBn": null,
+          "answerEn": "by chatting",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-05-31T11:00:09.471Z"
+        }
+      ],
+      "analytics": {
+        "totalMessages": 7,
+        "faqHits": {},
+        "lastActive": "2026-05-31T10:55:34.013Z"
+      }
+    }
+  ]
+}
