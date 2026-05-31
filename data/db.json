@@ -72,6 +72,24 @@
         "faqHits": {},
         "lastActive": "2026-05-31T10:55:34.013Z"
       }
+    },
+    {
+      "id": "4b7b0c4b-8b9e-4cbb-84e9-4cf553b2a027",
+      "name": "aics-business",
+      "domain": "example.com",
+      "createdAt": "2026-05-31T12:00:00.000Z",
+      "qdrantCollection": "aics_aics_business",
+      "widgetSettings": {
+        "title": "AICS Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "faqs": [],
+      "analytics": {
+        "totalMessages": 0,
+        "faqHits": {},
+        "lastActive": "2026-05-31T12:00:00.000Z"
+      }
     }
   ]
 }
