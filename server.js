@@ -9,6 +9,9 @@ const { Server } = require('socket.io');
 const chatHandler = require('./api/chat');
 const uploadFaqsHandler = require('./api/upload-faqs');
 const getFaqsHandler = require('./api/get-faqs');
+const businessesHandler = require('./api/businesses');
+const businessFaqsHandler = require('./api/businesses/[id]/faqs');
+const businessWidgetHandler = require('./api/businesses/[id]/widget');
 const QdrantManager = require('./lib/qdrant');
 const GeminiAI = require('./lib/gemini');
 
@@ -27,6 +30,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/chat', (req, res) => chatHandler(req, res));
 app.post('/api/upload-faqs', (req, res) => uploadFaqsHandler(req, res));
 app.get('/api/get-faqs', (req, res) => getFaqsHandler(req, res));
+app.all('/api/businesses', (req, res) => businessesHandler(req, res));
+app.all('/api/businesses/:id/faqs', (req, res) => {
+    req.query.id = req.params.id;
+    businessFaqsHandler(req, res);
+});
+app.all('/api/businesses/:id/widget', (req, res) => {
+    req.query.id = req.params.id;
+    businessWidgetHandler(req, res);
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

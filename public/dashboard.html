@@ -18,17 +18,39 @@
         .section h2 { margin-bottom:20px; color:#333; font-size:20px; }
         .form-group { margin-bottom:16px; }
         .form-group label { display:block; margin-bottom:8px; color:#444; font-weight:500; }
-        .form-group input { width:100%; padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; outline:none; }
-        .form-group input:focus { border-color:#667eea; }
+        .form-group input, .form-group textarea, .form-group select { width:100%; padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; outline:none; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:#667eea; }
         .btn { padding:12px 24px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:transform 0.2s; }
         .btn-primary { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; }
         .btn-primary:hover { transform: translateY(-1px); }
+        .btn-secondary { background:#f0f0f0; color:#333; }
+        .btn-danger { background:#dc3545; color:white; }
+        .btn-small { padding:8px 16px; font-size:13px; }
         .business-list { display:flex; flex-direction:column; gap:12px; }
-        .business-item { border:2px solid #e0e0e0; border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
-        .business-item h4 { color:#333; margin-bottom:4px; }
-        .business-item p { color:#666; font-size:13px; }
+        .business-item { border:2px solid #e0e0e0; border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+        .business-header { display:flex; justify-content:space-between; align-items:center; }
+        .business-header h4 { color:#333; margin-bottom:4px; }
+        .business-header p { color:#666; font-size:13px; }
+        .business-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .business-details { border-top:1px solid #e0e0e0; padding-top:12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; }
+        .detail-item h5 { color:#666; font-size:12px; text-transform:uppercase; margin-bottom:4px; }
+        .detail-item p { color:#333; font-size:16px; font-weight:600; }
+        .tab-container { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #e0e0e0; padding-bottom:12px; }
+        .tab-btn { padding:10px 20px; border:none; background:none; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-bottom:3px solid transparent; transition:all 0.2s; }
+        .tab-btn.active { color:#667eea; border-bottom-color:#667eea; }
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+        .embed-code { background:#f5f5f5; border:1px solid #e0e0e0; border-radius:8px; padding:16px; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-all; margin-bottom:12px; }
+        .color-picker-wrapper { display:flex; gap:12px; align-items:center; }
+        .color-picker-wrapper input[type="color"] { width:60px; height:40px; border:none; border-radius:8px; cursor:pointer; }
+        .message { padding:12px 16px; border-radius:8px; margin-bottom:16px; display:none; }
+        .message.success { background:#d4edda; color:#155724; display:block; }
+        .message.error { background:#f8d7da; color:#721c24; display:block; }
         .faq-list { display:flex; flex-direction:column; gap:10px; }
-        .faq-item { border:1px solid #e0e0e0; border-radius:8px; padding:12px; }
+        .faq-item { border:1px solid #e0e0e0; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; }
+        .faq-item-text { flex:1; }
+        .faq-item-text h5 { color:#333; margin-bottom:4px; }
+        .faq-item-text p { color:#666; font-size:13px; }
     </style>
 </head>
 <body>
@@ -38,17 +60,19 @@
             <a href="/" style="color:white; text-decoration:underline;">Back to Demo</a>
         </div>
         
+        <div id="message" class="message"></div>
+        
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Total Businesses</h3>
-                <div class="stat-value" id="stat-businesses">1</div>
+                <div class="stat-value" id="stat-businesses">0</div>
             </div>
             <div class="stat-card">
                 <h3>Total Messages</h3>
                 <div class="stat-value" id="stat-messages">0</div>
             </div>
             <div class="stat-card">
-                <h3>Top FAQ Hits</h3>
+                <h3>Total FAQs</h3>
                 <div class="stat-value" id="stat-faqs">0</div>
             </div>
         </div>
@@ -76,43 +100,300 @@
     
     <script>
         let businesses = [];
+        let selectedBusinessId = null;
+        
+        // Show message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            setTimeout(() => {
+                messageDiv.className = 'message';
+            }, 5000);
+        }
         
         // Load businesses
         async function loadBusinesses() {
-            // For now, just a static demo until we add API endpoints
-            businesses = [
-                { id: 'demo', name: 'Demo Business', domain: 'localhost', analytics: { totalMessages: 0 } }
-            ];
-            renderStats();
-            renderBusinessList();
+            try {
+                const response = await fetch('/api/businesses');
+                const data = await response.json();
+                
+                if (data.success) {
+                    businesses = data.businesses;
+                    renderStats();
+                    renderBusinessList();
+                }
+            } catch (error) {
+                console.error('Error loading businesses:', error);
+                showMessage('Error loading businesses', 'error');
+            }
         }
         
         function renderStats() {
             const totalMessages = businesses.reduce((sum, b) => sum + (b.analytics?.totalMessages || 0), 0);
+            const totalFaqs = businesses.reduce((sum, b) => sum + (b.faqs?.length || 0), 0);
+            
             document.getElementById('stat-businesses').textContent = businesses.length;
             document.getElementById('stat-messages').textContent = totalMessages;
-            // Add more stats later
+            document.getElementById('stat-faqs').textContent = totalFaqs;
         }
         
         function renderBusinessList() {
             const listDiv = document.getElementById('business-list');
-            listDiv.innerHTML = businesses.map(b => `
-                <div class="business-item">
-                    <div>
-                        <h4>${b.name}</h4>
-                        <p>Domain: ${b.domain} | Created: ${new Date(b.createdAt || Date.now()).toLocaleDateString()}</p>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <a class="btn btn-primary" href="/admin.html?business=${b.id}">Manage FAQs</a>
-                    </div>
-                </div>
-            `).join('');
+            
+            if (businesses.length === 0) {
+                listDiv.innerHTML = '<p style="color:#666; text-align:center; padding:24px;">No businesses yet. Create one above!</p>';
+                return;
+            }
+            
+            let html = '';
+            businesses.forEach(b => {
+                html += '<div class="business-item" data-id="' + b.id + '">';
+                html += '<div class="business-header">';
+                html += '<div>';
+                html += '<h4>' + b.name + '</h4>';
+                html += '<p>Domain: ' + b.domain + ' | Created: ' + new Date(b.createdAt).toLocaleDateString() + '</p>';
+                html += '</div>';
+                html += '<div class="business-actions">';
+                html += '<button class="btn btn-primary btn-small" onclick="toggleBusinessDetails(\'' + b.id + '\')">';
+                html += selectedBusinessId === b.id ? 'Hide Details' : 'Manage';
+                html += '</button>';
+                html += '<button class="btn btn-danger btn-small" onclick="deleteBusiness(\'' + b.id + '\')">Delete</button>';
+                html += '</div>';
+                html += '</div>';
+                
+                if (selectedBusinessId === b.id) {
+                    html += renderBusinessDetails(b);
+                }
+                
+                html += '</div>';
+            });
+            
+            listDiv.innerHTML = html;
+            
+            // Set embed code text for all businesses
+            businesses.forEach(b => {
+                const embedCodeDiv = document.getElementById('embed-code-' + b.id);
+                if (embedCodeDiv) {
+                    embedCodeDiv.textContent = '<script src="' + window.location.origin + '/js/embed.js" data-business-id="' + b.id + '"><\/script>';
+                }
+            });
+        }
+        
+        function renderBusinessDetails(business) {
+            let html = '';
+            
+            html += '<div class="business-details">';
+            html += '<div class="detail-item">';
+            html += '<h5>Total Messages</h5>';
+            html += '<p>' + (business.analytics?.totalMessages || 0) + '</p>';
+            html += '</div>';
+            html += '<div class="detail-item">';
+            html += '<h5>FAQs Count</h5>';
+            html += '<p>' + (business.faqs?.length || 0) + '</p>';
+            html += '</div>';
+            html += '<div class="detail-item">';
+            html += '<h5>Last Active</h5>';
+            html += '<p>' + (business.analytics?.lastActive ? new Date(business.analytics.lastActive).toLocaleString() : 'Never') + '</p>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '<div class="tab-container">';
+            html += '<button class="tab-btn active" onclick="switchTab(\'' + business.id + '\', \'faqs\')">📚 FAQs</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
+            html += '</div>';
+            
+            html += '<div class="tab-content active" id="tab-' + business.id + '-faqs">';
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">';
+            html += '<h3>FAQs (' + (business.faqs?.length || 0) + ')</h3>';
+            html += '<a class="btn btn-primary btn-small" href="/admin.html?business=' + business.id + '">Add FAQs</a>';
+            html += '</div>';
+            html += '<div class="faq-list">';
+            
+            if (business.faqs && business.faqs.length > 0) {
+                business.faqs.forEach(faq => {
+                    html += '<div class="faq-item">';
+                    html += '<div class="faq-item-text">';
+                    html += '<h5>' + (faq.questionEn || faq.questionBn) + '</h5>';
+                    const answer = (faq.answerEn || faq.answerBn) || '';
+                    const shortAnswer = answer.length > 100 ? answer.substring(0, 100) + '...' : answer;
+                    html += '<p>' + shortAnswer + '</p>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;">No FAQs yet. Add some!</p>';
+            }
+            
+            html += '</div>';
+            html += '</div>';
+            
+            html += '<div class="tab-content" id="tab-' + business.id + '-widget">';
+            html += '<h3>Customize Widget</h3>';
+            html += '<form id="widget-form-' + business.id + '" onsubmit="updateWidgetSettings(event, \'' + business.id + '\')">';
+            html += '<div class="form-group">';
+            html += '<label>Widget Title</label>';
+            html += '<input type="text" id="widget-title-' + business.id + '" value="' + (business.widgetSettings?.title || 'AI Support') + '">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Primary Color</label>';
+            html += '<div class="color-picker-wrapper">';
+            html += '<input type="color" id="widget-color-' + business.id + '" value="' + (business.widgetSettings?.primaryColor || '#667eea') + '">';
+            html += '<input type="text" id="widget-color-text-' + business.id + '" value="' + (business.widgetSettings?.primaryColor || '#667eea') + '" style="flex:1;">';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Avatar Emoji</label>';
+            html += '<input type="text" id="widget-avatar-' + business.id + '" value="' + (business.widgetSettings?.avatar || '🤖') + '">';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Save Settings</button>';
+            html += '</form>';
+            html += '</div>';
+            
+            html += '<div class="tab-content" id="tab-' + business.id + '-embed">';
+            html += '<h3>Embed Code</h3>';
+            html += '<p style="color:#666; margin-bottom:12px;">Add this code to your website to embed the chat widget:</p>';
+            html += '<div class="embed-code" id="embed-code-' + business.id + '"></div>';
+            html += '<button class="btn btn-secondary btn-small" onclick="copyEmbedCode(\'' + business.id + '\')">Copy Code</button>';
+            html += '</div>';
+            
+            html += '<div class="tab-content" id="tab-' + business.id + '-analytics">';
+            html += '<h3>Analytics</h3>';
+            html += '<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); margin-top:16px;">';
+            html += '<div class="stat-card">';
+            html += '<h3>Total Messages</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.totalMessages || 0) + '</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<h3>Top FAQ Hits</h3>';
+            const totalHits = Object.values(business.analytics?.faqHits || {}).reduce((a, b) => a + b, 0);
+            html += '<div class="stat-value" style="font-size:28px;">' + totalHits + '</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            return html;
+        }
+        
+        function toggleBusinessDetails(businessId) {
+            if (selectedBusinessId === businessId) {
+                selectedBusinessId = null;
+            } else {
+                selectedBusinessId = businessId;
+            }
+            renderBusinessList();
+        }
+        
+        function switchTab(businessId, tabName) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Activate selected tab
+            event.target.classList.add('active');
+            document.getElementById('tab-' + businessId + '-' + tabName).classList.add('active');
+        }
+        
+        async function updateWidgetSettings(event, businessId) {
+            event.preventDefault();
+            
+            const settings = {
+                title: document.getElementById('widget-title-' + businessId).value,
+                primaryColor: document.getElementById('widget-color-' + businessId).value,
+                avatar: document.getElementById('widget-avatar-' + businessId).value
+            };
+            
+            try {
+                const response = await fetch('/api/businesses/' + businessId + '/widget', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Widget settings saved!', 'success');
+                    loadBusinesses(); // Refresh
+                } else {
+                    showMessage('Error saving settings: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating widget settings:', error);
+                showMessage('Error saving settings', 'error');
+            }
+        }
+        
+        function copyEmbedCode(businessId) {
+            const code = '<' + 'script src="' + window.location.origin + '/js/embed.js" data-business-id="' + businessId + '"><' + '/script>';
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('Embed code copied!', 'success');
+            }).catch(() => {
+                showMessage('Failed to copy code', 'error');
+            });
         }
         
         // Create new business
-        document.getElementById('create-business-form').addEventListener('submit', (e) => {
+        document.getElementById('create-business-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            alert('Business creation coming soon! (Demo mode)');
+            
+            const name = document.getElementById('business-name').value.trim();
+            const domain = document.getElementById('business-domain').value.trim();
+            
+            if (!name || !domain) {
+                showMessage('Please fill in both fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/businesses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, domain })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Business created!', 'success');
+                    document.getElementById('create-business-form').reset();
+                    loadBusinesses();
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating business:', error);
+                showMessage('Error creating business', 'error');
+            }
+        });
+        
+        // Delete business
+        async function deleteBusiness(businessId) {
+            if (!confirm('Are you sure you want to delete this business? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                showMessage('Business deletion coming soon!', 'success');
+            } catch (error) {
+                console.error('Error deleting business:', error);
+                showMessage('Error deleting business', 'error');
+            }
+        }
+        
+        // Sync color picker and text input
+        document.addEventListener('input', (e) => {
+            if (e.target.type === 'color') {
+                const textInput = document.getElementById(e.target.id.replace('widget-color-', 'widget-color-text-'));
+                if (textInput) textInput.value = e.target.value;
+            }
+            if (e.target.id && e.target.id.startsWith('widget-color-text-')) {
+                const colorInput = document.getElementById(e.target.id.replace('widget-color-text-', 'widget-color-'));
+                if (colorInput) colorInput.value = e.target.value;
+            }
         });
         
         loadBusinesses();

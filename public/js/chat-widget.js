@@ -1,39 +1,41 @@
 // Chat Widget JavaScript
-
 console.log('AICS Chat Widget script loaded!');
 
 class AICSChatWidget {
-    constructor() {
+    constructor(options = {}) {
         console.log('AICS Chat Widget constructor called');
-        this.suggestedFaqs = [];
+        this.businessId = options.businessId || null;
+        this.widgetSettings = {
+            title: 'AI Support',
+            primaryColor: '#667eea',
+            avatar: '🤖'
+        };
         this.init();
     }
 
-    init() {
+    async init() {
         console.log('AICS Chat Widget init() called');
+        
+        // Load widget settings if business ID is provided
+        if (this.businessId) {
+            await this.loadWidgetSettings();
+        }
+        
         this.createWidget();
         this.attachEventListeners();
-        this.setupSocketIO();
-        this.loadSuggestedQuestions();
+        this.renderDefaultSuggestions();
     }
 
-    setupSocketIO() {
-        // Socket.IO is only for LOCAL DEV (Vercel serverless doesn't support it well)
-        // So we'll use REST API by default!
-        this.socket = null;
-        // Only try Socket.IO if running on localhost!
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            try {
-                console.log('Attempting Socket.IO connection (local dev only)');
-                this.socket = io();
-                this.socket.on('ai response', (response) => {
-                    this.hideTypingIndicator();
-                    this.addMessage(response, 'ai');
-                    this.sendBtn.disabled = false;
-                });
-            } catch (e) {
-                console.log('Socket.IO not available, using REST API');
+    async loadWidgetSettings() {
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/widget`);
+            const data = await response.json();
+            
+            if (data.success && data.settings) {
+                this.widgetSettings = { ...this.widgetSettings, ...data.settings };
             }
+        } catch (error) {
+            console.error('Error loading widget settings:', error);
         }
     }
 
@@ -41,18 +43,19 @@ class AICSChatWidget {
         // Create floating button
         this.floatBtn = document.createElement('button');
         this.floatBtn.className = 'aics-float-btn';
-        this.floatBtn.innerHTML = '💬';
+        this.floatBtn.innerHTML = this.widgetSettings.avatar;
+        this.floatBtn.style.background = this.widgetSettings.primaryColor;
         document.body.appendChild(this.floatBtn);
 
         // Create chat container
         this.chatContainer = document.createElement('div');
         this.chatContainer.className = 'aics-chat-container';
         this.chatContainer.innerHTML = `
-            <div class="aics-chat-header">
+            <div class="aics-chat-header" style="background: ${this.widgetSettings.primaryColor}">
                 <div class="aics-header-title">
-                    <div class="aics-avatar">🤖</div>
+                    <div class="aics-avatar">${this.widgetSettings.avatar}</div>
                     <div class="aics-title-text">
-                        <h3>AI Support</h3>
+                        <h3>${this.widgetSettings.title}</h3>
                         <p>Online</p>
                     </div>
                 </div>
@@ -71,7 +74,7 @@ class AICSChatWidget {
             </div>
             <div class="aics-chat-input">
                 <input type="text" id="aics-input" placeholder="Type your message...">
-                <button class="aics-send-btn" id="aics-send">➤</button>
+                <button id="aics-send-btn" class="aics-send-btn" style="background: ${this.widgetSettings.primaryColor}">➤</button>
             </div>
         `;
         document.body.appendChild(this.chatContainer);
@@ -79,7 +82,7 @@ class AICSChatWidget {
         // Store references to elements
         this.messagesContainer = document.getElementById('aics-messages');
         this.inputField = document.getElementById('aics-input');
-        this.sendBtn = document.getElementById('aics-send');
+        this.sendBtn = document.getElementById('aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
         this.suggestedContainer = document.getElementById('aics-suggested');
     }
@@ -121,10 +124,11 @@ class AICSChatWidget {
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message,
+                    businessId: this.businessId
+                })
             });
 
             const data = await response.json();
@@ -176,36 +180,6 @@ class AICSChatWidget {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
-    async loadSuggestedQuestions() {
-        try {
-            const response = await fetch('/api/get-faqs');
-            const data = await response.json();
-            
-            if (data.success && data.faqs.length > 0) {
-                this.suggestedFaqs = data.faqs;
-                this.renderSuggestedQuestions();
-            } else {
-                // If no FAQs yet, show some default suggestions
-                this.renderDefaultSuggestions();
-            }
-        } catch (error) {
-            console.error('Error loading suggested questions:', error);
-            this.renderDefaultSuggestions();
-        }
-    }
-
-    renderSuggestedQuestions() {
-        this.suggestedContainer.innerHTML = '';
-        
-        this.suggestedFaqs.slice(0, 6).forEach(faq => {
-            const btn = document.createElement('button');
-            btn.className = 'aics-suggested-btn';
-            btn.textContent = faq.question;
-            btn.addEventListener('click', () => this.sendMessageFromSuggestion(faq.question));
-            this.suggestedContainer.appendChild(btn);
-        });
-    }
-
     renderDefaultSuggestions() {
         const defaultQuestions = [
             'What are your business hours?',
@@ -232,8 +206,17 @@ class AICSChatWidget {
 }
 
 // Initialize the widget when DOM is loaded
+function initWidget() {
+    // Get business ID from script tag data attribute
+    const scriptTags = document.querySelectorAll('script[data-business-id]');
+    const scriptTag = scriptTags[scriptTags.length - 1]; // Get the last one (the one we just added
+    const businessId = scriptTag ? scriptTag.getAttribute('data-business-id') : null;
+    
+    new AICSChatWidget({ businessId });
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new AICSChatWidget());
+    document.addEventListener('DOMContentLoaded', initWidget);
 } else {
-    new AICSChatWidget();
+    initWidget();
 }

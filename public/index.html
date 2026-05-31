@@ -12,6 +12,35 @@
     </div>
 
     <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
-    <script src="/js/chat-widget.js"></script>
+    <script>
+        // Load businesses and initialize chat widget with first business
+        async function init() {
+            try {
+                const response = await fetch('/api/businesses');
+                const data = await response.json();
+                if (data.success && data.businesses.length > 0) {
+                    const business = data.businesses[0];
+                    // Create script tag with business ID
+                    const script = document.createElement('script');
+                    script.src = '/js/chat-widget.js';
+                    script.setAttribute('data-business-id', business.id);
+                    document.body.appendChild(script);
+                } else {
+                    // Fallback to default if no businesses
+                    const script = document.createElement('script');
+                    script.src = '/js/chat-widget.js';
+                    document.body.appendChild(script);
+                }
+            } catch (error) {
+                console.error('Error loading businesses:', error);
+                // Fallback to default
+                const script = document.createElement('script');
+                script.src = '/js/chat-widget.js';
+                document.body.appendChild(script);
+            }
+        }
+
+        init();
+    </script>
 </body>
 </html>
