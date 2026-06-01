@@ -6,6 +6,13 @@
       "password": "$2b$10$fId1uRRvLkbJW1PhWqxFGOXqX0Mz.0kW38.f79ml8ktK4NPFRel/2",
       "name": "palash",
       "createdAt": "2026-06-01T06:01:11.258Z"
+    },
+    {
+      "id": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
+      "email": "abc@gmail.com",
+      "password": "$2b$10$qJesv1nF4RpRIxBnMqpsuORtxwzw68RYHUtVNegSYG3X7DFj0qeAe",
+      "name": "Pro",
+      "createdAt": "2026-06-01T06:39:19.435Z"
     }
   ],
   "businesses": [
@@ -101,7 +108,8 @@
             "lastTrainedAt": "2026-06-01T05:40:07.261Z"
           }
         ]
-      }
+      },
+      "leads": []
     },
     {
       "id": "4b7b0c4b-8b9e-4cbb-84e9-4cf553b2a027",
@@ -119,7 +127,12 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-05-31T12:00:00.000Z"
-      }
+      },
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "leads": []
     },
     {
       "id": "1e10e7b6-b640-4538-8c71-a06ace13ac06",
@@ -142,6 +155,31 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-06-01T06:02:18.086Z"
+      },
+      "leads": []
+    },
+    {
+      "id": "46dc719b-ca9e-4c09-8a0f-a7cd2d5aa79a",
+      "name": "Neubyte",
+      "domain": "neubyte.tech",
+      "userId": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
+      "createdAt": "2026-06-01T06:39:30.401Z",
+      "qdrantCollection": "aics_neubyte",
+      "widgetSettings": {
+        "title": "Neubyte Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "faqs": [],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "leads": [],
+      "analytics": {
+        "totalMessages": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-01T06:39:30.401Z"
       }
     }
   ]
