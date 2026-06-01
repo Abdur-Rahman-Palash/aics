@@ -37,12 +37,11 @@ module.exports = async (req, res) => {
 
         const newWebsite = storage.addWebsite(businessId, url);
 
-        if (!newWebsite) {
-            return res.status(404).json({ success: false, error: 'Business not found' });
-        }
+            if (!newWebsite) {
+                return res.status(404).json({ success: false, error: 'Business not found' });
+            }
 
-        // Run training in background
-        (async () => {
+            // Try to run training (with timeout for serverless)
             try {
                 // Update status to training
                 const businessRef = storage.getBusiness(businessId);
@@ -52,8 +51,12 @@ module.exports = async (req, res) => {
                     storage.save();
                 }
 
-                // Run actual training
-                const result = await trainWebsite(businessId, url, businessRef.qdrantCollection);
+                // Run actual training with timeout (10 seconds for serverless)
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Training timed out')), 10000)
+                );
+                const trainingPromise = trainWebsite(businessId, url, businessRef.qdrantCollection);
+                const result = await Promise.race([trainingPromise, timeoutPromise]);
 
                 // Update status to completed
                 const businessRef2 = storage.getBusiness(businessId);
@@ -77,7 +80,6 @@ module.exports = async (req, res) => {
                     storage.save();
                 }
             }
-        })();
 
         return res.status(201).json({ success: true, website: newWebsite });
 

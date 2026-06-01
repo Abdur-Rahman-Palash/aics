@@ -86,28 +86,37 @@ module.exports = async (req, res) => {
         const qdrant = new QdrantManager();
         const gemini = new GeminiAI();
 
-        // Determine which collection to use
-        let collectionName = config.qdrant.collectionName; // Default
-        if (business) {
-            collectionName = business.qdrantCollection;
-        }
-
-        // Generate embedding for user message
-        const queryEmbedding = await gemini.generateEmbedding(message);
-
-        // Search Qdrant for similar content (FAQs + chunks)
-        const similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
-
-        // Build context from similar items
+        // Build context - start with empty
         let contextParts = [];
-        
-        // Process similar items
-        for (const item of similarItems) {
-            if (item.type === 'faq' && item.question && item.answer) {
-                contextParts.push(`FAQ - Q: ${item.question}\nA: ${item.answer}`);
-            } else if (item.content) {
-                contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
+        let similarItems = [];
+
+        try {
+            // Only try Qdrant and Gemini if config is available
+            if (config.gemini.apiKey && config.qdrant.url && config.qdrant.apiKey) {
+                // Determine which collection to use
+                let collectionName = config.qdrant.collectionName; // Default
+                if (business) {
+                    collectionName = business.qdrantCollection;
+                }
+
+                // Generate embedding for user message
+                const queryEmbedding = await gemini.generateEmbedding(message);
+
+                // Search Qdrant for similar content (FAQs + chunks)
+                similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
+
+                // Process similar items
+                for (const item of similarItems) {
+                    if (item.type === 'faq' && item.question && item.answer) {
+                        contextParts.push(`FAQ - Q: ${item.question}\nA: ${item.answer}`);
+                    } else if (item.content) {
+                        contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
+                    }
+                }
             }
+        } catch (error) {
+            console.error('Error with Qdrant/Gemini:', error);
+            // Continue without them - we'll use fallback responses
         }
 
         let context = 'No relevant context available.';
@@ -115,24 +124,37 @@ module.exports = async (req, res) => {
             context = contextParts.join('\n\n---\n\n');
         }
 
-        // Generate AI response with enhanced prompt that includes chunk context
+        // Generate AI response or use fallback
         let aiResponse;
         try {
-            aiResponse = await gemini.generateResponse(message, context);
+            if (config.gemini.apiKey) {
+                aiResponse = await gemini.generateResponse(message, context);
+            } else {
+                // Fallback if no Gemini API key
+                if (business && business.faqs.length > 0) {
+                    aiResponse = "I'm sorry, I couldn't find a direct answer to your question. Please check our FAQ section or contact support.";
+                } else {
+                    aiResponse = "Hi! Thanks for reaching out. Our team will get back to you soon.";
+                }
+            }
         } catch (error) {
             console.error('Error generating AI response:', error);
             // Fallback response
             aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later.";
         }
 
-        // Record analytics if business ID is provided
-        let hitFaqId = null;
-        const topFAQ = similarItems.find(item => item.type === 'faq' && item.score > 0.7);
-        if (topFAQ) {
-            hitFaqId = topFAQ.faqId;
-        }
-        if (businessId) {
-            storage.recordAnalytics(businessId, hitFaqId);
+        // Record analytics if business ID is provided (try/catch to not crash)
+        try {
+            let hitFaqId = null;
+            const topFAQ = similarItems.find(item => item.type === 'faq' && item.score > 0.7);
+            if (topFAQ) {
+                hitFaqId = topFAQ.faqId;
+            }
+            if (businessId) {
+                storage.recordAnalytics(businessId, hitFaqId);
+            }
+        } catch (error) {
+            console.error('Error recording analytics:', error);
         }
 
         return res.status(200).json({

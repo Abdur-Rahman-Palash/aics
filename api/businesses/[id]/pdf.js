@@ -85,44 +85,46 @@ module.exports = async (req, res) => {
                 return res.status(404).json({ success: false, error: 'Business not found' });
             }
 
-            // Run training in background
-            (async () => {
-                try {
-                    // Update status to training
-                    const businessRef = storage.getBusiness(businessId);
-                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                    if (pdfIndex !== -1) {
-                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'training';
-                        storage.save();
-                    }
-
-                    // Run actual training
-                    const filePath = path.join(uploadsDir, req.file.filename);
-                    const result = await trainDocument(businessId, filePath, req.file.originalname, businessRef.qdrantCollection);
-
-                    // Update status to completed
-                    const businessRef2 = storage.getBusiness(businessId);
-                    const pdfIndex2 = businessRef2.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                    if (pdfIndex2 !== -1) {
-                        businessRef2.knowledgeSources.pdfs[pdfIndex2].status = 'completed';
-                        businessRef2.knowledgeSources.pdfs[pdfIndex2].lastTrainedAt = new Date().toISOString();
-                        businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
-                        storage.save();
-                    }
-
-                    console.log('Document training completed:', req.file.originalname);
-                } catch (error) {
-                    console.error('Document training failed:', error);
-                    // Update status to failed
-                    const businessRef = storage.getBusiness(businessId);
-                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                    if (pdfIndex !== -1) {
-                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
-                        businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
-                        storage.save();
-                    }
+            // Try to run training (with timeout for serverless)
+            try {
+                // Update status to training
+                const businessRef = storage.getBusiness(businessId);
+                const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                if (pdfIndex !== -1) {
+                    businessRef.knowledgeSources.pdfs[pdfIndex].status = 'training';
+                    storage.save();
                 }
-            })();
+
+                // Run actual training with timeout (10 seconds for serverless)
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Training timed out')), 10000)
+                );
+                const filePath = path.join(uploadsDir, req.file.filename);
+                const trainingPromise = trainDocument(businessId, filePath, req.file.originalname, businessRef.qdrantCollection);
+                const result = await Promise.race([trainingPromise, timeoutPromise]);
+
+                // Update status to completed
+                const businessRef2 = storage.getBusiness(businessId);
+                const pdfIndex2 = businessRef2.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                if (pdfIndex2 !== -1) {
+                    businessRef2.knowledgeSources.pdfs[pdfIndex2].status = 'completed';
+                    businessRef2.knowledgeSources.pdfs[pdfIndex2].lastTrainedAt = new Date().toISOString();
+                    businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
+                    storage.save();
+                }
+
+                console.log('Document training completed:', req.file.originalname);
+            } catch (error) {
+                console.error('Document training failed:', error);
+                // Update status to failed
+                const businessRef = storage.getBusiness(businessId);
+                const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                if (pdfIndex !== -1) {
+                    businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
+                    businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
+                    storage.save();
+                }
+            }
 
             return res.status(201).json({ success: true, pdf: newPdf });
 

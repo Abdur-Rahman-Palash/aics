@@ -5,7 +5,7 @@ const http = require('http');
 const path = require('path');
 require('dotenv').config();
 const { Server } = require('socket.io');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 const cookieParser = require('cookie-parser');
 const storage = require('./lib/storage');
 
@@ -28,15 +28,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
-    }
+app.use(cookieSession({
+    name: 'aics-session',
+    keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
 }));
 
 // Auth middleware
