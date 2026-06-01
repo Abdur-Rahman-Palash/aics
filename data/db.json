@@ -13,6 +13,13 @@
       "password": "$2b$10$qJesv1nF4RpRIxBnMqpsuORtxwzw68RYHUtVNegSYG3X7DFj0qeAe",
       "name": "Pro",
       "createdAt": "2026-06-01T06:39:19.435Z"
+    },
+    {
+      "id": "fadd65fb-10d2-4b25-b687-c14d0a452974",
+      "email": "needman173@gmail.com",
+      "password": "$2b$10$SAfBdysjKc9hkm3W1O4RLen9x8j7nca2OX8NeR./ksiEwQF1Wlm1G",
+      "name": "Needman",
+      "createdAt": "2026-06-01T08:50:13.063Z"
     }
   ],
   "businesses": [

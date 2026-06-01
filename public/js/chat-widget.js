@@ -100,12 +100,34 @@ class AICSChatWidget {
                 this.sendMessage();
             }
         });
+        
+        // Handle resize
+        window.addEventListener('resize', () => this.handleResize());
+    }
+    
+    handleResize() {
+        const isMobile = window.innerWidth < 481;
+        if (this.chatContainer.classList.contains('active')) {
+            if (isMobile) {
+                this.floatBtn.style.display = 'none';
+            } else {
+                this.floatBtn.style.display = 'flex';
+            }
+        }
     }
 
     toggleChat() {
         this.chatContainer.classList.toggle('active');
+        const isMobile = window.innerWidth < 481;
         if (this.chatContainer.classList.contains('active')) {
+            // Hide floating button on mobile only
+            if (isMobile) {
+                this.floatBtn.style.display = 'none';
+            }
             this.inputField.focus();
+        } else {
+            // Show floating button
+            this.floatBtn.style.display = 'flex';
         }
     }
 

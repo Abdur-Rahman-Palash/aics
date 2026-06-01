@@ -7,6 +7,11 @@
     box-sizing: border-box;
 }
 
+/* Ensure viewport is set correctly */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 /* Floating Button */
 .aics-float-btn {
     position: fixed;
@@ -21,7 +26,7 @@
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     font-size: 24px;
-    z-index: 1000;
+    z-index: 10000; /* Higher z-index to avoid overlap */
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -47,11 +52,12 @@
     right: 0;
     top: 0;
     width: 100%;
-    height: 100%;
+    height: 100vh; /* Use viewport height */
+    max-height: 100vh;
     background: white;
     border-radius: 0;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    z-index: 999;
+    z-index: 9999; /* Higher z-index to avoid overlap */
     display: none;
     flex-direction: column;
     overflow: hidden;
@@ -83,6 +89,7 @@
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    padding-top: max(16px, env(safe-area-inset-top)); /* Safe area for notch */
 }
 
 .aics-header-title {
@@ -100,23 +107,31 @@
     align-items: center;
     justify-content: center;
     font-size: 20px;
+    flex-shrink: 0;
 }
 
 .aics-title-text {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .aics-title-text h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .aics-title-text p {
     margin: 2px 0 0 0;
     font-size: 12px;
     opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .aics-close-btn {
@@ -135,6 +150,7 @@
     transition: background 0.2s;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    flex-shrink: 0;
 }
 
 .aics-close-btn:hover {
@@ -179,6 +195,7 @@
     transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    flex-shrink: 0;
 }
 
 .aics-suggested-btn:hover {
@@ -206,6 +223,7 @@
     font-size: 14px;
     line-height: 1.5;
     word-wrap: break-word;
+    word-break: break-word;
 }
 
 .aics-message.ai {
@@ -226,6 +244,7 @@
 /* Chat Input */
 .aics-chat-input {
     padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)); /* Safe area for bottom nav */
     border-top: 1px solid #e0e0e0;
     background: white;
     display: flex;
@@ -241,6 +260,7 @@
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s;
+    min-width: 0;
 }
 
 .aics-chat-input input:focus {
@@ -336,6 +356,12 @@
         max-height: calc(100vh - 120px);
         height: 520px;
         border-radius: 16px;
+    }
+    
+    /* Keep floating button visible on desktop even when chat is open */
+    .aics-chat-container.active ~ .aics-float-btn,
+    .aics-float-btn[style*="display: none"] {
+        display: flex !important;
     }
 }
 
