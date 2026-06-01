@@ -165,6 +165,7 @@ html {
 /* Chat Messages */
 .aics-chat-messages {
     flex: 1;
+    min-height: 0; /* Critical flexbox fix to prevent overflow */
     padding: 16px;
     overflow-y: auto;
     background: #f5f7fa;
