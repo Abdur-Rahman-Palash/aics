@@ -1,39 +1,43 @@
-// Chat Widget JavaScript
 
+// Chat Widget JavaScript
 console.log('AICS Chat Widget script loaded!');
 
 class AICSChatWidget {
-    constructor() {
+    constructor(options = {}) {
         console.log('AICS Chat Widget constructor called');
-        this.suggestedFaqs = [];
+        this.businessId = options.businessId || null;
+        this.widgetSettings = {
+            title: 'AI Support',
+            primaryColor: '#667eea',
+            avatar: '🤖'
+        };
+        this.showingLeadForm = false;
         this.init();
     }
 
-    init() {
+    async init() {
         console.log('AICS Chat Widget init() called');
+        
+        // Load widget settings if business ID is provided
+        if (this.businessId) {
+            await this.loadWidgetSettings();
+        }
+        
         this.createWidget();
         this.attachEventListeners();
-        this.setupSocketIO();
-        this.loadSuggestedQuestions();
+        await this.loadSuggestedFAQs();
     }
 
-    setupSocketIO() {
-        // Socket.IO is only for LOCAL DEV (Vercel serverless doesn't support it well)
-        // So we'll use REST API by default!
-        this.socket = null;
-        // Only try Socket.IO if running on localhost!
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            try {
-                console.log('Attempting Socket.IO connection (local dev only)');
-                this.socket = io();
-                this.socket.on('ai response', (response) => {
-                    this.hideTypingIndicator();
-                    this.addMessage(response, 'ai');
-                    this.sendBtn.disabled = false;
-                });
-            } catch (e) {
-                console.log('Socket.IO not available, using REST API');
+    async loadWidgetSettings() {
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/widget`);
+            const data = await response.json();
+            
+            if (data.success && data.settings) {
+                this.widgetSettings = { ...this.widgetSettings, ...data.settings };
             }
+        } catch (error) {
+            console.error('Error loading widget settings:', error);
         }
     }
 
@@ -41,18 +45,19 @@ class AICSChatWidget {
         // Create floating button
         this.floatBtn = document.createElement('button');
         this.floatBtn.className = 'aics-float-btn';
-        this.floatBtn.innerHTML = '💬';
+        this.floatBtn.innerHTML = this.widgetSettings.avatar;
+        this.floatBtn.style.background = this.widgetSettings.primaryColor;
         document.body.appendChild(this.floatBtn);
 
         // Create chat container
         this.chatContainer = document.createElement('div');
         this.chatContainer.className = 'aics-chat-container';
         this.chatContainer.innerHTML = `
-            <div class="aics-chat-header">
+            <div class="aics-chat-header" style="background: ${this.widgetSettings.primaryColor}">
                 <div class="aics-header-title">
-                    <div class="aics-avatar">🤖</div>
+                    <div class="aics-avatar">${this.widgetSettings.avatar}</div>
                     <div class="aics-title-text">
-                        <h3>AI Support</h3>
+                        <h3>${this.widgetSettings.title}</h3>
                         <p>Online</p>
                     </div>
                 </div>
@@ -71,7 +76,7 @@ class AICSChatWidget {
             </div>
             <div class="aics-chat-input">
                 <input type="text" id="aics-input" placeholder="Type your message...">
-                <button class="aics-send-btn" id="aics-send">➤</button>
+                <button id="aics-send-btn" class="aics-send-btn" style="background: ${this.widgetSettings.primaryColor}">➤</button>
             </div>
         `;
         document.body.appendChild(this.chatContainer);
@@ -79,7 +84,7 @@ class AICSChatWidget {
         // Store references to elements
         this.messagesContainer = document.getElementById('aics-messages');
         this.inputField = document.getElementById('aics-input');
-        this.sendBtn = document.getElementById('aics-send');
+        this.sendBtn = document.getElementById('aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
         this.suggestedContainer = document.getElementById('aics-suggested');
     }
@@ -96,12 +101,34 @@ class AICSChatWidget {
                 this.sendMessage();
             }
         });
+        
+        // Handle resize
+        window.addEventListener('resize', () => this.handleResize());
+    }
+    
+    handleResize() {
+        const isMobile = window.innerWidth < 481;
+        if (this.chatContainer.classList.contains('active')) {
+            if (isMobile) {
+                this.floatBtn.style.display = 'none';
+            } else {
+                this.floatBtn.style.display = 'flex';
+            }
+        }
     }
 
     toggleChat() {
         this.chatContainer.classList.toggle('active');
+        const isMobile = window.innerWidth < 481;
         if (this.chatContainer.classList.contains('active')) {
+            // Hide floating button on mobile only
+            if (isMobile) {
+                this.floatBtn.style.display = 'none';
+            }
             this.inputField.focus();
+        } else {
+            // Show floating button
+            this.floatBtn.style.display = 'flex';
         }
     }
 
@@ -121,10 +148,11 @@ class AICSChatWidget {
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message,
+                    businessId: this.businessId
+                })
             });
 
             const data = await response.json();
@@ -176,64 +204,131 @@ class AICSChatWidget {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
-    async loadSuggestedQuestions() {
-        try {
-            const response = await fetch('/api/get-faqs');
-            const data = await response.json();
-            
-            if (data.success && data.faqs.length > 0) {
-                this.suggestedFaqs = data.faqs;
-                this.renderSuggestedQuestions();
-            } else {
-                // If no FAQs yet, show some default suggestions
-                this.renderDefaultSuggestions();
-            }
-        } catch (error) {
-            console.error('Error loading suggested questions:', error);
-            this.renderDefaultSuggestions();
-        }
-    }
-
-    renderSuggestedQuestions() {
-        this.suggestedContainer.innerHTML = '';
-        
-        this.suggestedFaqs.slice(0, 6).forEach(faq => {
-            const btn = document.createElement('button');
-            btn.className = 'aics-suggested-btn';
-            btn.textContent = faq.question;
-            btn.addEventListener('click', () => this.sendMessageFromSuggestion(faq.question));
-            this.suggestedContainer.appendChild(btn);
-        });
-    }
-
-    renderDefaultSuggestions() {
+    async loadSuggestedFAQs() {
         const defaultQuestions = [
             'What are your business hours?',
             'Do you offer refunds?',
             'How can I contact support?',
             'Where are you located?'
         ];
-        
+
+        let questions = defaultQuestions;
+
+        if (this.businessId) {
+            try {
+                const response = await fetch(`/api/businesses/${this.businessId}/faqs`);
+                const data = await response.json();
+                if (data.success && Array.isArray(data.faqs) && data.faqs.length > 0) {
+                    questions = data.faqs
+                        .slice(0, 6)
+                        .map(faq => faq.questionEn || faq.questionBn)
+                        .filter(Boolean);
+                }
+            } catch (error) {
+                console.error('Error loading suggested FAQs:', error);
+            }
+        }
+
         this.suggestedContainer.innerHTML = '';
-        
-        defaultQuestions.forEach(q => {
+
+        questions.forEach(q => {
             const btn = document.createElement('button');
             btn.className = 'aics-suggested-btn';
             btn.textContent = q;
             btn.addEventListener('click', () => this.sendMessageFromSuggestion(q));
             this.suggestedContainer.appendChild(btn);
         });
+
+        // Add talk to human button
+        if (this.businessId) {
+            const humanBtn = document.createElement('button');
+            humanBtn.className = 'aics-suggested-btn';
+            humanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            humanBtn.style.color = 'white';
+            humanBtn.textContent = 'Talk to Human';
+            humanBtn.addEventListener('click', () => this.showLeadForm());
+            this.suggestedContainer.appendChild(humanBtn);
+        }
     }
 
     sendMessageFromSuggestion(question) {
         this.inputField.value = question;
         this.sendMessage();
     }
+
+    showLeadForm() {
+        this.showingLeadForm = true;
+        this.inputField.disabled = true;
+        this.sendBtn.disabled = true;
+
+        // Add lead form message
+        const formDiv = document.createElement('div');
+        formDiv.className = 'aics-message ai';
+        formDiv.innerHTML = `
+            <div style="margin-bottom: 12px;">Sure! Please fill out the form below and our team will get back to you shortly.</div>
+            <form id="aics-lead-form" style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="aics-lead-name" placeholder="Your Name" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <input type="email" id="aics-lead-email" placeholder="Your Email" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <input type="tel" id="aics-lead-phone" placeholder="Your Phone (optional)" style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <textarea id="aics-lead-message" placeholder="How can we help you?" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                <button type="submit" style="padding: 10px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Send Request</button>
+            </form>
+        `;
+        this.messagesContainer.appendChild(formDiv);
+        this.scrollToBottom();
+
+        // Attach form submit listener
+        const form = document.getElementById('aics-lead-form');
+        form.addEventListener('submit', (e) => this.submitLeadForm(e));
+    }
+
+    async submitLeadForm(e) {
+        e.preventDefault();
+        const name = document.getElementById('aics-lead-name').value;
+        const email = document.getElementById('aics-lead-email').value;
+        const phone = document.getElementById('aics-lead-phone').value;
+        const message = document.getElementById('aics-lead-message').value;
+
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, phone, message })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove form and show success message
+                const formDiv = document.getElementById('aics-lead-form').parentElement;
+                formDiv.innerHTML = '<div>Thank you! We\'ve received your request and will get back to you soon.</div>';
+                
+                this.showingLeadForm = false;
+                this.inputField.disabled = false;
+                this.sendBtn.disabled = false;
+            } else {
+                this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+            }
+        } catch (error) {
+            console.error('Error submitting lead:', error);
+            this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+        }
+    }
 }
 
 // Initialize the widget when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new AICSChatWidget());
-} else {
-    new AICSChatWidget();
+function initWidget() {
+    // Get business ID from script tag data attribute
+    const scriptTags = document.querySelectorAll('script[data-business-id]');
+    const scriptTag = scriptTags[scriptTags.length - 1]; // Get the last one (the one we just added
+    const businessId = scriptTag ? scriptTag.getAttribute('data-business-id') : null;
+    
+    new AICSChatWidget({ businessId });
 }
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWidget);
+} else {
+    initWidget();
+}
+

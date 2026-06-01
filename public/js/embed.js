@@ -15,33 +15,49 @@
 
         // Inject Styles
         const css = `
-            .aics-float-btn { position: fixed; bottom: 24px; right: 24px; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); cursor: pointer; font-size: 28px; z-index: 999999; transition: transform 0.2s; }
-            .aics-float-btn:hover { transform: scale(1.1); }
-            .aics-chat-container { position: fixed; bottom: 100px; right: 24px; width: 90%; max-width: 420px; height: 600px; border-radius: 20px; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15); z-index: 999998; display: none; background: white; flex-direction: column; overflow: hidden; }
-            @media (max-width: 480px) { .aics-chat-container { right: 12px; left: 12px; bottom: 88px; width: auto; max-width: 100%; height: 70vh; } }
-            .aics-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; color: white; }
-            .aics-header-title { display: flex; align-items: center; gap: 12px; }
-            .aics-avatar { width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-            .aics-title-text h3 { margin: 0; font-size: 18px; font-weight: 600; }
-            .aics-title-text p { margin: 0; font-size: 12px; opacity: 0.9; }
-            .aics-close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-            .aics-chat-messages { flex: 1; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 12px; }
-            .aics-message { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.5; }
-            .aics-message.user { align-self: flex-end; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-bottom-right-radius: 4px; }
-            .aics-message.ai { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
-            .aics-typing-indicator { display: flex; gap: 4px; padding: 12px 16px; }
-            .aics-typing-indicator span { width: 8px; height: 8px; background: #667eea; border-radius: 50%; animation: aics-bounce 1.4s infinite ease-in-out both; }
-            .aics-typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-            .aics-typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-            @keyframes aics-bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-            .aics-chat-input { padding: 16px; background: white; border-top: 1px solid #e0e0e0; display: flex; gap: 12px; }
-            .aics-chat-input input { flex: 1; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.2s; }
-            .aics-chat-input input:focus { border-color: #667eea; }
-            .aics-send-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; font-size: 16px; }
-            .aics-suggested-header { font-size: 13px; color: #666; padding: 16px 16px 0; margin: 0; background: #f5f7fa; }
-            .aics-suggested-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 0 16px 16px; background: #f5f7fa; border-bottom: 1px solid #e0e0e0; }
-            .aics-suggested-btn { background: white; border: 1px solid #667eea; color: #667eea; padding: 8px 12px; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+            .aics-float-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); font-size: 24px; z-index: 10000; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+            .aics-float-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3); }
+            .aics-float-btn:active { transform: scale(0.95); }
+            .aics-chat-container { position: fixed; bottom: 0; left: 0; right: 0; top: 0; width: 100%; height: 100vh; max-height: 100vh; background: white; border-radius: 0; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); z-index: 9999; display: none; flex-direction: column; overflow: hidden; transition: all 0.3s ease; }
+            .aics-chat-container.active { display: flex; animation: slideUp 0.3s ease; }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            .aics-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; padding-top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+            .aics-header-title { display: flex; align-items: center; gap: 10px; }
+            .aics-avatar { width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+            .aics-title-text { display: flex; flex-direction: column; overflow: hidden; }
+            .aics-title-text h3 { margin: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .aics-title-text p { margin: 2px 0 0 0; font-size: 12px; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .aics-close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
+            .aics-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
+            .aics-close-btn:active { transform: scale(0.9); }
+            .aics-chat-messages { flex: 1; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
+            .aics-suggested-header { font-size: 13px; color: #666; padding: 16px 16px 0 16px; margin: 0; background: #f5f7fa; flex-shrink: 0; }
+            .aics-suggested-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 0 16px 16px 16px; background: #f5f7fa; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+            .aics-suggested-btn { background: white; border: 1px solid #667eea; color: #667eea; padding: 8px 12px; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
             .aics-suggested-btn:hover { background: #667eea; color: white; }
+            .aics-suggested-btn:active { transform: scale(0.95); }
+            .aics-message { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word; word-break: break-word; }
+            .aics-message.ai { background: white; color: #333; border-bottom-left-radius: 4px; align-self: flex-start; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+            .aics-message.user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+            .aics-chat-input { padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); border-top: 1px solid #e0e0e0; background: white; display: flex; gap: 10px; flex-shrink: 0; }
+            .aics-chat-input input { flex: 1; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.2s; min-width: 0; }
+            .aics-chat-input input:focus { border-color: #667eea; }
+            .aics-send-btn { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-size: 18px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
+            .aics-send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4); }
+            .aics-send-btn:active { transform: scale(0.95); }
+            .aics-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+            .aics-typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: white; border-radius: 16px; border-bottom-left-radius: 4px; align-self: flex-start; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); width: fit-content; }
+            .aics-typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #667eea; animation: typingBounce 1.4s infinite ease-in-out both; }
+            .aics-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+            .aics-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+            @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+            @media (min-width: 481px) {
+                .aics-float-btn { bottom: 30px; right: 30px; width: 60px; height: 60px; }
+                .aics-chat-container { bottom: 100px; right: 30px; top: auto; left: auto; width: 380px; max-height: calc(100vh - 120px); height: 520px; border-radius: 16px; }
+            }
+            @media (min-width: 1025px) {
+                .aics-chat-container { width: 420px; height: 580px; }
+            }
         `;
         const style = document.createElement('style');
         style.type = 'text/css';
@@ -51,7 +67,7 @@
         // Create Elements
         const floatBtn = document.createElement('button');
         floatBtn.className = 'aics-float-btn';
-        floatBtn.innerHTML = '💬';
+        floatBtn.innerHTML = '🤖';
 
         const chatContainer = document.createElement('div');
         chatContainer.className = 'aics-chat-container';
@@ -102,8 +118,18 @@
 
         // Helper Functions
         function toggleChat() {
-            const isOpen = chatContainer.style.display === 'flex';
-            chatContainer.style.display = isOpen ? 'none' : 'flex';
+            const isActive = chatContainer.classList.contains('active');
+            if (isActive) {
+                chatContainer.classList.remove('active');
+                floatBtn.style.display = 'flex';
+            } else {
+                chatContainer.classList.add('active');
+                const isMobile = window.innerWidth < 481;
+                if (isMobile) {
+                    floatBtn.style.display = 'none';
+                }
+                inputField.focus();
+            }
         }
         function addMessage(text, type) {
             const messageDiv = document.createElement('div');
@@ -114,9 +140,13 @@
         }
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
-            typingDiv.className = 'aics-message ai aics-typing-indicator';
             typingDiv.id = 'aics-typing';
-            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            typingDiv.className = 'aics-typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="aics-typing-dot"></div>
+                <div class="aics-typing-dot"></div>
+                <div class="aics-typing-dot"></div>
+            `;
             messagesContainer.appendChild(typingDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }

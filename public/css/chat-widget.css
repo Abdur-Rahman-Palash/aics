@@ -173,6 +173,15 @@ html {
     -webkit-overflow-scrolling: touch;
 }
 
+.aics-suggested-header {
+    font-size: 13px;
+    color: #666;
+    padding: 16px 16px 0 16px;
+    margin: 0;
+    background: #f5f7fa;
+    flex-shrink: 0;
+}
+
 /* Suggested Questions */
 .aics-suggested-questions {
     display: flex;
@@ -182,6 +191,7 @@ html {
     padding: 0 16px 16px 16px;
     background: #f5f7fa;
     border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
 }
 
 .aics-suggested-btn {
@@ -205,14 +215,6 @@ html {
 
 .aics-suggested-btn:active {
     transform: scale(0.95);
-}
-
-.aics-suggested-header {
-    font-size: 13px;
-    color: #666;
-    padding: 16px 16px 0 16px;
-    margin: 0;
-    background: #f5f7fa;
 }
 
 /* Message Bubbles */
