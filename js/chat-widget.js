@@ -1,4 +1,3 @@
-
 // Chat Widget JavaScript
 console.log('AICS Chat Widget script loaded!');
 
@@ -87,6 +86,11 @@ class AICSChatWidget {
         this.sendBtn = document.getElementById('aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
         this.suggestedContainer = document.getElementById('aics-suggested');
+        this.chatHeader = this.chatContainer.querySelector('.aics-chat-header');
+        
+        // Drag state
+        this.isDragging = false;
+        this.dragOffset = { x: 0, y: 0 };
     }
 
     attachEventListeners() {
@@ -104,6 +108,62 @@ class AICSChatWidget {
         
         // Handle resize
         window.addEventListener('resize', () => this.handleResize());
+        
+        // Drag functionality
+        this.chatHeader.addEventListener('mousedown', (e) => this.startDrag(e));
+        document.addEventListener('mousemove', (e) => this.drag(e));
+        document.addEventListener('mouseup', () => this.stopDrag());
+        this.chatHeader.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
+        document.addEventListener('touchmove', (e) => this.drag(e), { passive: false });
+        document.addEventListener('touchend', () => this.stopDrag());
+    }
+    
+    startDrag(e) {
+        const isMobile = window.innerWidth < 650;
+        console.log('startDrag called, isMobile:', isMobile, 'e.target:', e.target);
+        if (isMobile) return; // Don't allow dragging on mobile
+        
+        e.preventDefault();
+        this.isDragging = true;
+        console.log('startDrag: isDragging set to true');
+        
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        const rect = this.chatContainer.getBoundingClientRect();
+        this.dragOffset.x = clientX - rect.left;
+        this.dragOffset.y = clientY - rect.top;
+        console.log('startDrag: dragOffset:', this.dragOffset);
+    }
+    
+    drag(e) {
+        if (!this.isDragging) return;
+        
+        e.preventDefault();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        console.log('drag: clientX, clientY:', clientX, clientY);
+        
+        let newX = clientX - this.dragOffset.x;
+        let newY = clientY - this.dragOffset.y;
+        
+        // Constrain to viewport
+        const maxX = window.innerWidth - this.chatContainer.offsetWidth;
+        const maxY = window.innerHeight - this.chatContainer.offsetHeight;
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+        
+        // Update position (reset bottom/right for desktop)
+        this.chatContainer.style.left = `${newX}px`;
+        this.chatContainer.style.top = `${newY}px`;
+        this.chatContainer.style.bottom = 'auto';
+        this.chatContainer.style.right = 'auto';
+        console.log('drag: newX, newY:', newX, newY);
+    }
+    
+    stopDrag() {
+        console.log('stopDrag called');
+        this.isDragging = false;
     }
     
     handleResize() {
@@ -120,10 +180,27 @@ class AICSChatWidget {
     toggleChat() {
         this.chatContainer.classList.toggle('active');
         const isMobile = window.innerWidth < 650;
+        console.log('toggleChat called, isMobile:', isMobile);
         if (this.chatContainer.classList.contains('active')) {
-            // Hide floating button on mobile only
+            // Reset position for mobile
             if (isMobile) {
+                this.chatContainer.style.left = '0';
+                this.chatContainer.style.top = '0';
+                this.chatContainer.style.bottom = '0';
+                this.chatContainer.style.right = '0';
                 this.floatBtn.style.display = 'none';
+            } else {
+                // Desktop: set initial left/top from bottom/right if not already set
+                if (!this.chatContainer.style.left || this.chatContainer.style.left === 'auto') {
+                    const computedStyle = window.getComputedStyle(this.chatContainer);
+                    const bottom = parseFloat(computedStyle.bottom) || 100;
+                    const right = parseFloat(computedStyle.right) || 30;
+                    this.chatContainer.style.left = `${window.innerWidth - this.chatContainer.offsetWidth - right}px`;
+                    this.chatContainer.style.top = `${window.innerHeight - this.chatContainer.offsetHeight - bottom}px`;
+                    this.chatContainer.style.bottom = 'auto';
+                    this.chatContainer.style.right = 'auto';
+                }
+                this.floatBtn.style.display = 'flex';
             }
             this.inputField.focus();
         } else {
@@ -331,4 +408,3 @@ if (document.readyState === 'loading') {
 } else {
     initWidget();
 }
-

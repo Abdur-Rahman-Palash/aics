@@ -1,4 +1,3 @@
-
 /* Chat Widget Styles - Mobile First */
 
 /* Reset & Base */
@@ -93,6 +92,7 @@ html {
     flex-shrink: 0;
     min-width: 0;
     padding-top: max(16px, env(safe-area-inset-top)); /* Safe area for notch */
+    cursor: move; /* Indicate draggable */
 }
 
 .aics-header-title {

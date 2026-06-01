@@ -20,6 +20,20 @@
       "password": "$2b$10$SAfBdysjKc9hkm3W1O4RLen9x8j7nca2OX8NeR./ksiEwQF1Wlm1G",
       "name": "Needman",
       "createdAt": "2026-06-01T08:50:13.063Z"
+    },
+    {
+      "id": "0d91d86a-bb53-4222-93d4-f0552b770f6e",
+      "email": "test@example.com",
+      "password": "$2b$10$htFkETrtKWgCAfsndsWbS.gM7tFxMG80kXuBV5FDkMOzx25fwiKIy",
+      "name": "Test User",
+      "createdAt": "2026-06-01T15:36:56.801Z"
+    },
+    {
+      "id": "23696c7d-9814-4bab-8c5c-f545c5dede55",
+      "email": "newtest@example.com",
+      "password": "$2b$10$LJ35VRvnYzSMjnN.vkwYIe.Sxl/bbAoUqYd1L3bIW3kPVNM4VjJNC",
+      "name": "New Test User",
+      "createdAt": "2026-06-01T15:38:10.646Z"
     }
   ],
   "businesses": [

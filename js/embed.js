@@ -1,4 +1,3 @@
-
 // AICS - Embed Widget Script
 // Copy this script and paste anywhere on your website!
 // Example usage:
@@ -22,7 +21,7 @@
             .aics-chat-container { position: fixed; bottom: 0; left: 0; right: 0; top: 0; width: 100%; height: 100%; max-height: 100vh; background: white; border-radius: 0; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); z-index: 9999; display: none; flex-direction: column; overflow: hidden; min-height: 0; transition: all 0.3s ease; }
             .aics-chat-container.active { display: flex; animation: slideUp 0.3s ease; }
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-            .aics-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; padding-top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-width: 0; }
+            .aics-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; padding-top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-width: 0; cursor: move; }
             .aics-header-title { display: flex; align-items: center; gap: 10px; }
             .aics-avatar { width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
             .aics-title-text { display: flex; flex-direction: column; overflow: hidden; }
@@ -86,7 +85,7 @@
             <p class="aics-suggested-header">Try asking:</p>
             <div class="aics-suggested-questions" id="aics-suggested"></div>
             <div class="aics-chat-messages" id="aics-messages">
-                <div class="aics-message.ai">Hi there! 👋 How can I help you today?</div>
+                <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
             <div class="aics-chat-input">
                 <input type="text" id="aics-input" placeholder="Type your message...">
@@ -104,6 +103,11 @@
         const sendBtn = document.getElementById('aics-send');
         const closeBtn = chatContainer.querySelector('.aics-close-btn');
         const suggestedContainer = document.getElementById('aics-suggested');
+        const chatHeader = chatContainer.querySelector('.aics-chat-header');
+        
+        // Drag state
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
 
         suggestedContainer.innerHTML = `
             <button class="aics-suggested-btn">What are your business hours?</button>
@@ -116,21 +120,96 @@
         closeBtn.addEventListener('click', toggleChat);
         sendBtn.addEventListener('click', sendMessage);
         inputField.addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMessage(); });
+        
+        // Drag functionality
+        chatHeader.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        chatHeader.addEventListener('touchstart', startDrag, { passive: false });
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', stopDrag);
 
         // Helper Functions
         function toggleChat() {
             const isActive = chatContainer.classList.contains('active');
+            console.log('toggleChat called, isActive:', isActive);
             if (isActive) {
                 chatContainer.classList.remove('active');
                 floatBtn.style.display = 'flex';
             } else {
                 chatContainer.classList.add('active');
                 const isMobile = window.innerWidth < 650;
+                console.log('toggleChat, isMobile:', isMobile);
                 if (isMobile) {
+                    // Reset position for mobile
+                    chatContainer.style.left = '0';
+                    chatContainer.style.top = '0';
+                    chatContainer.style.bottom = '0';
+                    chatContainer.style.right = '0';
                     floatBtn.style.display = 'none';
+                } else {
+                    // Desktop: set initial left/top from bottom/right if not already set
+                    if (!chatContainer.style.left || chatContainer.style.left === 'auto') {
+                        const computedStyle = window.getComputedStyle(chatContainer);
+                        const bottom = parseFloat(computedStyle.bottom) || 100;
+                        const right = parseFloat(computedStyle.right) || 30;
+                        chatContainer.style.left = `${window.innerWidth - chatContainer.offsetWidth - right}px`;
+                        chatContainer.style.top = `${window.innerHeight - chatContainer.offsetHeight - bottom}px`;
+                        chatContainer.style.bottom = 'auto';
+                        chatContainer.style.right = 'auto';
+                    }
+                    floatBtn.style.display = 'flex';
                 }
                 inputField.focus();
             }
+        }
+        
+        function startDrag(e) {
+            const isMobile = window.innerWidth < 650;
+            console.log('startDrag called, isMobile:', isMobile, 'e.target:', e.target);
+            if (isMobile) return; // Don't allow dragging on mobile
+            
+            e.preventDefault();
+            isDragging = true;
+            console.log('startDrag: isDragging set to true');
+            
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            const rect = chatContainer.getBoundingClientRect();
+            dragOffset.x = clientX - rect.left;
+            dragOffset.y = clientY - rect.top;
+            console.log('startDrag: dragOffset:', dragOffset);
+        }
+        
+        function drag(e) {
+            if (!isDragging) return;
+            
+            e.preventDefault();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            console.log('drag: clientX, clientY:', clientX, clientY);
+            
+            let newX = clientX - dragOffset.x;
+            let newY = clientY - dragOffset.y;
+            
+            // Constrain to viewport
+            const maxX = window.innerWidth - chatContainer.offsetWidth;
+            const maxY = window.innerHeight - chatContainer.offsetHeight;
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+            
+            // Update position (reset bottom/right for desktop)
+            chatContainer.style.left = `${newX}px`;
+            chatContainer.style.top = `${newY}px`;
+            chatContainer.style.bottom = 'auto';
+            chatContainer.style.right = 'auto';
+            console.log('drag: newX, newY:', newX, newY);
+        }
+        
+        function stopDrag() {
+            console.log('stopDrag called');
+            isDragging = false;
         }
         function addMessage(text, type) {
             const messageDiv = document.createElement('div');

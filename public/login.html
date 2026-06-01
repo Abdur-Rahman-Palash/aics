@@ -133,14 +133,18 @@
     </div>
 
     <script>
+        console.log('Login page loaded');
+        
         const form = document.getElementById('loginForm');
         const messageDiv = document.getElementById('message');
         const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
 
         // Email validation regex
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         function showMessage(text, type) {
+            console.log('Showing message:', text, type);
             messageDiv.textContent = text;
             messageDiv.className = 'message ' + type;
             setTimeout(() => {
@@ -150,9 +154,12 @@
         }
 
         form.addEventListener('submit', async (e) => {
+            console.log('Login form submitted');
             e.preventDefault();
             const email = emailInput.value.trim();
-            const password = document.getElementById('password').value;
+            const password = passwordInput.value;
+
+            console.log('Login attempt with email:', email);
 
             // Validate email
             if (!emailRegex.test(email)) {
@@ -167,12 +174,16 @@
             }
 
             try {
+                console.log('Sending login request to /api/auth/login');
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
+
+                console.log('Login response status:', response.status);
                 const data = await response.json();
+                console.log('Login response data:', data);
 
                 if (data.success) {
                     showMessage('Login successful! Redirecting...', 'success');
@@ -180,11 +191,11 @@
                         window.location.href = '/dashboard.html';
                     }, 1000);
                 } else {
-                    showMessage(data.error, 'error');
+                    showMessage(data.error || 'Login failed', 'error');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                showMessage('Failed to login. Please try again.', 'error');
+                console.error('Login error (catch block):', error);
+                showMessage('Failed to login. Please try again. Error: ' + error.message, 'error');
             }
         });
     </script>
