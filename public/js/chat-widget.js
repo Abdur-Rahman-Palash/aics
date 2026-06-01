@@ -106,7 +106,7 @@ class AICSChatWidget {
     }
     
     handleResize() {
-        const isMobile = window.innerWidth < 481;
+        const isMobile = window.innerWidth < 650;
         if (this.chatContainer.classList.contains('active')) {
             if (isMobile) {
                 this.floatBtn.style.display = 'none';
@@ -118,7 +118,7 @@ class AICSChatWidget {
 
     toggleChat() {
         this.chatContainer.classList.toggle('active');
-        const isMobile = window.innerWidth < 481;
+        const isMobile = window.innerWidth < 650;
         if (this.chatContainer.classList.contains('active')) {
             // Hide floating button on mobile only
             if (isMobile) {
