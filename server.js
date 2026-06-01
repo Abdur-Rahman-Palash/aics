@@ -7,6 +7,7 @@ require('dotenv').config();
 const { Server } = require('socket.io');
 const cookieSession = require('cookie-session');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const storage = require('./lib/storage');
 
 const chatHandler = require('./api/chat');
@@ -24,6 +25,18 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
+
+// Email validation regex
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Rate limiting
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: { success: false, error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Middleware
 app.use(cookieParser());
@@ -47,12 +60,21 @@ function requireAuth(req, res, next) {
 }
 
 // Auth API Routes
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/api/auth/signup', authLimiter, async (req, res) => {
     try {
         const { email, password, name } = req.body;
-        if (!email || !password || !name) {
-            return res.status(400).json({ success: false, error: 'Email, password, and name are required' });
+        
+        // Validate inputs
+        if (!name || name.length < 2) {
+            return res.status(400).json({ success: false, error: 'Name must be at least 2 characters long' });
         }
+        if (!email || !emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
+        }
+        if (!password || password.length < 6) {
+            return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long' });
+        }
+        
         const user = await storage.createUser(email, password, name);
         req.session.userId = user.id;
         res.status(201).json({ success: true, user });
@@ -62,12 +84,18 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ success: false, error: 'Email and password are required' });
+        
+        // Validate inputs
+        if (!email || !emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'Please enter a valid email address' });
         }
+        if (!password) {
+            return res.status(400).json({ success: false, error: 'Password is required' });
+        }
+        
         const user = await storage.loginUser(email, password);
         req.session.userId = user.id;
         res.status(200).json({ success: true, user });
@@ -78,13 +106,9 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({ success: false, error: 'Failed to log out' });
-        }
-        res.clearCookie('connect.sid');
-        res.status(200).json({ success: true });
-    });
+    req.session = null;
+    res.clearCookie('aics-session');
+    res.status(200).json({ success: true });
 });
 
 app.get('/api/auth/me', (req, res) => {

@@ -135,6 +135,10 @@
     <script>
         const form = document.getElementById('loginForm');
         const messageDiv = document.getElementById('message');
+        const emailInput = document.getElementById('email');
+
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         function showMessage(text, type) {
             messageDiv.textContent = text;
@@ -147,8 +151,20 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            const email = emailInput.value.trim();
             const password = document.getElementById('password').value;
+
+            // Validate email
+            if (!emailRegex.test(email)) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+
+            // Validate password
+            if (!password) {
+                showMessage('Password is required', 'error');
+                return;
+            }
 
             try {
                 const response = await fetch('/api/auth/login', {

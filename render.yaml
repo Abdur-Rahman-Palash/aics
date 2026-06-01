@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: aics-app
+    runtime: node
+    repo: https://github.com/Abdur-Rahman-Palash/aics # Replace with your repo
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
