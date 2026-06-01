@@ -41,6 +41,13 @@
       "password": "$2b$10$dg4kjbGDScOpHedhR9Vt4euXakbF2LtrXCpMi7b4AHqbX68W/s.zK",
       "name": "akash",
       "createdAt": "2026-06-01T16:44:18.278Z"
+    },
+    {
+      "id": "1d0571e9-1148-4857-8112-dc0daae309a4",
+      "email": "lionkong658@gmail.com",
+      "password": "$2b$10$.R8SeEaAOC7Y/X8Dx4q6rugJr.VHEjfAXU..1.mdQ6fVv5ZVxxTbi",
+      "name": "Lion Kong",
+      "createdAt": "2026-06-01T17:00:55.671Z"
     }
   ],
   "businesses": [
@@ -262,6 +269,36 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-06-01T16:44:37.817Z"
+      }
+    },
+    {
+      "id": "c49370b9-9224-4528-9c02-146a3133460f",
+      "name": "Tech Mart",
+      "domain": "techmart.com",
+      "userId": "1d0571e9-1148-4857-8112-dc0daae309a4",
+      "createdAt": "2026-06-01T17:01:07.364Z",
+      "qdrantCollection": "aics_tech_mart",
+      "widgetSettings": {
+        "title": "Tech Mart Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "b6fcac0c7cafa7a24c821069d709365b",
+        "verifiedAt": null
+      },
+      "faqs": [],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "leads": [],
+      "analytics": {
+        "totalMessages": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-01T17:01:07.364Z"
       }
     }
   ]
