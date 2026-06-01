@@ -13,15 +13,10 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // Auth check
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-
     try {
         if (req.method === 'GET') {
-            // Get businesses for current user
-            const businesses = storage.getBusinessesForUser(req.session.userId);
+            // Get all businesses for now (demo mode)
+            const businesses = storage.data.businesses;
             return res.status(200).json({ success: true, businesses });
         }
 
@@ -32,7 +27,7 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Name and domain are required' });
             }
 
-            const newBusiness = storage.createBusiness(name, domain, req.session.userId);
+            const newBusiness = storage.createBusiness(name, domain, 'demo-user-id');
             return res.status(201).json({ success: true, business: newBusiness });
         }
 

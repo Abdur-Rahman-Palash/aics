@@ -55,14 +55,9 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Auth check
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-
-    // Check if business exists and user owns it
+    // Check if business exists
     const businessId = req.query.id;
-    const business = storage.getBusiness(businessId, req.session.userId);
+    const business = storage.getBusiness(businessId);
     if (!business) {
         return res.status(404).json({ success: false, error: 'Business not found' });
     }
