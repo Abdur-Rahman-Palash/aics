@@ -5,6 +5,7 @@ const storage = require('../../../lib/storage');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { trainDocument } = require('../../../lib/training');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../../uploads');
@@ -84,17 +85,44 @@ module.exports = async (req, res) => {
                 return res.status(404).json({ success: false, error: 'Business not found' });
             }
 
-            // TODO: Implement actual PDF/DOCX text extraction, chunking, embedding, and Qdrant storage here
-            // For now, just mark it as completed after a short delay (simulating processing)
-            setTimeout(() => {
-                const business = storage.getBusiness(businessId);
-                const pdfIndex = business.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                if (pdfIndex !== -1) {
-                    business.knowledgeSources.pdfs[pdfIndex].status = 'completed';
-                    business.knowledgeSources.pdfs[pdfIndex].lastTrainedAt = new Date().toISOString();
-                    storage.save();
+            // Run training in background
+            (async () => {
+                try {
+                    // Update status to training
+                    const businessRef = storage.getBusiness(businessId);
+                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                    if (pdfIndex !== -1) {
+                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'training';
+                        storage.save();
+                    }
+
+                    // Run actual training
+                    const filePath = path.join(uploadsDir, req.file.filename);
+                    const result = await trainDocument(businessId, filePath, req.file.originalname, businessRef.qdrantCollection);
+
+                    // Update status to completed
+                    const businessRef2 = storage.getBusiness(businessId);
+                    const pdfIndex2 = businessRef2.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                    if (pdfIndex2 !== -1) {
+                        businessRef2.knowledgeSources.pdfs[pdfIndex2].status = 'completed';
+                        businessRef2.knowledgeSources.pdfs[pdfIndex2].lastTrainedAt = new Date().toISOString();
+                        businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
+                        storage.save();
+                    }
+
+                    console.log('Document training completed:', req.file.originalname);
+                } catch (error) {
+                    console.error('Document training failed:', error);
+                    // Update status to failed
+                    const businessRef = storage.getBusiness(businessId);
+                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                    if (pdfIndex !== -1) {
+                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
+                        businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
+                        storage.save();
+                    }
                 }
-            }, 3000);
+            })();
 
             return res.status(201).json({ success: true, pdf: newPdf });
 

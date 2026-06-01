@@ -122,6 +122,67 @@ app.all('/api/businesses/:id/pdf', (req, res) => {
     businessPdfHandler(req, res);
 });
 
+// Lead API Routes
+app.post('/api/businesses/:id/leads', async (req, res) => {
+    try {
+        const businessId = req.params.id;
+        const newLead = storage.addLead(businessId, req.body);
+        if (newLead) {
+            res.status(201).json({ success: true, lead: newLead });
+        } else {
+            res.status(404).json({ success: false, error: 'Business not found' });
+        }
+    } catch (error) {
+        console.error('Error adding lead:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.get('/api/businesses/:id/leads', (req, res) => {
+    // Check auth
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        // Verify ownership
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const leads = storage.getLeadsForBusiness(businessId);
+        res.status(200).json({ success: true, leads });
+    } catch (error) {
+        console.error('Error getting leads:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
+    // Check auth
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, leadId } = req.params;
+        const { status } = req.body;
+        // Verify ownership
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedLead = storage.updateLeadStatus(businessId, leadId, status);
+        if (updatedLead) {
+            res.status(200).json({ success: true, lead: updatedLead });
+        } else {
+            res.status(404).json({ success: false, error: 'Lead not found' });
+        }
+    } catch (error) {
+        console.error('Error updating lead:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);

@@ -95,24 +95,41 @@ module.exports = async (req, res) => {
         // Generate embedding for user message
         const queryEmbedding = await gemini.generateEmbedding(message);
 
-        // Search Qdrant for similar FAQs
-        const similarFAQs = await qdrant.searchSimilar(queryEmbedding, 5, collectionName);
+        // Search Qdrant for similar content (FAQs + chunks)
+        const similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
 
-        // Build context from similar FAQs
-        let context = 'No FAQ context available.';
-        if (similarFAQs.length > 0) {
-            context = similarFAQs.map(faq => 
-                `Q: ${faq.question}\nA: ${faq.answer}`
-            ).join('\n\n');
+        // Build context from similar items
+        let contextParts = [];
+        
+        // Process similar items
+        for (const item of similarItems) {
+            if (item.type === 'faq' && item.question && item.answer) {
+                contextParts.push(`FAQ - Q: ${item.question}\nA: ${item.answer}`);
+            } else if (item.content) {
+                contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
+            }
         }
 
-        // Generate AI response
-        const aiResponse = await gemini.generateResponse(message, context);
+        let context = 'No relevant context available.';
+        if (contextParts.length > 0) {
+            context = contextParts.join('\n\n---\n\n');
+        }
+
+        // Generate AI response with enhanced prompt that includes chunk context
+        let aiResponse;
+        try {
+            aiResponse = await gemini.generateResponse(message, context);
+        } catch (error) {
+            console.error('Error generating AI response:', error);
+            // Fallback response
+            aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later.";
+        }
 
         // Record analytics if business ID is provided
         let hitFaqId = null;
-        if (similarFAQs.length > 0 && similarFAQs[0].score > 0.7) { // Threshold for considering it a hit
-            hitFaqId = similarFAQs[0].faqId;
+        const topFAQ = similarItems.find(item => item.type === 'faq' && item.score > 0.7);
+        if (topFAQ) {
+            hitFaqId = topFAQ.faqId;
         }
         if (businessId) {
             storage.recordAnalytics(businessId, hitFaqId);
@@ -121,7 +138,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             success: true,
             response: aiResponse,
-            context: similarFAQs
+            context: similarItems
         });
 
     } catch (error) {

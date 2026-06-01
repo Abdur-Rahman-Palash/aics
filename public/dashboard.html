@@ -261,6 +261,7 @@
             
             html += '<div class="tab-container">';
             html += '<button class="tab-btn active" onclick="switchTab(\'' + business.id + '\', \'knowledge\')">📚 Knowledge Sources</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'leads\')">👥 Leads</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
@@ -383,10 +384,34 @@
             html += '</div>';
             
             html += '<div class="tab-content" id="tab-' + business.id + '-embed">';
-            html += '<h3>Embed Code</h3>';
-            html += '<p style="color:#666; margin-bottom:12px;">Add this code to your website to embed the chat widget:</p>';
-            html += '<div class="embed-code" id="embed-code-' + business.id + '"></div>';
-            html += '<button class="btn btn-secondary btn-small" onclick="copyEmbedCode(\'' + business.id + '\')">Copy Code</button>';
+            html += '<h3>Install the Widget</h3>';
+            
+            // Step 1: Instructions
+            html += '<div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:16px; margin-bottom:24px;">';
+            html += '<h4 style="margin:0 0 8px 0; color:#166534;">📝 How to Install</h4>';
+            html += '<ol style="margin:0; padding-left:20px; color:#333;">';
+            html += '<li>Copy the code below</li>';
+            html += '<li>Paste it right before the closing &lt;/body&gt; tag on your website</li>';
+            html += '<li>That\'s it! The chat widget will appear on your site</li>';
+            html += '</ol>';
+            html += '</div>';
+            
+            // Embed Code
+            html += '<div style="margin-bottom:16px;">';
+            html += '<h4 style="margin:0 0 8px 0; color:#333;">Your Embed Code</h4>';
+            html += '<div class="embed-code" id="embed-code-' + business.id + '" style="margin-bottom:12px;"></div>';
+            html += '<button class="btn btn-primary" onclick="copyEmbedCode(\'' + business.id + '\')">📋 Copy Code</button>';
+            html += '</div>';
+            
+            // Preview
+            html += '<div style="margin-top:24px;">';
+            html += '<h4 style="margin:0 0 8px 0; color:#333;">Widget Preview</h4>';
+            html += '<div style="border:1px solid #e0e0e0; border-radius:8px; padding:16px; background:white; text-align:center;">';
+            html += '<p style="color:#666; margin-bottom:12px;">Here\'s how your widget will look:</p>';
+            html += '<div style="display:inline-block; width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); display:flex; align-items:center; justify-content:center; font-size:28px;">' + (business.widgetSettings?.avatar || '🤖') + '</div>';
+            html += '</div>';
+            html += '</div>';
+            
             html += '</div>';
             
             html += '<div class="tab-content" id="tab-' + business.id + '-analytics">';
@@ -401,6 +426,38 @@
             const totalHits = Object.values(business.analytics?.faqHits || {}).reduce((a, b) => a + b, 0);
             html += '<div class="stat-value" style="font-size:28px;">' + totalHits + '</div>';
             html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '<div class="tab-content" id="tab-' + business.id + '-leads">';
+            html += '<h3>Leads</h3>';
+            html += '<div id="leads-list-' + business.id + '" style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">';
+            const leads = business.leads || [];
+            if (leads.length > 0) {
+                leads.forEach(lead => {
+                    const statusColor = { new: '#3b82f6', contacted: '#f59e0b', closed: '#10b981' };
+                    const statusText = { new: 'New', contacted: 'Contacted', closed: 'Closed' };
+                    html += '<div class="lead-item" style="border:1px solid #e0e0e0; border-radius:8px; padding:16px;">';
+                    html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">';
+                    html += '<div>';
+                    html += '<h4 style="margin:0 0 4px 0; color:#333;">' + (lead.name || 'Anonymous') + '</h4>';
+                    html += '<p style="margin:0; color:#666; font-size:13px;">' + lead.email + (lead.phone ? ' • ' + lead.phone : '') + '</p>';
+                    html += '</div>';
+                    html += '<select id="lead-status-' + lead.id + '" onchange="updateLeadStatus(\'' + business.id + '\', \'' + lead.id + '\', this.value)" style="padding:4px 10px; border-radius:12px; border:1px solid #e0e0e0; font-size:12px; cursor:pointer; background:' + statusColor[lead.status] + '20; color:' + statusColor[lead.status] + '">';
+                    html += '<option value="new"' + (lead.status === 'new' ? ' selected' : '') + '>New</option>';
+                    html += '<option value="contacted"' + (lead.status === 'contacted' ? ' selected' : '') + '>Contacted</option>';
+                    html += '<option value="closed"' + (lead.status === 'closed' ? ' selected' : '') + '>Closed</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    if (lead.message) {
+                        html += '<p style="margin:0; color:#333; font-size:14px; background:#f8f9fa; padding:10px; border-radius:6px;">' + lead.message + '</p>';
+                    }
+                    html += '<p style="margin:8px 0 0 0; color:#888; font-size:12px;">' + new Date(lead.createdAt).toLocaleString() + '</p>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666; text-align:center; padding:24px;">No leads yet. Start chatting to collect leads!</p>';
+            }
             html += '</div>';
             html += '</div>';
             
@@ -508,6 +565,34 @@
                     console.error('Error uploading file:', error);
                     showMessage('Error uploading "' + file.name + '"', 'error');
                 }
+            }
+        }
+
+        async function updateLeadStatus(businessId, leadId, status) {
+            try {
+                const response = await fetch('/api/businesses/' + businessId + '/leads/' + leadId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Lead status updated!', 'success');
+                    // Update the status background color immediately
+                    const statusSelect = document.getElementById('lead-status-' + leadId);
+                    if (statusSelect) {
+                        const statusColor = { new: '#3b82f6', contacted: '#f59e0b', closed: '#10b981' };
+                        statusSelect.style.background = statusColor[status] + '20';
+                        statusSelect.style.color = statusColor[status];
+                    }
+                } else {
+                    showMessage('Error updating lead status: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating lead status:', error);
+                showMessage('Error updating lead status', 'error');
             }
         }
         

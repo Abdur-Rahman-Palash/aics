@@ -2,6 +2,7 @@
 // Handles website training for a specific business
 
 const storage = require('../../../lib/storage');
+const { trainWebsite } = require('../../../lib/training');
 
 module.exports = async (req, res) => {
     // Set CORS headers
@@ -40,17 +41,43 @@ module.exports = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
 
-        // TODO: Implement actual website crawling, content extraction, chunking, embedding, and Qdrant storage here
-        // For now, just mark it as completed after a short delay (simulating training)
-        setTimeout(() => {
-            const business = storage.getBusiness(businessId);
-            const websiteIndex = business.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-            if (websiteIndex !== -1) {
-                business.knowledgeSources.websites[websiteIndex].status = 'completed';
-                business.knowledgeSources.websites[websiteIndex].lastTrainedAt = new Date().toISOString();
-                storage.save();
+        // Run training in background
+        (async () => {
+            try {
+                // Update status to training
+                const businessRef = storage.getBusiness(businessId);
+                const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
+                if (websiteIndex !== -1) {
+                    businessRef.knowledgeSources.websites[websiteIndex].status = 'training';
+                    storage.save();
+                }
+
+                // Run actual training
+                const result = await trainWebsite(businessId, url, businessRef.qdrantCollection);
+
+                // Update status to completed
+                const businessRef2 = storage.getBusiness(businessId);
+                const websiteIndex2 = businessRef2.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
+                if (websiteIndex2 !== -1) {
+                    businessRef2.knowledgeSources.websites[websiteIndex2].status = 'completed';
+                    businessRef2.knowledgeSources.websites[websiteIndex2].lastTrainedAt = new Date().toISOString();
+                    businessRef2.knowledgeSources.websites[websiteIndex2].chunksCount = result.chunksCount;
+                    storage.save();
+                }
+
+                console.log('Website training completed:', url);
+            } catch (error) {
+                console.error('Website training failed:', error);
+                // Update status to failed
+                const businessRef = storage.getBusiness(businessId);
+                const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
+                if (websiteIndex !== -1) {
+                    businessRef.knowledgeSources.websites[websiteIndex].status = 'failed';
+                    businessRef.knowledgeSources.websites[websiteIndex].error = error.message;
+                    storage.save();
+                }
             }
-        }, 3000);
+        })();
 
         return res.status(201).json({ success: true, website: newWebsite });
 

@@ -10,6 +10,7 @@ class AICSChatWidget {
             primaryColor: '#667eea',
             avatar: '🤖'
         };
+        this.showingLeadForm = false;
         this.init();
     }
 
@@ -214,11 +215,81 @@ class AICSChatWidget {
             btn.addEventListener('click', () => this.sendMessageFromSuggestion(q));
             this.suggestedContainer.appendChild(btn);
         });
+
+        // Add talk to human button
+        if (this.businessId) {
+            const humanBtn = document.createElement('button');
+            humanBtn.className = 'aics-suggested-btn';
+            humanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            humanBtn.style.color = 'white';
+            humanBtn.textContent = 'Talk to Human';
+            humanBtn.addEventListener('click', () => this.showLeadForm());
+            this.suggestedContainer.appendChild(humanBtn);
+        }
     }
 
     sendMessageFromSuggestion(question) {
         this.inputField.value = question;
         this.sendMessage();
+    }
+
+    showLeadForm() {
+        this.showingLeadForm = true;
+        this.inputField.disabled = true;
+        this.sendBtn.disabled = true;
+
+        // Add lead form message
+        const formDiv = document.createElement('div');
+        formDiv.className = 'aics-message ai';
+        formDiv.innerHTML = `
+            <div style="margin-bottom: 12px;">Sure! Please fill out the form below and our team will get back to you shortly.</div>
+            <form id="aics-lead-form" style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="aics-lead-name" placeholder="Your Name" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <input type="email" id="aics-lead-email" placeholder="Your Email" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <input type="tel" id="aics-lead-phone" placeholder="Your Phone (optional)" style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                <textarea id="aics-lead-message" placeholder="How can we help you?" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                <button type="submit" style="padding: 10px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Send Request</button>
+            </form>
+        `;
+        this.messagesContainer.appendChild(formDiv);
+        this.scrollToBottom();
+
+        // Attach form submit listener
+        const form = document.getElementById('aics-lead-form');
+        form.addEventListener('submit', (e) => this.submitLeadForm(e));
+    }
+
+    async submitLeadForm(e) {
+        e.preventDefault();
+        const name = document.getElementById('aics-lead-name').value;
+        const email = document.getElementById('aics-lead-email').value;
+        const phone = document.getElementById('aics-lead-phone').value;
+        const message = document.getElementById('aics-lead-message').value;
+
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, phone, message })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove form and show success message
+                const formDiv = document.getElementById('aics-lead-form').parentElement;
+                formDiv.innerHTML = '<div>Thank you! We\'ve received your request and will get back to you soon.</div>';
+                
+                this.showingLeadForm = false;
+                this.inputField.disabled = false;
+                this.sendBtn.disabled = false;
+            } else {
+                this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+            }
+        } catch (error) {
+            console.error('Error submitting lead:', error);
+            this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+        }
     }
 }
 
