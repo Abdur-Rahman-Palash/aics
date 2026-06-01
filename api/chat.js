@@ -6,20 +6,6 @@ const GeminiAI = require('../lib/gemini');
 const storage = require('../lib/storage');
 const config = require('../lib/config');
 
-// Demo fallback responses
-const demoResponses = {
-    en: [
-        "Thanks for your message! This is a demo response. To use the full AI features, please set up your GEMINI_API_KEY and Qdrant credentials.",
-        "Hello! I'm here to help. This is a demo mode. Configure your API keys for real AI responses.",
-        "Great question! For production use, please add your GEMINI_API_KEY and Qdrant configuration to the .env file."
-    ],
-    bn: [
-        "আপনার বার্তার জন্য ধন্যবাদ! এটি একটি ডেমো প্রতিক্রিয়া। পূর্ণ AI বৈশিষ্ট্য ব্যবহার করতে, দয়া করে আপনার GEMINI_API_KEY এবং Qdrant ক্রেডেনশিয়াল সেট আপ করুন।",
-        "হ্যালো! আমি সাহায্য করতে এখানে আছি। এটি একটি ডেমো মোড। আসল AI প্রতিক্রিয়ার জন্য আপনার API কী কনফিগার করুন।",
-        "দুর্দান্ত প্রশ্ন! প্রোডাকশন ব্যবহারের জন্য, দয়া করে আপনার GEMINI_API_KEY এবং Qdrant কনফিগারেশন .env ফাইলে যোগ করুন।"
-    ]
-};
-
 // Simple function to normalize whitespace
 function normalizeWhitespace(text) {
     return text.replace(/\s+/g, ' ').trim();
@@ -96,22 +82,6 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Check if API keys are available for Qdrant/Gemini
-        const hasApiKeys = config.gemini.apiKey && config.qdrant.url && config.qdrant.apiKey;
-
-        if (!hasApiKeys) {
-            // Demo mode - return random fallback response
-            const lang = /[\u0980-\u09FF]/.test(message) ? 'bn' : 'en';
-            const responses = demoResponses[lang];
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            
-            return res.status(200).json({
-                success: true,
-                response: randomResponse,
-                context: []
-            });
-        }
-
         // Initialize services
         const qdrant = new QdrantManager();
         const gemini = new GeminiAI();
@@ -156,15 +126,9 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Error in chat API:', error);
-        // Even if there's an error, return a demo response
-        const lang = /[\u0980-\u09FF]/.test(req.body.message || '') ? 'bn' : 'en';
-        const responses = demoResponses[lang];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        
-        return res.status(200).json({
-            success: true,
-            response: randomResponse,
-            context: []
+        return res.status(500).json({
+            success: false,
+            error: 'Something went wrong. Please try again later.'
         });
     }
 };

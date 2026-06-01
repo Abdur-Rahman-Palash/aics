@@ -1,4 +1,13 @@
 {
+  "users": [
+    {
+      "id": "24e46e30-8b89-48ef-8e74-438af6d4fdf3",
+      "email": "abdurrahmanpalashbd@gmail.com",
+      "password": "$2b$10$fId1uRRvLkbJW1PhWqxFGOXqX0Mz.0kW38.f79ml8ktK4NPFRel/2",
+      "name": "palash",
+      "createdAt": "2026-06-01T06:01:11.258Z"
+    }
+  ],
   "businesses": [
     {
       "id": "698f150e-fc65-4371-8bb0-ab1aa272c874",
@@ -71,6 +80,27 @@
         "totalMessages": 7,
         "faqHits": {},
         "lastActive": "2026-05-31T10:55:34.013Z"
+      },
+      "knowledgeSources": {
+        "websites": [
+          {
+            "id": "e4971c44-d87d-4a91-9a1d-729ef00b2287",
+            "url": "https://neubyte.tech/",
+            "status": "completed",
+            "createdAt": "2026-06-01T05:33:47.078Z",
+            "lastTrainedAt": "2026-06-01T05:33:50.096Z"
+          }
+        ],
+        "pdfs": [
+          {
+            "id": "58efe1f7-1d08-422e-9a72-af8c68ee3468",
+            "name": "HSC_ICT_MCQ.pdf",
+            "fileName": "1780292404240-100454212.pdf",
+            "status": "completed",
+            "createdAt": "2026-06-01T05:40:04.246Z",
+            "lastTrainedAt": "2026-06-01T05:40:07.261Z"
+          }
+        ]
       }
     },
     {
@@ -89,6 +119,29 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-05-31T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "1e10e7b6-b640-4538-8c71-a06ace13ac06",
+      "name": "neubyte",
+      "domain": "neubyte.tech",
+      "userId": "24e46e30-8b89-48ef-8e74-438af6d4fdf3",
+      "createdAt": "2026-06-01T06:02:18.086Z",
+      "qdrantCollection": "aics_neubyte",
+      "widgetSettings": {
+        "title": "neubyte Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "faqs": [],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "analytics": {
+        "totalMessages": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-01T06:02:18.086Z"
       }
     }
   ]

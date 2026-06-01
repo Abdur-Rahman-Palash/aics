@@ -51,13 +51,34 @@
         .faq-item-text { flex:1; }
         .faq-item-text h5 { color:#333; margin-bottom:4px; }
         .faq-item-text p { color:#666; font-size:13px; }
+        .knowledge-tab-container { display:flex; gap:4px; margin-bottom:20px; background:#f5f7fa; padding:4px; border-radius:8px; }
+        .knowledge-tab-btn { flex:1; padding:10px 16px; border:none; background:transparent; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-radius:6px; transition:all 0.2s; }
+        .knowledge-tab-btn.active { background:white; color:#667eea; box-shadow:0 2px 4px rgba(0,0,0,0.08); }
+        .knowledge-content { display:none; }
+        .knowledge-content.active { display:block; }
+        .source-item { border:1px solid #e0e0e0; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+        .source-info { flex:1; }
+        .source-status { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+        .source-status.pending { background:#fff3cd; color:#856404; }
+        .source-status.training { background:#cce5ff; color:#004085; }
+        .source-status.completed { background:#d4edda; color:#155724; }
+        .source-status.error { background:#f8d7da; color:#721c24; }
+        .file-upload-area { border:2px dashed #e0e0e0; border-radius:8px; padding:40px 20px; text-align:center; cursor:pointer; transition:all 0.2s; }
+        .file-upload-area:hover { border-color:#667eea; background:#f8f9ff; }
+        .file-upload-area.dragover { border-color:#667eea; background:#f0f4ff; }
+        .file-upload-icon { font-size:48px; margin-bottom:16px; display:block; }
+        .file-upload-text { color:#666; font-size:14px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎛️ AICS Dashboard</h1>
-            <a href="/" style="color:white; text-decoration:underline;">Back to Demo</a>
+            <div style="display:flex; align-items:center; gap:16px;">
+                <span id="user-name" style="font-weight:500;"></span>
+                <button id="logout-btn" class="btn btn-small" style="background:rgba(255,255,255,0.2); color:white;">Logout</button>
+                <a href="/" style="color:white; text-decoration:underline;">Back to Demo</a>
+            </div>
         </div>
         
         <div id="message" class="message"></div>
@@ -101,6 +122,45 @@
     <script>
         let businesses = [];
         let selectedBusinessId = null;
+        
+        // Check auth and load user
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                document.getElementById('user-name').textContent = data.user.name;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = '/login.html';
+            }
+        }
+        
+        // Logout
+        async function logout(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                await response.json(); // Wait for response to finish
+                window.location.href = '/login.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login.html';
+            }
+        }
+        
+        // Initialize logout button
+        document.getElementById('logout-btn').addEventListener('click', logout);
         
         // Show message
         function showMessage(text, type) {
@@ -171,12 +231,13 @@
             
             listDiv.innerHTML = html;
             
-            // Set embed code text for all businesses
+            // Set embed code text for all businesses and initialize drag and drop
             businesses.forEach(b => {
                 const embedCodeDiv = document.getElementById('embed-code-' + b.id);
                 if (embedCodeDiv) {
                     embedCodeDiv.textContent = '<script src="' + window.location.origin + '/js/embed.js" data-business-id="' + b.id + '"><\/script>';
                 }
+                initDragAndDrop(b.id);
             });
         }
         
@@ -199,19 +260,27 @@
             html += '</div>';
             
             html += '<div class="tab-container">';
-            html += '<button class="tab-btn active" onclick="switchTab(\'' + business.id + '\', \'faqs\')">📚 FAQs</button>';
+            html += '<button class="tab-btn active" onclick="switchTab(\'' + business.id + '\', \'knowledge\')">📚 Knowledge Sources</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
             html += '</div>';
             
-            html += '<div class="tab-content active" id="tab-' + business.id + '-faqs">';
+            html += '<div class="tab-content active" id="tab-' + business.id + '-knowledge">';
+            
+            html += '<div class="knowledge-tab-container">';
+            html += '<button class="knowledge-tab-btn active" onclick="switchKnowledgeTab(\'' + business.id + '\', \'faqs\')">📚 FAQs</button>';
+            html += '<button class="knowledge-tab-btn" onclick="switchKnowledgeTab(\'' + business.id + '\', \'website\')">🌐 Website</button>';
+            html += '<button class="knowledge-tab-btn" onclick="switchKnowledgeTab(\'' + business.id + '\', \'pdf\')">📄 PDF</button>';
+            html += '</div>';
+            
+            // FAQs Content
+            html += '<div class="knowledge-content active" id="knowledge-' + business.id + '-faqs">';
             html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">';
             html += '<h3>FAQs (' + (business.faqs?.length || 0) + ')</h3>';
             html += '<a class="btn btn-primary btn-small" href="/admin.html?business=' + business.id + '">Add FAQs</a>';
             html += '</div>';
             html += '<div class="faq-list">';
-            
             if (business.faqs && business.faqs.length > 0) {
                 business.faqs.forEach(faq => {
                     html += '<div class="faq-item">';
@@ -226,8 +295,69 @@
             } else {
                 html += '<p style="color:#666;">No FAQs yet. Add some!</p>';
             }
-            
             html += '</div>';
+            html += '</div>';
+            
+            // Website Content
+            html += '<div class="knowledge-content" id="knowledge-' + business.id + '-website">';
+            html += '<h3 style="margin-bottom:16px;">Website Training</h3>';
+            html += '<form id="website-form-' + business.id + '" onsubmit="trainWebsite(event, \'' + business.id + '\')">';
+            html += '<div class="form-group">';
+            html += '<label>Website URL</label>';
+            html += '<input type="url" id="website-url-' + business.id + '" placeholder="https://yourcompany.com" required>';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Train Website</button>';
+            html += '</form>';
+            html += '<div style="margin-top:24px;">';
+            html += '<h4 style="margin-bottom:12px; color:#666;">Trained Websites</h4>';
+            html += '<div id="website-list-' + business.id + '" style="display:flex; flex-direction:column; gap:10px;">';
+            const websites = business.knowledgeSources?.websites || [];
+            if (websites.length > 0) {
+                websites.forEach(website => {
+                    html += '<div class="source-item">';
+                    html += '<div class="source-info">';
+                    html += '<h5 style="margin-bottom:4px;">' + website.url + '</h5>';
+                    html += '<p style="color:#666; font-size:12px;">Added: ' + new Date(website.createdAt).toLocaleDateString() + '</p>';
+                    html += '</div>';
+                    html += '<span class="source-status ' + (website.status || 'pending') + '">' + (website.status || 'Pending') + '</span>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;">No websites trained yet.</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // PDF Content
+            html += '<div class="knowledge-content" id="knowledge-' + business.id + '-pdf">';
+            html += '<h3 style="margin-bottom:16px;">PDF & DOCX Training</h3>';
+            html += '<div id="pdf-upload-area-' + business.id + '" class="file-upload-area" onclick="document.getElementById(\'pdf-input-' + business.id + '\').click()">';
+            html += '<span class="file-upload-icon">📄</span>';
+            html += '<p class="file-upload-text">Click or drag and drop to upload PDFs or DOCX</p>';
+            html += '<input type="file" id="pdf-input-' + business.id + '" accept=".pdf,.docx" multiple style="display:none;" onchange="uploadPdfs(event, \'' + business.id + '\')">';
+            html += '</div>';
+            html += '<div style="margin-top:24px;">';
+            html += '<h4 style="margin-bottom:12px; color:#666;">Uploaded Files</h4>';
+            html += '<div id="pdf-list-' + business.id + '" style="display:flex; flex-direction:column; gap:10px;">';
+            const pdfs = business.knowledgeSources?.pdfs || [];
+            if (pdfs.length > 0) {
+                pdfs.forEach(pdf => {
+                    html += '<div class="source-item">';
+                    html += '<div class="source-info">';
+                    html += '<h5 style="margin-bottom:4px;">' + pdf.name + '</h5>';
+                    html += '<p style="color:#666; font-size:12px;">Added: ' + new Date(pdf.createdAt).toLocaleDateString() + '</p>';
+                    html += '</div>';
+                    html += '<span class="source-status ' + (pdf.status || 'pending') + '">' + (pdf.status || 'Pending') + '</span>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;">No PDFs uploaded yet.</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
             html += '</div>';
             
             html += '<div class="tab-content" id="tab-' + business.id + '-widget">';
@@ -294,7 +424,91 @@
             
             // Activate selected tab
             event.target.classList.add('active');
-            document.getElementById('tab-' + businessId + '-' + tabName).classList.add('active');
+            const targetTab = document.getElementById('tab-' + businessId + '-' + tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+        }
+
+        function switchKnowledgeTab(businessId, tabName) {
+            const container = document.getElementById('tab-' + businessId + '-knowledge');
+            if (!container) return;
+            
+            // Remove active class from all buttons
+            container.querySelectorAll('.knowledge-tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Hide all knowledge contents
+            container.querySelectorAll('.knowledge-content').forEach(content => content.classList.remove('active'));
+            
+            // Activate selected tab
+            event.target.classList.add('active');
+            const targetContent = document.getElementById('knowledge-' + businessId + '-' + tabName);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        }
+
+        async function trainWebsite(event, businessId) {
+            event.preventDefault();
+            const url = document.getElementById('website-url-' + businessId).value.trim();
+            
+            if (!url) {
+                showMessage('Please enter a website URL', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/businesses/' + businessId + '/website', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Website training started! This may take a few minutes.', 'success');
+                    // Clear the input
+                    document.getElementById('website-url-' + businessId).value = '';
+                    // Refresh the business list
+                    loadBusinesses();
+                } else {
+                    showMessage('Error training website: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error training website:', error);
+                showMessage('Error training website', 'error');
+            }
+        }
+
+        async function uploadPdfs(event, businessId) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch('/api/businesses/' + businessId + '/pdf', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showMessage('File "' + file.name + '" uploaded successfully!', 'success');
+                        // Refresh the business list
+                        loadBusinesses();
+                    } else {
+                        showMessage('Error uploading "' + file.name + '": ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    showMessage('Error uploading "' + file.name + '"', 'error');
+                }
+            }
         }
         
         async function updateWidgetSettings(event, businessId) {
@@ -396,7 +610,52 @@
             }
         });
         
-        loadBusinesses();
+        // Initialize drag and drop for PDF uploads
+        document.addEventListener('DOMContentLoaded', () => {
+            // We'll add drag and drop listeners when businesses are loaded
+        });
+
+        // Add drag and drop functionality dynamically
+        function initDragAndDrop(businessId) {
+            const uploadArea = document.getElementById('pdf-upload-area-' + businessId);
+            const fileInput = document.getElementById('pdf-input-' + businessId);
+            
+            if (!uploadArea || !fileInput) return;
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.add('dragover');
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.remove('dragover');
+                }, false);
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                uploadPdfs({ target: { files } }, businessId);
+            }, false);
+        }
+
+        // Initialize
+        async function init() {
+            await checkAuth();
+            loadBusinesses();
+        }
+        
+        init();
     </script>
 </body>
 </html>

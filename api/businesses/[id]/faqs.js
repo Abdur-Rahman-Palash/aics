@@ -13,9 +13,14 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    // Auth check
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
     try {
         const businessId = req.query.id;
-        const business = storage.getBusiness(businessId);
+        const business = storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
