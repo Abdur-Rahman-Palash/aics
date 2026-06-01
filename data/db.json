@@ -34,6 +34,13 @@
       "password": "$2b$10$LJ35VRvnYzSMjnN.vkwYIe.Sxl/bbAoUqYd1L3bIW3kPVNM4VjJNC",
       "name": "New Test User",
       "createdAt": "2026-06-01T15:38:10.646Z"
+    },
+    {
+      "id": "314c0512-64ed-476a-8787-601806a541b8",
+      "email": "akash456@gmail.com",
+      "password": "$2b$10$dg4kjbGDScOpHedhR9Vt4euXakbF2LtrXCpMi7b4AHqbX68W/s.zK",
+      "name": "akash",
+      "createdAt": "2026-06-01T16:44:18.278Z"
     }
   ],
   "businesses": [
@@ -130,7 +137,13 @@
           }
         ]
       },
-      "leads": []
+      "leads": [],
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "c3a07500aa8e6bd4b5b253eca76c23f4",
+        "verifiedAt": null
+      }
     },
     {
       "id": "4b7b0c4b-8b9e-4cbb-84e9-4cf553b2a027",
@@ -153,7 +166,13 @@
         "websites": [],
         "pdfs": []
       },
-      "leads": []
+      "leads": [],
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "4f31a11b90c29f4c0605708790429f54",
+        "verifiedAt": null
+      }
     },
     {
       "id": "1e10e7b6-b640-4538-8c71-a06ace13ac06",
@@ -177,7 +196,13 @@
         "faqHits": {},
         "lastActive": "2026-06-01T06:02:18.086Z"
       },
-      "leads": []
+      "leads": [],
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "978b5fba707cd98bc0c57d5a770d213a",
+        "verifiedAt": null
+      }
     },
     {
       "id": "46dc719b-ca9e-4c09-8a0f-a7cd2d5aa79a",
@@ -201,6 +226,42 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-06-01T06:39:30.401Z"
+      },
+      "verification": {
+        "status": "verified",
+        "method": "html",
+        "token": "bd025feae92be239d1a33b651b93c0e9",
+        "verifiedAt": "2026-06-01T16:42:05.056Z"
+      }
+    },
+    {
+      "id": "678a5997-624f-46de-ba9b-ed85910bd133",
+      "name": "asad",
+      "domain": "asad.com",
+      "userId": "314c0512-64ed-476a-8787-601806a541b8",
+      "createdAt": "2026-06-01T16:44:37.817Z",
+      "qdrantCollection": "aics_asad",
+      "widgetSettings": {
+        "title": "asad Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "3945f735e0ca687a6c327aeeb5154189",
+        "verifiedAt": null
+      },
+      "faqs": [],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "leads": [],
+      "analytics": {
+        "totalMessages": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-01T16:44:37.817Z"
       }
     }
   ]

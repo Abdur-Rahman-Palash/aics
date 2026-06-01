@@ -22,6 +22,8 @@ const QdrantManager = require('./lib/qdrant');
 const GeminiAI = require('./lib/gemini');
 
 const app = express();
+// Trust proxy (for Render HTTPS)
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
@@ -41,13 +43,15 @@ const authLimiter = rateLimit({
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(cookieSession({
     name: 'aics-session',
     keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: isProduction, // Secure only in production (HTTPS)
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-site (though we're same-site), 'lax' for local
+    path: '/'
 }));
 
 // Auth middleware
@@ -142,6 +146,13 @@ app.all('/api/businesses/:id/website', (req, res) => {
 app.all('/api/businesses/:id/pdf', (req, res) => {
     req.query.id = req.params.id;
     businessPdfHandler(req, res);
+});
+
+// Verification endpoint
+const verifyHandler = require('./api/businesses/[id]/verify');
+app.all('/api/businesses/:id/verify', (req, res) => {
+    req.query.id = req.params.id;
+    verifyHandler(req, res);
 });
 
 // Lead API Routes
@@ -286,6 +297,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 server.listen(PORT, () => {
     console.log(`AICS Server running at http://localhost:${PORT}`);
-    console.log(`Demo: http://localhost:${PORT}/`);
+    console.log(`Main Page: http://localhost:${PORT}/`);
     console.log(`Admin: http://localhost:${PORT}/admin`);
 });
