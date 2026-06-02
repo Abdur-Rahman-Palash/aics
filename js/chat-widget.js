@@ -374,10 +374,16 @@ class AICSChatWidget {
         const message = document.getElementById('aics-lead-message').value;
 
         try {
+            const csrfToken = await getCsrfToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['X-CSRF-Token'] = csrfToken;
+            }
             const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, phone, message })
+                headers,
+                body: JSON.stringify({ name, email, phone, message }),
+                credentials: 'include'
             });
 
             const data = await response.json();

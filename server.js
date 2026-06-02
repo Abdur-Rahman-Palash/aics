@@ -101,9 +101,13 @@ app.get('/api/csrf-token', (req, res) => {
     res.json({ success: true, csrfToken });
 });
 
-// Apply CSRF protection to all state-changing routes except /api/chat
+// Apply CSRF protection to all state-changing routes except /api/chat and public lead endpoints
 app.use('/api', (req, res, next) => {
-    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/chat') {
+    if (
+        ['GET', 'HEAD', 'OPTIONS'].includes(req.method) || 
+        req.path === '/chat' || 
+        req.path.match(/^\/businesses\/[^/]+\/leads$/)
+    ) {
         next();
     } else {
         doubleCsrfProtection(req, res, next);
