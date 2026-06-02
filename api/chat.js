@@ -115,7 +115,6 @@ module.exports = async (req, res) => {
                 }
             }
         } catch (error) {
-            console.error('Error with Qdrant/Gemini:', error);
             // Continue without them - we'll use fallback responses
         }
 
@@ -124,11 +123,20 @@ module.exports = async (req, res) => {
             context = contextParts.join('\n\n---\n\n');
         }
 
+        // Check similarity threshold - if no relevant context found, offer talk to human
+        const SIMILARITY_THRESHOLD = 0.5;
+        const humanTransferMessage = "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.";
+        const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+        
         // Generate AI response or use fallback
         let aiResponse;
         try {
             if (config.gemini.apiKey) {
-                aiResponse = await gemini.generateResponse(message, context);
+                if (!hasRelevantContext || similarItems.length === 0) {
+                    aiResponse = humanTransferMessage;
+                } else {
+                    aiResponse = await gemini.generateResponse(message, context);
+                }
             } else {
                 // Fallback if no Gemini API key
                 if (business && business.faqs.length > 0) {
@@ -138,7 +146,6 @@ module.exports = async (req, res) => {
                 }
             }
         } catch (error) {
-            console.error('Error generating AI response:', error);
             // Fallback response
             aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later.";
         }
@@ -154,7 +161,7 @@ module.exports = async (req, res) => {
                 storage.recordAnalytics(businessId, hitFaqId);
             }
         } catch (error) {
-            console.error('Error recording analytics:', error);
+            // Error recording analytics
         }
 
         return res.status(200).json({
@@ -164,7 +171,6 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in chat API:', error);
         return res.status(500).json({
             success: false,
             error: 'Something went wrong. Please try again later.'

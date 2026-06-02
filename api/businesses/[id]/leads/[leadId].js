@@ -15,7 +15,6 @@ module.exports = async (req, res) => {
             res.status(404).json({ success: false, error: 'Lead not found' });
         }
     } catch (error) {
-        console.error('Error updating lead:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };

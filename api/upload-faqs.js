@@ -5,7 +5,6 @@ const QdrantManager = require('../lib/qdrant');
 const GeminiAI = require('../lib/gemini');
 
 module.exports = async (req, res) => {
-    console.log('Received FAQ upload request:', req.method, req.body);
 
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,7 +12,6 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
-        console.log('Handling OPTIONS preflight request');
         return res.status(200).end();
     }
 
@@ -23,7 +21,6 @@ module.exports = async (req, res) => {
 
     try {
         const { faqs } = req.body;
-        console.log('FAQs to upload:', faqs);
 
         if (!faqs || !Array.isArray(faqs) || faqs.length === 0) {
             return res.status(400).json({ error: 'FAQs array is required' });
@@ -55,7 +52,6 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error uploading FAQs:', error);
         return res.status(500).json({ 
             success: false, 
             error: error.message 

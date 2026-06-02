@@ -65,7 +65,6 @@ module.exports = async (req, res) => {
         req.session.userId = user.id;
         res.status(200).json({ success: true, user });
     } catch (error) {
-        console.error('Login error:', error);
         res.status(401).json({ success: false, error: error.message });
     }
 };

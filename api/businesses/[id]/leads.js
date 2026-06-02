@@ -12,7 +12,6 @@ module.exports = async (req, res) => {
                 res.status(404).json({ success: false, error: 'Business not found' });
             }
         } catch (error) {
-            console.error('Error adding lead:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     } else if (req.method === 'GET') {
@@ -20,7 +19,6 @@ module.exports = async (req, res) => {
             const leads = storage.getLeadsForBusiness(businessId);
             res.status(200).json({ success: true, leads });
         } catch (error) {
-            console.error('Error getting leads:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     } else {

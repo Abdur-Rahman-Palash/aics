@@ -70,7 +70,6 @@ module.exports = async (req, res) => {
     // Use multer to handle the upload
     upload.single('file')(req, res, async (err) => {
         if (err) {
-            console.error('Upload error:', err);
             return res.status(400).json({ success: false, error: err.message });
         }
 
@@ -112,10 +111,7 @@ module.exports = async (req, res) => {
                     businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
                     storage.save();
                 }
-
-                console.log('Document training completed:', req.file.originalname);
             } catch (error) {
-                console.error('Document training failed:', error);
                 // Update status to failed
                 const businessRef = storage.getBusiness(businessId);
                 const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
@@ -129,7 +125,6 @@ module.exports = async (req, res) => {
             return res.status(201).json({ success: true, pdf: newPdf });
 
         } catch (error) {
-            console.error('Error in PDF API:', error);
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });

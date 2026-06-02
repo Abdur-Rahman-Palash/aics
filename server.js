@@ -9,6 +9,7 @@ const cookieSession = require('cookie-session');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const storage = require('./lib/storage');
+const { doubleCsrf } = require('csrf-csrf');
 
 const chatHandler = require('./api/chat');
 const uploadFaqsHandler = require('./api/upload-faqs');
@@ -25,8 +26,32 @@ const app = express();
 // Trust proxy (for Render HTTPS)
 app.set('trust proxy', 1);
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Allow all origins for Socket.IO (or restrict to your domain)
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});
 const PORT = process.env.PORT || 3000;
+
+// Check for default session secret in production
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'your-secret-key-change-this-in-production')) {
+    console.warn('WARNING: Using default or missing SESSION_SECRET in production! This is a security risk. Please set a strong SESSION_SECRET in your environment variables.');
+}
+
+// Initialize CSRF Protection
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+    getSecret: () => process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
+    cookieName: 'aics-csrf-token',
+    cookieOptions: {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
+    },
+});
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -40,10 +65,26 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Security Headers
+app.use((req, res, next) => {
+    // Prevent MIME sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Prevent clickjacking
+    res.setHeader('X-Frame-Options', 'DENY');
+    // XSS protection
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // CSP - Content Security Policy
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cdn.socket.io ws://localhost:3000 wss://localhost:3000; font-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
+    // Referrer Policy
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Permissions Policy
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+});
+
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
-const isProduction = process.env.NODE_ENV === 'production';
 app.use(cookieSession({
     name: 'aics-session',
     keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
@@ -53,6 +94,21 @@ app.use(cookieSession({
     sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-site (though we're same-site), 'lax' for local
     path: '/'
 }));
+
+// Add CSRF token endpoint
+app.get('/api/csrf-token', (req, res) => {
+    const csrfToken = generateToken(req, res);
+    res.json({ success: true, csrfToken });
+});
+
+// Apply CSRF protection to all state-changing routes except /api/chat
+app.use('/api', (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.path === '/chat') {
+        next();
+    } else {
+        doubleCsrfProtection(req, res, next);
+    }
+});
 
 // Auth middleware
 function requireAuth(req, res, next) {
@@ -83,7 +139,6 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
         req.session.userId = user.id;
         res.status(201).json({ success: true, user });
     } catch (error) {
-        console.error('Signup error:', error);
         res.status(400).json({ success: false, error: error.message });
     }
 });
@@ -104,7 +159,6 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         req.session.userId = user.id;
         res.status(200).json({ success: true, user });
     } catch (error) {
-        console.error('Login error:', error);
         res.status(401).json({ success: false, error: error.message });
     }
 });
@@ -161,12 +215,13 @@ app.post('/api/businesses/:id/leads', async (req, res) => {
         const businessId = req.params.id;
         const newLead = storage.addLead(businessId, req.body);
         if (newLead) {
+            // Emit real-time event for new lead
+            io.emit('new lead', { businessId, lead: newLead });
             res.status(201).json({ success: true, lead: newLead });
         } else {
             res.status(404).json({ success: false, error: 'Business not found' });
         }
     } catch (error) {
-        console.error('Error adding lead:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
@@ -186,7 +241,6 @@ app.get('/api/businesses/:id/leads', (req, res) => {
         const leads = storage.getLeadsForBusiness(businessId);
         res.status(200).json({ success: true, leads });
     } catch (error) {
-        console.error('Error getting leads:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
@@ -206,23 +260,20 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
         }
         const updatedLead = storage.updateLeadStatus(businessId, leadId, status);
         if (updatedLead) {
+            // Emit real-time event for lead status update
+            io.emit('lead status updated', { businessId, lead: updatedLead });
             res.status(200).json({ success: true, lead: updatedLead });
         } else {
             res.status(404).json({ success: false, error: 'Lead not found' });
         }
     } catch (error) {
-        console.error('Error updating lead:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
     socket.on('send message', async (userMessage) => {
-        console.log('Received message from user:', userMessage);
-
         try {
             // Initialize services
             const qdrant = new QdrantManager();
@@ -249,13 +300,8 @@ io.on('connection', (socket) => {
             socket.emit('ai response', aiResponse);
 
         } catch (error) {
-            console.error('Error handling message:', error);
             socket.emit('ai response', 'Sorry, something went wrong. Please try again.');
         }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
     });
 });
 
@@ -296,7 +342,4 @@ app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 server.listen(PORT, () => {
-    console.log(`AICS Server running at http://localhost:${PORT}`);
-    console.log(`Main Page: http://localhost:${PORT}/`);
-    console.log(`Admin: http://localhost:${PORT}/admin`);
 });

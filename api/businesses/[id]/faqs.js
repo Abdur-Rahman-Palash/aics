@@ -15,7 +15,22 @@ module.exports = async (req, res) => {
 
     try {
         const businessId = req.query.id;
-        const business = storage.getBusiness(businessId);
+        
+        // Require auth for POST/PUT/DELETE
+        if (req.method !== 'GET') {
+            if (!req.session || !req.session.userId) {
+                return res.status(401).json({ success: false, error: 'Unauthorized' });
+            }
+        }
+        
+        // Get business and verify ownership if modifying
+        let business;
+        if (req.method !== 'GET') {
+            business = storage.getBusiness(businessId, req.session.userId);
+        } else {
+            business = storage.getBusiness(businessId);
+        }
+        
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
@@ -74,7 +89,6 @@ module.exports = async (req, res) => {
 
         return res.status(405).json({ error: 'Method not allowed' });
     } catch (error) {
-        console.error('Error in FAQs API:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };

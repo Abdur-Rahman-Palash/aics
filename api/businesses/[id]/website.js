@@ -68,10 +68,7 @@ module.exports = async (req, res) => {
                     businessRef2.knowledgeSources.websites[websiteIndex2].chunksCount = result.chunksCount;
                     storage.save();
                 }
-
-                console.log('Website training completed:', url);
             } catch (error) {
-                console.error('Website training failed:', error);
                 // Update status to failed
                 const businessRef = storage.getBusiness(businessId);
                 const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
@@ -85,7 +82,6 @@ module.exports = async (req, res) => {
         return res.status(201).json({ success: true, website: newWebsite });
 
     } catch (error) {
-        console.error('Error in website API:', error);
         return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };

@@ -206,6 +206,7 @@
         </div>
     </div>
     
+    <script src="/js/csrf-helper.js"></script>
     <script>
         let businessId = null;
         let faqCounter = 1;
@@ -299,7 +300,7 @@
             try {
                 // Upload each FAQ individually
                 for (const faq of faqs) {
-                    const response = await fetch(`/api/businesses/${businessId}/faqs`, {
+                    const response = await fetchWithCsrf(`/api/businesses/${businessId}/faqs`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(faq)
@@ -383,7 +384,7 @@
                     }).join('');
                 }
             } catch (error) {
-                console.error('Error loading existing FAQs:', error);
+                // Error loading existing FAQs
             }
         }
         
@@ -394,7 +395,7 @@
             }
             
             try {
-                const response = await fetch(`/api/businesses/${businessId}/faqs`, {
+                const response = await fetchWithCsrf(`/api/businesses/${businessId}/faqs`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ faqId })
@@ -409,7 +410,6 @@
                     showMessage('Error deleting FAQ: ' + data.error, 'error');
                 }
             } catch (error) {
-                console.error('Error deleting FAQ:', error);
                 showMessage('Error deleting FAQ', 'error');
             }
         }

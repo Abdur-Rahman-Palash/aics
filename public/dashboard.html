@@ -119,29 +119,26 @@
         </div>
     </div>
     
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/csrf-helper.js"></script>
     <script>
         let businesses = [];
         let selectedBusinessId = null;
+        const socket = io();
         
         // Check auth and load user
         async function checkAuth() {
-            console.log('Checking authentication...');
             try {
                 const response = await fetch('/api/auth/me', { credentials: 'include' });
-                console.log('Auth check response status:', response.status);
                 const data = await response.json();
-                console.log('Auth check response data:', data);
                 
                 if (!data.success) {
-                    console.log('Auth failed, redirecting to login');
                     window.location.href = '/login.html';
                     return;
                 }
                 
-                console.log('Auth successful! User:', data.user);
                 document.getElementById('user-name').textContent = data.user.name;
             } catch (error) {
-                console.error('Auth check error:', error);
                 window.location.href = '/login.html';
             }
         }
@@ -150,17 +147,15 @@
         async function logout(e) {
             e.preventDefault();
             try {
-                const response = await fetch('/api/auth/logout', {
+                const response = await fetchWithCsrf('/api/auth/logout', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
+                    }
                 });
                 await response.json(); // Wait for response to finish
                 window.location.href = '/login.html';
             } catch (error) {
-                console.error('Logout error:', error);
                 window.location.href = '/login.html';
             }
         }
@@ -190,10 +185,21 @@
                     renderBusinessList();
                 }
             } catch (error) {
-                console.error('Error loading businesses:', error);
                 showMessage('Error loading businesses', 'error');
             }
         }
+
+        // Listen for real-time new lead events
+        socket.on('new lead', (data) => {
+            showMessage('New lead received!', 'success');
+            loadBusinesses(); // Refresh the dashboard to show the new lead
+        });
+
+        // Listen for real-time lead status updates
+        socket.on('lead status updated', (data) => {
+            showMessage('Lead status updated!', 'success');
+            loadBusinesses(); // Refresh the dashboard to show the updated status
+        });
         
         function renderStats() {
             const totalMessages = businesses.reduce((sum, b) => sum + (b.analytics?.totalMessages || 0), 0);
@@ -570,11 +576,10 @@
             }
             
             try {
-                const response = await fetch('/api/businesses/' + businessId + '/website', {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/website', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url }),
-                    credentials: 'include'
+                    body: JSON.stringify({ url })
                 });
                 
                 const data = await response.json();
@@ -589,7 +594,6 @@
                     showMessage('Error training website: ' + data.error, 'error');
                 }
             } catch (error) {
-                console.error('Error training website:', error);
                 showMessage('Error training website', 'error');
             }
         }
@@ -603,9 +607,13 @@
                 try {
                     const formData = new FormData();
                     formData.append('file', file);
+                    const csrfToken = await getCsrfToken();
                     
                     const response = await fetch('/api/businesses/' + businessId + '/pdf', {
                         method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        },
                         body: formData,
                         credentials: 'include'
                     });
@@ -620,7 +628,6 @@
                         showMessage('Error uploading "' + file.name + '": ' + data.error, 'error');
                     }
                 } catch (error) {
-                    console.error('Error uploading file:', error);
                     showMessage('Error uploading "' + file.name + '"', 'error');
                 }
             }
@@ -628,11 +635,10 @@
 
         async function updateLeadStatus(businessId, leadId, status) {
             try {
-                const response = await fetch('/api/businesses/' + businessId + '/leads/' + leadId, {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/leads/' + leadId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status }),
-                    credentials: 'include'
+                    body: JSON.stringify({ status })
                 });
 
                 const data = await response.json();
@@ -650,7 +656,6 @@
                     showMessage('Error updating lead status: ' + data.error, 'error');
                 }
             } catch (error) {
-                console.error('Error updating lead status:', error);
                 showMessage('Error updating lead status', 'error');
             }
         }
@@ -665,11 +670,10 @@
             };
             
             try {
-                const response = await fetch('/api/businesses/' + businessId + '/widget', {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/widget', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings),
-                    credentials: 'include'
+                    body: JSON.stringify(settings)
                 });
                 
                 const data = await response.json();
@@ -681,7 +685,6 @@
                     showMessage('Error saving settings: ' + data.error, 'error');
                 }
             } catch (error) {
-                console.error('Error updating widget settings:', error);
                 showMessage('Error saving settings', 'error');
             }
         }
@@ -689,11 +692,10 @@
         async function verifyDomain(businessId, method) {
         try {
             showMessage('Verifying domain...', 'success');
-            const response = await fetch('/api/businesses/' + businessId + '/verify', {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ method }),
-                credentials: 'include'
+                body: JSON.stringify({ method })
             });
             
             const data = await response.json();
@@ -705,7 +707,6 @@
                 showMessage(data.error, 'error');
             }
         } catch (error) {
-            console.error('Verification error:', error);
             showMessage('Failed to verify domain', 'error');
         }
     }
@@ -732,11 +733,10 @@
             }
             
             try {
-                const response = await fetch('/api/businesses', {
+                const response = await fetchWithCsrf('/api/businesses', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, domain }),
-                    credentials: 'include'
+                    body: JSON.stringify({ name, domain })
                 });
                 
                 const data = await response.json();
@@ -749,7 +749,6 @@
                     showMessage('Error: ' + data.error, 'error');
                 }
             } catch (error) {
-                console.error('Error creating business:', error);
                 showMessage('Error creating business', 'error');
             }
         });
@@ -763,7 +762,6 @@
             try {
                 showMessage('Business deletion coming soon!', 'success');
             } catch (error) {
-                console.error('Error deleting business:', error);
                 showMessage('Error deleting business', 'error');
             }
         }

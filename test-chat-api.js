@@ -16,20 +16,18 @@ const options = {
 };
 
 const req = http.request(options, (res) => {
-    console.log(`Status Code: ${res.statusCode}`);
-    
     let data = '';
     res.on('data', (chunk) => {
         data += chunk;
     });
     
     res.on('end', () => {
-        console.log('Response:', JSON.parse(data));
+        // Response handling
     });
 });
 
 req.on('error', (e) => {
-    console.error(`Problem with request: ${e.message}`);
+    // Error handling
 });
 
 req.write(postData);

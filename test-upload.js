@@ -7,8 +7,6 @@ async function testUpload() {
         { question: "Do you offer refunds?", answer: "Yes, within 30 days" }
     ];
 
-    console.log('Testing FAQ upload with:', testFaqs);
-
     try {
         const response = await fetch('http://localhost:3000/api/upload-faqs', {
             method: 'POST',
@@ -17,9 +15,9 @@ async function testUpload() {
         });
 
         const data = await response.json();
-        console.log('Upload response:', data);
+        // Upload response
     } catch (error) {
-        console.error('Error in test upload:', error);
+        // Error in test upload
     }
 }
 

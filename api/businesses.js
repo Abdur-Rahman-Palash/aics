@@ -44,7 +44,6 @@ module.exports = async (req, res) => {
 
         return res.status(405).json({ error: 'Method not allowed' });
     } catch (error) {
-        console.error('Error in businesses API:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };

@@ -132,14 +132,12 @@
         // Helper Functions
         function toggleChat() {
             const isActive = chatContainer.classList.contains('active');
-            console.log('toggleChat called, isActive:', isActive);
             if (isActive) {
                 chatContainer.classList.remove('active');
                 floatBtn.style.display = 'flex';
             } else {
                 chatContainer.classList.add('active');
                 const isMobile = window.innerWidth < 650;
-                console.log('toggleChat, isMobile:', isMobile);
                 if (isMobile) {
                     // Reset position for mobile
                     chatContainer.style.left = '0';
@@ -166,12 +164,10 @@
         
         function startDrag(e) {
             const isMobile = window.innerWidth < 650;
-            console.log('startDrag called, isMobile:', isMobile, 'e.target:', e.target);
             if (isMobile) return; // Don't allow dragging on mobile
             
             e.preventDefault();
             isDragging = true;
-            console.log('startDrag: isDragging set to true');
             
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
@@ -179,7 +175,6 @@
             const rect = chatContainer.getBoundingClientRect();
             dragOffset.x = clientX - rect.left;
             dragOffset.y = clientY - rect.top;
-            console.log('startDrag: dragOffset:', dragOffset);
         }
         
         function drag(e) {
@@ -188,7 +183,6 @@
             e.preventDefault();
             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            console.log('drag: clientX, clientY:', clientX, clientY);
             
             let newX = clientX - dragOffset.x;
             let newY = clientY - dragOffset.y;
@@ -204,11 +198,9 @@
             chatContainer.style.top = `${newY}px`;
             chatContainer.style.bottom = 'auto';
             chatContainer.style.right = 'auto';
-            console.log('drag: newX, newY:', newX, newY);
         }
         
         function stopDrag() {
-            console.log('stopDrag called');
             isDragging = false;
         }
         function addMessage(text, type) {

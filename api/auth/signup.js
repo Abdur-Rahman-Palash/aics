@@ -68,7 +68,6 @@ module.exports = async (req, res) => {
         req.session.userId = user.id;
         res.status(201).json({ success: true, user });
     } catch (error) {
-        console.error('Signup error:', error);
         res.status(400).json({ success: false, error: error.message });
     }
 };

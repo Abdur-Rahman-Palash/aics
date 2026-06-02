@@ -1,161 +1,210 @@
-# AICS - AI Customer Support SaaS
+# AICS - AI Customer Support
 
-Production‑ready AI customer support platform for any business. It uses vector search to answer questions from your custom FAQs, powered by Google Gemini and Qdrant Cloud.
+A complete AI-powered customer support chatbot platform that can be embedded on any website.
 
-## 🚀 What Is AICS?
+## Features
 
-AICS (AI Customer Support) is a lightweight, embeddable chat widget that:
-- 📖 Answers questions from your business FAQ/knowledge base
-- 🔍 Uses vector similarity search for accurate results
-- 🌐 Responds in natural language (English, Bangla, etc.)
-- 📡 Communicates in real‑time with Socket.IO
-- 🎯 Collects leads (future phase)
-- 👥 Escalates to human support when needed (future phase)
+- 🤖 **AI Chatbot**: Powered by Google Gemini AI
+- 📚 **Knowledge Base**: Train on your website content and PDF documents
+- 🔒 **Domain Verification**: Verify domain ownership before embedding the widget
+- � **Responsive Design**: Works perfectly on desktop and mobile devices
+- �️ **Draggable Widget**: Users can move the chat widget around on desktop
+- � **Customizable Widget**: Customize colors, avatar, and title
+- � **Analytics**: Track chat volume and FAQ usage
+- 👥 **Lead Capture**: Collect customer information through the chat
+- 🔐 **User Authentication**: Secure login and signup system
 
-## ✅ Current Features (Phase 1, Phase 2 & Phase 3 Progress)
+## Tech Stack
 
-### Phase 1 (Complete)
-- ✅ Beautiful, responsive floating chat widget
-- ✅ Real‑time messaging via Socket.IO
-- ✅ FAQ upload admin page
-- ✅ Google Gemini AI integration
-- ✅ Qdrant Cloud vector search integration
-- ✅ Suggested questions from uploaded FAQs
-- ✅ Works completely free on Vercel Free Tier
+- **Backend**: Node.js + Express
+- **AI**: Google Gemini (for responses) + Qdrant (for vector search)
+- **Database**: JSON file storage (simple, but easy to replace with PostgreSQL/MongoDB)
+- **Frontend**: Vanilla JavaScript + CSS (no heavy frameworks)
+- **Deployment**: Render (or any Node.js hosting platform)
 
-### Phase 2 (Started)
-- ✅ Dashboard UI (public/dashboard.html)
-- ✅ Multiple businesses data structure (lib/businesses.js)
-- ✅ Analytics tracking foundation
-- 🚧 More features coming soon (full dashboard, full analytics)
+## Quick Start
 
-### Phase 3 (Started)
-- ✅ Embeddable widget script (js/embed.js)
-- ✅ Multilingual support (auto-detects user's language, EN/BN selector)
-- 📝 Subscription SaaS plan (Free, Basic, Pro tiers planned)
+### Prerequisites
 
-## 📁 Project Structure
+1. Node.js (v16 or later)
+2. A Google Gemini API key
+3. (Optional) A Qdrant account for vector search
 
-```
-aics/
-├── api/                # Vercel API Routes
-│   ├── chat.js         # Chat API (for REST fallback)
-│   ├── upload-faqs.js  # FAQ Upload API
-│   └── get-faqs.js     # Get All FAQs API
-├── css/                # Stylesheets
-│   └── chat-widget.css # Chat widget styles
-├── js/                 # Frontend JavaScript
-│   ├── chat-widget.js  # Chat widget core logic
-│   └── embed.js        # Embeddable widget script for external sites
-├── lib/                # Backend libraries
-│   ├── config.js       # App configuration
-│   ├── gemini.js       # Gemini AI integration
-│   ├── qdrant.js       # Qdrant vector DB integration
-│   └── businesses.js   # Business & analytics management
-├── public/             # Public static files
-│   ├── index.html      # Demo page with chat widget
-│   ├── admin.html      # Admin page for FAQ upload
-│   └── dashboard.html  # Admin dashboard (Phase 2)
-├── data/               # Data storage (created automatically)
-│   └── businesses.json # Business & analytics data
-├── .env.example        # Environment variables example
-├── .gitignore          # Git ignore rules
-├── package.json        # Project dependencies & scripts
-├── server.js           # Local Express server (with Socket.IO)
-├── vercel.json         # Vercel deployment config
-├── test-chat-api.js    # Helper script to test chat endpoint
-├── test-upload.js      # Helper script to test FAQ upload
-└── available-models.json # List of Gemini models (optional)
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/yourusername/aics.git
+cd aics
 ```
 
-## 🔧 Setup Instructions (Step-by-Step)
+2. **Install dependencies**
 
-### 1. Get Your API Keys
-
-First, you'll need these 3 things:
-
-a) **Google Gemini API Key**:
-   - Go to https://aistudio.google.com/app/apikey
-   - Create an API key (copy it, you'll need it soon!)
-
-b) **Qdrant Cloud Free Cluster**:
-   - Go to https://cloud.qdrant.io/ and create a free account
-   - Create a new cluster (choose Free Tier)
-   - When it's ready, copy the **Cluster URL** and **API Key**
-
-### 2. Set Up Environment Variables
-
-1. In your project folder, copy the file `.env.example` and rename it to `.env`
-2. Open `.env` and fill in your keys:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   QDRANT_URL=your_qdrant_cluster_url_here
-   QDRANT_API_KEY=your_qdrant_api_key_here
-   ```
-
-### 3. Install Project Dependencies
-
-Open your terminal/command prompt, go to the project folder and run:
 ```bash
 npm install
 ```
 
-### 4. Run the App Locally
+3. **Set up environment variables**
 
-Start the server:
+Create a `.env` file in the root directory:
+
+```env
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Authentication
+SESSION_SECRET=your-super-secret-key-change-this-in-production
+
+# AI
+GEMINI_API_KEY=your-gemini-api-key
+
+# Vector Search (optional but recommended)
+QDRANT_URL=https://your-qdrant-cluster-url
+QDRANT_API_KEY=your-qdrant-api-key
+```
+
+4. **Start the server**
+
 ```bash
 npm run dev
 ```
 
-Then open your browser and go to:
-- **Demo Page**: http://localhost:3000/ (try the chat widget!)
-- **Admin Page**: http://localhost:3000/admin (upload your FAQs!)
+5. **Open the app**
 
-### 5. Upload Your FAQs
+Visit http://localhost:3000 in your browser.
 
-1. Go to the admin page (http://localhost:3000/admin)
-2. Add your business FAQs (question + answer)
-3. Click the "Upload FAQs" button
-4. Go back to the demo page – your FAQs will show up as suggested questions!
+## Usage
 
-## 🤖 How It Works (Simplified)
+### For Website Owners
 
-Here's what happens when a user sends a message:
+1. **Sign up and login**
+   - Go to your AICS instance and create an account
 
-1. **User sends question**: User types a question in the chat widget
-2. **Socket.IO real-time**: Message is sent to the server instantly
-3. **Gemini creates embedding**: Gemini converts the question into a numerical vector
-4. **Qdrant vector search**: Qdrant finds your most similar FAQs
-5. **Gemini crafts response**: Gemini uses those FAQs to generate a natural answer
-6. **Response appears**: Answer is shown in the chat widget!
+2. **Create a business**
+   - Click "Create New Business"
+   - Enter your business name and domain name
 
-## 🌐 Deploying to Vercel (Free)
+3. **Verify your domain** (recommended)
+   - Choose either DNS TXT record or HTML file verification
+   - Follow the instructions on the dashboard
 
-To make your AICS live on the internet:
+4. **Add knowledge sources**
+   - **Website**: Enter your website URL to train the bot
+   - **PDF**: Upload PDF documents with your business information
+   - **FAQs**: Add manually through the admin interface
 
-1. Push your code to GitHub
-2. Go to https://vercel.com and connect your GitHub account
-3. Import your aics project
-4. Add your environment variables (GEMINI_API_KEY, QDRANT_URL, QDRANT_API_KEY) in Vercel's settings
-5. Click Deploy – your AICS is live for free!
+5. **Customize your widget**
+   - Go to your business settings
+   - Set your widget title, primary color, and avatar
 
-## 📌 Key Tech Stack Constraints Followed
+6. **Embed the widget**
+   - Copy the embed code from your dashboard
+   - Paste it before the closing `</body>` tag on your website
 
-- ✅ No React/Vue/jQuery/Tailwind/TypeScript
-- ✅ Vanilla HTML/CSS/JS only
-- ✅ Node.js/Vercel API Routes for backend
-- ✅ Qdrant Cloud vector DB
-- ✅ Google Gemini AI
-- ✅ Socket.IO for real‑time
+### For Developers
 
-## 🎯 Upcoming Phases (Planned Features)
+#### Embed the Widget
 
-- Phase 2: Dashboard, analytics, multi‑business support
-- Phase 3: Embeddable widget, multilingual, subscription SaaS
+```html
+<script src="https://your-aics-instance.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
+```
 
-## 📝 Notes
+#### API Endpoints
 
-- Make sure you use valid Qdrant cluster URL (should look like: `https://your-cluster-name.qdrant.io:6333`)
-- The free tiers for both Gemini and Qdrant are perfect for testing and small businesses!
+**Authentication**:
+- `POST /api/auth/signup` - Create a new user account
+- `POST /api/auth/login` - Login to an existing account
+- `POST /api/auth/logout` - Logout from the current session
+- `GET /api/auth/me` - Get current user information
 
-Enjoy using your own AI customer support!
+**Businesses**:
+- `GET /api/businesses` - Get businesses for the authenticated user
+- `POST /api/businesses` - Create a new business
+
+**Knowledge Sources**:
+- `POST /api/businesses/:id/website` - Train on a website
+- `POST /api/businesses/:id/pdf` - Train on a PDF document
+
+**Verification**:
+- `POST /api/businesses/:id/verify` - Verify domain ownership
+
+## Customization
+
+### Widget Customization
+
+You can customize the widget through the dashboard or by modifying the embed code:
+
+```html
+<script src="https://your-aics-instance.com/js/embed.js" 
+  data-business-id="YOUR_BUSINESS_ID"
+  data-widget-title="My Support"
+  data-widget-color="#4CAF50"
+  data-widget-avatar="👨‍💼"></script>
+```
+
+### Backend Customization
+
+- The backend uses a simple JSON file storage system (`lib/storage.js`)
+- You can easily replace it with PostgreSQL, MongoDB, or any other database
+- Modify `lib/config.js` to change default settings
+
+## Deployment
+
+### Deploy to Render
+
+1. **Fork this repository** to your GitHub account
+
+2. **Create a new Web Service** on Render:
+   - Connect your GitHub account
+   - Select the forked repository
+   - Choose Node.js as the environment
+
+3. **Set environment variables**:
+   - Add all variables from `.env`
+   - Set `NODE_ENV` to `production`
+
+4. **Deploy!**
+
+### Other Platforms
+
+The app should work on any Node.js hosting platform (Vercel, Railway, Heroku, AWS, etc.). Just make sure to set the environment variables correctly.
+
+## Security Best Practices
+
+### For Production Deployments
+
+1. **Always use HTTPS**: Never use HTTP in production
+2. **Secure your SESSION_SECRET**: Use a long, random secret key
+3. **Don't commit secrets**: Never commit `.env` file or sensitive information
+4. **Use rate limiting**: Already implemented, but you can customize it
+5. **Regularly update dependencies**: Run `npm audit` and keep dependencies up to date
+6. **Use a proper database**: Replace the JSON file storage with PostgreSQL/MongoDB for production
+7. **Add CSRF protection**: Consider using the `csurf` middleware
+8. **Set secure cookies**: Already implemented for production
+
+## Roadmap
+
+- [ ] Multi-language support
+- [ ] Email notifications for new leads
+- [ ] More analytics and reporting
+- [ ] Human handoff feature
+- [ ] SSO integration
+- [ ] Webhooks for events
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - feel free to use this for personal or commercial projects!
+
+## Support
+
+If you have any questions or need help, please open an issue on GitHub!
+
+---
+
+Made with ❤️ by [Your Name]

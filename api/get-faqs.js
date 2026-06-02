@@ -40,7 +40,6 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error retrieving FAQs:', error);
         return res.status(500).json({
             success: false,
             error: error.message

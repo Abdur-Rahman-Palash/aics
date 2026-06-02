@@ -1,9 +1,25 @@
 // Chat Widget JavaScript
-console.log('AICS Chat Widget script loaded!');
+let cachedCsrfToken = null;
+
+async function getCsrfToken() {
+  if (cachedCsrfToken) {
+    return cachedCsrfToken;
+  }
+  try {
+    const response = await fetch('/api/csrf-token', { credentials: 'include' });
+    const data = await response.json();
+    if (data.success && data.csrfToken) {
+      cachedCsrfToken = data.csrfToken;
+      return cachedCsrfToken;
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
 
 class AICSChatWidget {
     constructor(options = {}) {
-        console.log('AICS Chat Widget constructor called');
         this.businessId = options.businessId || null;
         this.widgetSettings = {
             title: 'AI Support',
@@ -15,8 +31,6 @@ class AICSChatWidget {
     }
 
     async init() {
-        console.log('AICS Chat Widget init() called');
-        
         // Load widget settings if business ID is provided
         if (this.businessId) {
             await this.loadWidgetSettings();
@@ -36,7 +50,7 @@ class AICSChatWidget {
                 this.widgetSettings = { ...this.widgetSettings, ...data.settings };
             }
         } catch (error) {
-            console.error('Error loading widget settings:', error);
+            // Error log removed
         }
     }
 
@@ -120,12 +134,10 @@ class AICSChatWidget {
     
     startDrag(e) {
         const isMobile = window.innerWidth < 650;
-        console.log('startDrag called, isMobile:', isMobile, 'e.target:', e.target);
         if (isMobile) return; // Don't allow dragging on mobile
         
         e.preventDefault();
         this.isDragging = true;
-        console.log('startDrag: isDragging set to true');
         
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
@@ -133,7 +145,6 @@ class AICSChatWidget {
         const rect = this.chatContainer.getBoundingClientRect();
         this.dragOffset.x = clientX - rect.left;
         this.dragOffset.y = clientY - rect.top;
-        console.log('startDrag: dragOffset:', this.dragOffset);
     }
     
     drag(e) {
@@ -142,7 +153,6 @@ class AICSChatWidget {
         e.preventDefault();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        console.log('drag: clientX, clientY:', clientX, clientY);
         
         let newX = clientX - this.dragOffset.x;
         let newY = clientY - this.dragOffset.y;
@@ -158,11 +168,9 @@ class AICSChatWidget {
         this.chatContainer.style.top = `${newY}px`;
         this.chatContainer.style.bottom = 'auto';
         this.chatContainer.style.right = 'auto';
-        console.log('drag: newX, newY:', newX, newY);
     }
     
     stopDrag() {
-        console.log('stopDrag called');
         this.isDragging = false;
     }
     
@@ -180,7 +188,6 @@ class AICSChatWidget {
     toggleChat() {
         this.chatContainer.classList.toggle('active');
         const isMobile = window.innerWidth < 650;
-        console.log('toggleChat called, isMobile:', isMobile);
         if (this.chatContainer.classList.contains('active')) {
             // Reset position for mobile
             if (isMobile) {
@@ -223,27 +230,38 @@ class AICSChatWidget {
 
         // Use REST API (works on Vercel)
         try {
+            const csrfToken = await getCsrfToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['X-CSRF-Token'] = csrfToken;
+            }
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ 
                     message,
                     businessId: this.businessId
-                })
+                }),
+                credentials: 'include'
             });
 
             const data = await response.json();
             this.hideTypingIndicator();
             
             if (data.success) {
-                this.addMessage(data.response, 'ai');
+                const humanTransferMessage = "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.";
+                if (data.response === humanTransferMessage) {
+                    this.addMessage(data.response, 'ai');
+                    setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
+                } else {
+                    this.addMessage(data.response, 'ai');
+                }
             } else {
                 this.addMessage('Sorry, something went wrong. Please try again.', 'ai');
             }
         } catch (error) {
             this.hideTypingIndicator();
             this.addMessage('Sorry, I\'m having trouble connecting. Please check your internet.', 'ai');
-            console.error('API error:', error);
         }
 
         this.sendBtn.disabled = false;
@@ -302,7 +320,7 @@ class AICSChatWidget {
                         .filter(Boolean);
                 }
             } catch (error) {
-                console.error('Error loading suggested FAQs:', error);
+                // Error log removed
             }
         }
 
@@ -315,17 +333,6 @@ class AICSChatWidget {
             btn.addEventListener('click', () => this.sendMessageFromSuggestion(q));
             this.suggestedContainer.appendChild(btn);
         });
-
-        // Add talk to human button
-        if (this.businessId) {
-            const humanBtn = document.createElement('button');
-            humanBtn.className = 'aics-suggested-btn';
-            humanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            humanBtn.style.color = 'white';
-            humanBtn.textContent = 'Talk to Human';
-            humanBtn.addEventListener('click', () => this.showLeadForm());
-            this.suggestedContainer.appendChild(humanBtn);
-        }
     }
 
     sendMessageFromSuggestion(question) {
@@ -387,7 +394,6 @@ class AICSChatWidget {
                 this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
             }
         } catch (error) {
-            console.error('Error submitting lead:', error);
             this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
         }
     }
