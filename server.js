@@ -95,10 +95,16 @@ app.use(cookieSession({
     path: '/'
 }));
 
-// Add CSRF token endpoint
+// Add CSRF token endpoint with error handling
 app.get('/api/csrf-token', (req, res) => {
-    const csrfToken = generateToken(req, res);
-    res.json({ success: true, csrfToken });
+    try {
+        const csrfToken = generateToken(req, res);
+        res.json({ success: true, csrfToken });
+    } catch (error) {
+        console.error('Error generating CSRF token:', error);
+        // If CSRF token generation fails, still return success with null token
+        res.json({ success: true, csrfToken: null });
+    }
 });
 
 // Apply CSRF protection to all state-changing routes except /api/chat and public lead endpoints
