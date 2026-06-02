@@ -1,210 +1,205 @@
-# AICS - AI Customer Support
+# 🚀 AICS - AI Customer Support SaaS
 
-A complete AI-powered customer support chatbot platform that can be embedded on any website.
+**Sell more, support less.**
 
-## Features
-
-- 🤖 **AI Chatbot**: Powered by Google Gemini AI
-- 📚 **Knowledge Base**: Train on your website content and PDF documents
-- 🔒 **Domain Verification**: Verify domain ownership before embedding the widget
-- � **Responsive Design**: Works perfectly on desktop and mobile devices
-- �️ **Draggable Widget**: Users can move the chat widget around on desktop
-- � **Customizable Widget**: Customize colors, avatar, and title
-- � **Analytics**: Track chat volume and FAQ usage
-- 👥 **Lead Capture**: Collect customer information through the chat
-- 🔐 **User Authentication**: Secure login and signup system
-
-## Tech Stack
-
-- **Backend**: Node.js + Express
-- **AI**: Google Gemini (for responses) + Qdrant (for vector search)
-- **Database**: JSON file storage (simple, but easy to replace with PostgreSQL/MongoDB)
-- **Frontend**: Vanilla JavaScript + CSS (no heavy frameworks)
-- **Deployment**: Render (or any Node.js hosting platform)
-
-## Quick Start
-
-### Prerequisites
-
-1. Node.js (v16 or later)
-2. A Google Gemini API key
-3. (Optional) A Qdrant account for vector search
-
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/yourusername/aics.git
-cd aics
-```
-
-2. **Install dependencies**
-
-```bash
-npm install
-```
-
-3. **Set up environment variables**
-
-Create a `.env` file in the root directory:
-
-```env
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Authentication
-SESSION_SECRET=your-super-secret-key-change-this-in-production
-
-# AI
-GEMINI_API_KEY=your-gemini-api-key
-
-# Vector Search (optional but recommended)
-QDRANT_URL=https://your-qdrant-cluster-url
-QDRANT_API_KEY=your-qdrant-api-key
-```
-
-4. **Start the server**
-
-```bash
-npm run dev
-```
-
-5. **Open the app**
-
-Visit http://localhost:3000 in your browser.
-
-## Usage
-
-### For Website Owners
-
-1. **Sign up and login**
-   - Go to your AICS instance and create an account
-
-2. **Create a business**
-   - Click "Create New Business"
-   - Enter your business name and domain name
-
-3. **Verify your domain** (recommended)
-   - Choose either DNS TXT record or HTML file verification
-   - Follow the instructions on the dashboard
-
-4. **Add knowledge sources**
-   - **Website**: Enter your website URL to train the bot
-   - **PDF**: Upload PDF documents with your business information
-   - **FAQs**: Add manually through the admin interface
-
-5. **Customize your widget**
-   - Go to your business settings
-   - Set your widget title, primary color, and avatar
-
-6. **Embed the widget**
-   - Copy the embed code from your dashboard
-   - Paste it before the closing `</body>` tag on your website
-
-### For Developers
-
-#### Embed the Widget
-
-```html
-<script src="https://your-aics-instance.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
-```
-
-#### API Endpoints
-
-**Authentication**:
-- `POST /api/auth/signup` - Create a new user account
-- `POST /api/auth/login` - Login to an existing account
-- `POST /api/auth/logout` - Logout from the current session
-- `GET /api/auth/me` - Get current user information
-
-**Businesses**:
-- `GET /api/businesses` - Get businesses for the authenticated user
-- `POST /api/businesses` - Create a new business
-
-**Knowledge Sources**:
-- `POST /api/businesses/:id/website` - Train on a website
-- `POST /api/businesses/:id/pdf` - Train on a PDF document
-
-**Verification**:
-- `POST /api/businesses/:id/verify` - Verify domain ownership
-
-## Customization
-
-### Widget Customization
-
-You can customize the widget through the dashboard or by modifying the embed code:
-
-```html
-<script src="https://your-aics-instance.com/js/embed.js" 
-  data-business-id="YOUR_BUSINESS_ID"
-  data-widget-title="My Support"
-  data-widget-color="#4CAF50"
-  data-widget-avatar="👨‍💼"></script>
-```
-
-### Backend Customization
-
-- The backend uses a simple JSON file storage system (`lib/storage.js`)
-- You can easily replace it with PostgreSQL, MongoDB, or any other database
-- Modify `lib/config.js` to change default settings
-
-## Deployment
-
-### Deploy to Render
-
-1. **Fork this repository** to your GitHub account
-
-2. **Create a new Web Service** on Render:
-   - Connect your GitHub account
-   - Select the forked repository
-   - Choose Node.js as the environment
-
-3. **Set environment variables**:
-   - Add all variables from `.env`
-   - Set `NODE_ENV` to `production`
-
-4. **Deploy!**
-
-### Other Platforms
-
-The app should work on any Node.js hosting platform (Vercel, Railway, Heroku, AWS, etc.). Just make sure to set the environment variables correctly.
-
-## Security Best Practices
-
-### For Production Deployments
-
-1. **Always use HTTPS**: Never use HTTP in production
-2. **Secure your SESSION_SECRET**: Use a long, random secret key
-3. **Don't commit secrets**: Never commit `.env` file or sensitive information
-4. **Use rate limiting**: Already implemented, but you can customize it
-5. **Regularly update dependencies**: Run `npm audit` and keep dependencies up to date
-6. **Use a proper database**: Replace the JSON file storage with PostgreSQL/MongoDB for production
-7. **Add CSRF protection**: Consider using the `csurf` middleware
-8. **Set secure cookies**: Already implemented for production
-
-## Roadmap
-
-- [ ] Multi-language support
-- [ ] Email notifications for new leads
-- [ ] More analytics and reporting
-- [ ] Human handoff feature
-- [ ] SSO integration
-- [ ] Webhooks for events
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - feel free to use this for personal or commercial projects!
-
-## Support
-
-If you have any questions or need help, please open an issue on GitHub!
+A complete, white-label AI customer support chatbot platform that lets you embed a smart bot on any website in minutes. Built for small businesses, agencies, and developers – and **100% ready to deploy on Render.com**!
 
 ---
 
-Made with ❤️ by [Your Name]
+## 🎯 Why AICS? (For Non-Tech People)
+
+Imagine having a 24/7 employee that:
+- ✅ Answers customer questions instantly
+- ✅ Captures leads even when you're asleep
+- ✅ Learns from your website, PDFs, and FAQs
+- ✅ Looks like *your* brand
+- ✅ Costs way less than hiring another support person
+
+That's exactly what AICS gives you – no coding required!
+
+---
+
+## �️ Tech Stack (For Developers)
+
+AICS is built with modern, reliable tools that make deployment and customization a breeze:
+
+- **Backend**: Node.js + Express (production-proven)
+- **AI Brain**: Google Gemini (state-of-the-art language models)
+- **Smart Search**: Qdrant (vector search for accurate knowledge retrieval)
+- **Database**: Simple JSON storage (easy to swap to PostgreSQL/MongoDB if needed)
+- **Frontend**: Vanilla JS + CSS (lightning-fast, no heavy frameworks)
+- **Deployment**: **Render.com** (we've already set up render.yaml for you!)
+
+---
+
+## ✨ Key Features That Sell
+
+<table>
+  <tr>
+    <td valign="top">
+      <h3>🤖 Smart AI Chatbot</h3>
+      <ul>
+        <li>Trained on your unique knowledge</li>
+        <li>Human-like responses</li>
+        <li>Understands context</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>📚 Easy Training</h3>
+      <ul>
+        <li>Scrape your website</li>
+        <li>Upload PDFs</li>
+        <li>Add FAQs manually</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>👥 Lead Capture</h3>
+      <ul>
+        <li>Shows form when bot can't help</li>
+        <li>Collects name, email, phone</li>
+        <li>Real-time alerts (coming soon)</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>🎨 Fully Customizable</h3>
+      <ul>
+        <li>Change colors, avatar, title</li>
+        <li>Matches your brand</li>
+        <li>Draggable on desktop</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>📱 Mobile-Friendly</h3>
+      <ul>
+        <li>Looks perfect on phones</li>
+        <li>Works on tablets</li>
+        <li>Responsive by default</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>🔒 Secure</h3>
+      <ul>
+        <li>User authentication</li>
+        <li>CSRF protection</li>
+        <li>Rate limiting</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🚀 Deploy to Render in 5 Minutes (It Really Works!)
+
+Yes, **everything is already set up for Render.com**! Here's how to do it:
+
+### Step 1: Fork This Repo
+Click "Use this template" or "Fork" on GitHub to get your own copy of AICS.
+
+### Step 2: Create a Render Account
+Go to [render.com](https://render.com) and sign up (free tier works great!).
+
+### Step 3: Create a New Web Service
+1. Connect your GitHub account
+2. Select your forked AICS repository
+3. Use these settings:
+   - **Runtime**: Node.js
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+
+### Step 4: Set Environment Variables
+Add these in Render's dashboard (make sure NODE_ENV is production):
+```env
+PORT=3000
+NODE_ENV=production
+SESSION_SECRET=change-this-to-a-long-random-secret-key
+GEMINI_API_KEY=your-google-gemini-api-key-here
+QDRANT_URL=https://your-qdrant-cluster-url (optional but recommended)
+QDRANT_API_KEY=your-qdrant-api-key (optional)
+```
+
+### Step 5: Deploy!
+Hit "Save & Deploy" – Render will take care of the rest! 🎉
+
+---
+
+## 💻 Local Development
+
+Want to run it on your computer first? Here's how:
+
+1. Install Node.js (v16 or later)
+2. Clone the repo: `git clone https://github.com/yourusername/aics.git`
+3. Install dependencies: `npm install`
+4. Create a `.env` file (copy from `.env.example`)
+5. Start the server: `npm run dev`
+6. Visit http://localhost:3000
+
+---
+
+## 🔧 How to Use It (Step by Step)
+
+### For Business Owners
+1. **Sign Up / Login**: Go to your AICS instance and make an account
+2. **Create Your Business**: Add your business name and domain
+3. **Train the Bot**:
+   - Enter your website URL (we'll scrape it)
+   - Upload PDF documents
+   - Add FAQs manually
+4. **Customize**: Change colors, avatar, and widget title
+5. **Embed It**: Copy the embed code and paste it on your website before `</body>`
+
+### For Developers
+Embed the widget in seconds:
+```html
+<script src="https://your-aics-instance.onrender.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
+```
+
+Or customize it:
+```html
+<script src="https://your-aics-instance.onrender.com/js/embed.js" 
+  data-business-id="YOUR_BUSINESS_ID"
+  data-widget-title="My Awesome Support"
+  data-widget-color="#667eea"
+  data-widget-avatar="🤖"></script>
+```
+
+---
+
+## 📈 Roadmap (Upcoming Features That Add Value!)
+
+- [ ] Email/SMS notifications for new leads
+- [ ] Multi-language support (English + more)
+- [ ] Advanced analytics dashboard
+- [ ] Direct human handoff
+- [ ] SSO integration
+- [ ] Webhooks for zapier/automations
+- [ ] More database options out of the box
+
+---
+
+## 💡 Ready to Sell This?
+
+AICS is perfect for:
+- 🛠️ Developers building SaaS products
+- 🏢 Agencies serving small businesses
+- 🏪 Small business owners wanting their own support bot
+
+The MIT license lets you use it commercially – go make money! 💰
+
+---
+
+## 📝 License
+
+MIT License - go nuts! Use it for personal or commercial projects.
+
+---
+
+## 🙋 Need Help?
+
+Open an issue on GitHub, or reach out! We're here to help.
+
+---
+
+Made with ❤️ for builders and businesses everywhere!

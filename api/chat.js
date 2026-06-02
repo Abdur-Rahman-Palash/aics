@@ -127,22 +127,30 @@ module.exports = async (req, res) => {
         const SIMILARITY_THRESHOLD = 0.5;
         const humanTransferMessage = "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.";
         const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+        let needsHumanHelp = !hasRelevantContext || similarItems.length === 0;
         
         // Generate AI response or use fallback
         let aiResponse;
         try {
             if (config.gemini.apiKey) {
-                if (!hasRelevantContext || similarItems.length === 0) {
+                if (needsHumanHelp) {
                     aiResponse = humanTransferMessage;
                 } else {
                     aiResponse = await gemini.generateResponse(message, context);
+                    // Check if AI response mentions human/escalate, set needsHumanHelp if so
+                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(aiResponse);
+                    if (hasHumanKeywords) {
+                        needsHumanHelp = true;
+                    }
                 }
             } else {
                 // Fallback if no Gemini API key
                 if (business && business.faqs.length > 0) {
                     aiResponse = "I'm sorry, I couldn't find a direct answer to your question. Please check our FAQ section or contact support.";
+                    needsHumanHelp = true;
                 } else {
                     aiResponse = "Hi! Thanks for reaching out. Our team will get back to you soon.";
+                    needsHumanHelp = true;
                 }
             }
         } catch (error) {
@@ -167,6 +175,7 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             success: true,
             response: aiResponse,
+            needsHumanHelp,
             context: similarItems
         });
 

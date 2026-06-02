@@ -249,12 +249,11 @@ class AICSChatWidget {
             this.hideTypingIndicator();
             
             if (data.success) {
-                const humanTransferMessage = "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.";
-                if (data.response === humanTransferMessage) {
-                    this.addMessage(data.response, 'ai');
+                this.addMessage(data.response, 'ai');
+                // Check either the flag or look for keywords in the response
+                const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
+                if (data.needsHumanHelp || hasHumanKeywords) {
                     setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
-                } else {
-                    this.addMessage(data.response, 'ai');
                 }
             } else {
                 this.addMessage('Sorry, something went wrong. Please try again.', 'ai');

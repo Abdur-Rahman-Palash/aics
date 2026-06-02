@@ -119,9 +119,9 @@
         }
       ],
       "analytics": {
-        "totalMessages": 7,
+        "totalMessages": 10,
         "faqHits": {},
-        "lastActive": "2026-05-31T10:55:34.013Z"
+        "lastActive": "2026-06-02T18:27:25.466Z"
       },
       "knowledgeSources": {
         "websites": [
@@ -144,7 +144,17 @@
           }
         ]
       },
-      "leads": [],
+      "leads": [
+        {
+          "id": "cc3e74b5-c414-4cdc-a5cb-301fd16a9f1e",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "message": "i need apple",
+          "status": "new",
+          "createdAt": "2026-06-02T18:27:44.538Z"
+        }
+      ],
       "verification": {
         "status": "unverified",
         "method": null,
@@ -266,9 +276,9 @@
       },
       "leads": [],
       "analytics": {
-        "totalMessages": 2,
+        "totalMessages": 3,
         "faqHits": {},
-        "lastActive": "2026-06-02T06:32:22.927Z"
+        "lastActive": "2026-06-02T07:01:10.903Z"
       }
     },
     {

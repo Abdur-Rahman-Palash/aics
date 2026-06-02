@@ -42,8 +42,9 @@ if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET =
 }
 
 // Initialize CSRF Protection
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
+    getSessionIdentifier: (req) => req.session?.userId || 'anonymous-' + req.ip,
     cookieName: 'aics-csrf-token',
     cookieOptions: {
         httpOnly: true,
@@ -98,7 +99,7 @@ app.use(cookieSession({
 // Add CSRF token endpoint with error handling
 app.get('/api/csrf-token', (req, res) => {
     try {
-        const csrfToken = generateToken(req, res);
+        const csrfToken = generateCsrfToken(req, res);
         res.json({ success: true, csrfToken });
     } catch (error) {
         console.error('Error generating CSRF token:', error);
