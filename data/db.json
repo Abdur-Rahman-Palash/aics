@@ -160,7 +160,11 @@
         "method": null,
         "token": "c3a07500aa8e6bd4b5b253eca76c23f4",
         "verifiedAt": null
-      }
+      },
+      "notificationEmail": "",
+      "conversations": [],
+      "unansweredQuestions": [],
+      "webhooks": []
     },
     {
       "id": "4b7b0c4b-8b9e-4cbb-84e9-4cf553b2a027",
@@ -189,7 +193,11 @@
         "method": null,
         "token": "4f31a11b90c29f4c0605708790429f54",
         "verifiedAt": null
-      }
+      },
+      "notificationEmail": "",
+      "conversations": [],
+      "unansweredQuestions": [],
+      "webhooks": []
     },
     {
       "id": "1e10e7b6-b640-4538-8c71-a06ace13ac06",
@@ -219,7 +227,11 @@
         "method": null,
         "token": "978b5fba707cd98bc0c57d5a770d213a",
         "verifiedAt": null
-      }
+      },
+      "notificationEmail": "",
+      "conversations": [],
+      "unansweredQuestions": [],
+      "webhooks": []
     },
     {
       "id": "46dc719b-ca9e-4c09-8a0f-a7cd2d5aa79a",
@@ -233,23 +245,206 @@
         "primaryColor": "#667eea",
         "avatar": "🤖"
       },
-      "faqs": [],
+      "faqs": [
+        {
+          "id": "bcee503f-cf71-417e-9d88-14aaf3888b24",
+          "questionEn": "Book demo",
+          "questionBn": null,
+          "answerEn": "whats app 22356778",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-03T17:28:51.651Z"
+        }
+      ],
       "knowledgeSources": {
         "websites": [],
         "pdfs": []
       },
-      "leads": [],
+      "leads": [
+        {
+          "id": "204527c9-c0a7-4683-9116-ce8097e31684",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "message": "i need your webservice",
+          "status": "new",
+          "createdAt": "2026-06-03T16:50:37.117Z"
+        },
+        {
+          "id": "505f8049-9cd9-44c3-8136-5fea0e5354b6",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "company": "",
+          "notes": "",
+          "message": "i need service\n",
+          "status": "lost",
+          "score": 40,
+          "conversationId": "13cd4563-414a-4b08-9422-369d7ca0f105",
+          "createdAt": "2026-06-03T17:01:41.145Z"
+        },
+        {
+          "id": "625dc0ff-d140-431f-b062-5b8ece560c09",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "company": "",
+          "notes": "",
+          "message": "business hour",
+          "status": "new",
+          "score": 40,
+          "conversationId": "f68bb29f-1264-4138-b8a6-58b6f672eecd",
+          "createdAt": "2026-06-03T17:23:50.658Z"
+        },
+        {
+          "id": "2151633d-959a-4f3c-bbc1-8ee722436fcb",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "company": "",
+          "notes": "",
+          "message": "hi",
+          "status": "new",
+          "score": 40,
+          "conversationId": "f68bb29f-1264-4138-b8a6-58b6f672eecd",
+          "createdAt": "2026-06-03T17:26:09.120Z"
+        }
+      ],
       "analytics": {
-        "totalMessages": 0,
+        "totalMessages": 5,
         "faqHits": {},
-        "lastActive": "2026-06-01T06:39:30.401Z"
+        "lastActive": "2026-06-03T16:50:20.377Z",
+        "humanEscalated": 2,
+        "leadsCaptured": 2,
+        "aiResolved": null
       },
       "verification": {
         "status": "verified",
         "method": "html",
         "token": "bd025feae92be239d1a33b651b93c0e9",
         "verifiedAt": "2026-06-01T16:42:05.056Z"
-      }
+      },
+      "notificationEmail": "abdurrahmanpalashbd@gmail.com",
+      "conversations": [
+        {
+          "id": "13cd4563-414a-4b08-9422-369d7ca0f105",
+          "visitor": {
+            "name": "Md Abdur Rahman",
+            "email": "abdurrahmanpalashbd@gmail.com",
+            "phone": "01786433078"
+          },
+          "messages": [
+            {
+              "id": "6426a3e3-1c5c-4f64-8469-b4edccb296dc",
+              "role": "user",
+              "content": "i love you",
+              "confidence": null,
+              "timestamp": "2026-06-03T17:01:28.329Z"
+            },
+            {
+              "id": "637d8746-0a02-4f51-b184-140ff6a699da",
+              "role": "ai",
+              "content": "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.",
+              "confidence": 0.61518955,
+              "timestamp": "2026-06-03T17:01:28.332Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": "505f8049-9cd9-44c3-8136-5fea0e5354b6",
+          "score": 40,
+          "createdAt": "2026-06-03T17:01:23.353Z",
+          "updatedAt": "2026-06-03T17:22:39.549Z"
+        },
+        {
+          "id": "f68bb29f-1264-4138-b8a6-58b6f672eecd",
+          "visitor": {
+            "name": "Md Abdur Rahman",
+            "email": "abdurrahmanpalashbd@gmail.com",
+            "phone": "01786433078"
+          },
+          "messages": [
+            {
+              "id": "0b1ac301-ec58-4931-8dd1-863bea25b1ce",
+              "role": "user",
+              "content": "What are your business hours?",
+              "confidence": null,
+              "timestamp": "2026-06-03T17:23:34.118Z"
+            },
+            {
+              "id": "2a427691-b783-496a-9ad6-fd9587fd915c",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": 0.5553839,
+              "timestamp": "2026-06-03T17:23:34.121Z"
+            },
+            {
+              "id": "fec01314-9dac-415d-8c6e-35d785bdc792",
+              "role": "user",
+              "content": "What are your business hours?",
+              "confidence": null,
+              "timestamp": "2026-06-03T17:25:26.413Z"
+            },
+            {
+              "id": "b55aaa9e-89df-4148-9285-701e793184bd",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": 0.5553839,
+              "timestamp": "2026-06-03T17:25:26.415Z"
+            }
+          ],
+          "status": "open",
+          "leadId": "2151633d-959a-4f3c-bbc1-8ee722436fcb",
+          "score": 40,
+          "createdAt": "2026-06-03T17:23:31.534Z",
+          "updatedAt": "2026-06-03T17:26:41.018Z"
+        },
+        {
+          "id": "ec5d488c-eff4-41d5-bbb9-2cfbd89963be",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "58deff7d-f01b-445c-866c-13add23e3f48",
+              "role": "user",
+              "content": "Book demo",
+              "confidence": null,
+              "timestamp": "2026-06-03T17:29:04.728Z"
+            },
+            {
+              "id": "3ce32767-d3a5-439d-a3aa-38971652fd72",
+              "role": "ai",
+              "content": "whats app 22356778",
+              "confidence": 1,
+              "timestamp": "2026-06-03T17:29:04.733Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-03T17:29:02.227Z",
+          "updatedAt": "2026-06-03T17:29:30.358Z"
+        }
+      ],
+      "unansweredQuestions": [
+        {
+          "id": "ca05707b-c6d5-4379-b815-9cc932d10524",
+          "question": "i love you",
+          "count": 1,
+          "lastAskedAt": "2026-06-03T17:01:28.324Z",
+          "answered": true
+        },
+        {
+          "id": "94b0b072-fc05-4abd-a864-117acd955305",
+          "question": "What are your business hours?",
+          "count": 2,
+          "lastAskedAt": "2026-06-03T17:25:26.409Z",
+          "answered": true
+        }
+      ],
+      "webhooks": []
     },
     {
       "id": "678a5997-624f-46de-ba9b-ed85910bd133",
@@ -276,10 +471,14 @@
       },
       "leads": [],
       "analytics": {
-        "totalMessages": 3,
+        "totalMessages": 4,
         "faqHits": {},
-        "lastActive": "2026-06-02T07:01:10.903Z"
-      }
+        "lastActive": "2026-06-03T16:49:29.213Z"
+      },
+      "notificationEmail": "",
+      "conversations": [],
+      "unansweredQuestions": [],
+      "webhooks": []
     },
     {
       "id": "c49370b9-9224-4528-9c02-146a3133460f",
@@ -309,7 +508,11 @@
         "totalMessages": 0,
         "faqHits": {},
         "lastActive": "2026-06-01T17:01:07.364Z"
-      }
+      },
+      "notificationEmail": "",
+      "conversations": [],
+      "unansweredQuestions": [],
+      "webhooks": []
     }
   ]
 }

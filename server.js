@@ -10,6 +10,70 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const storage = require('./lib/storage');
 const { doubleCsrf } = require('csrf-csrf');
+const nodemailer = require('nodemailer');
+
+// Email notification function
+async function sendLeadNotification(business, lead) {
+    if (!business.notificationEmail) {
+        console.log('No notification email set for business:', business.name);
+        return;
+    }
+
+    // Create a transporter using environment variables
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+
+    // Get conversation transcript if available
+    let transcript = '';
+    if (lead.conversationId) {
+        const conversation = business.conversations.find(c => c.id === lead.conversationId);
+        if (conversation && conversation.messages) {
+            transcript = conversation.messages.map(msg => {
+                return `${msg.role.toUpperCase()}: ${msg.content}`;
+            }).join('\n\n');
+        }
+    }
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || 'noreply@aics.app',
+        to: business.notificationEmail,
+        subject: `New Lead from ${business.name}`,
+        text: `
+Hello!
+
+You have a new lead from your website!
+
+Visitor Information:
+Name: ${lead.name}
+Email: ${lead.email}
+Phone: ${lead.phone}
+Message: ${lead.message}
+
+Lead Score: ${lead.score}
+Status: ${lead.status}
+Received: ${new Date(lead.createdAt).toLocaleString()}
+
+${transcript ? 'Conversation Transcript:\n' + transcript : ''}
+
+Best regards,
+AICS Team
+        `
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Notification email sent:', info.messageId);
+    } catch (error) {
+        console.error('Error sending notification email:', error);
+    }
+}
 
 const chatHandler = require('./api/chat');
 const uploadFaqsHandler = require('./api/upload-faqs');
@@ -224,10 +288,15 @@ app.all('/api/businesses/:id/verify', (req, res) => {
 app.post('/api/businesses/:id/leads', async (req, res) => {
     try {
         const businessId = req.params.id;
+        const business = storage.getBusiness(businessId);
         const newLead = storage.addLead(businessId, req.body);
         if (newLead) {
             // Emit real-time event for new lead
             io.emit('new lead', { businessId, lead: newLead });
+            // Send email notification
+            if (business) {
+                sendLeadNotification(business, newLead);
+            }
             res.status(201).json({ success: true, lead: newLead });
         } else {
             res.status(404).json({ success: false, error: 'Business not found' });
@@ -263,13 +332,13 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
     }
     try {
         const { id: businessId, leadId } = req.params;
-        const { status } = req.body;
+        const { status, ...updates } = req.body;
         // Verify ownership
         const business = storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const updatedLead = storage.updateLeadStatus(businessId, leadId, status);
+        const updatedLead = storage.updateLead(businessId, leadId, { status, ...updates });
         if (updatedLead) {
             // Emit real-time event for lead status update
             io.emit('lead status updated', { businessId, lead: updatedLead });
@@ -277,6 +346,249 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
         } else {
             res.status(404).json({ success: false, error: 'Lead not found' });
         }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Conversations API endpoints
+app.get('/api/businesses/:id/conversations', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const conversations = storage.getConversationsForBusiness(businessId);
+        res.status(200).json({ success: true, conversations });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/conversations/:conversationId', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const updates = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedConversation = storage.updateConversation(businessId, conversationId, updates);
+        if (updatedConversation) {
+            res.status(200).json({ success: true, conversation: updatedConversation });
+        } else {
+            res.status(404).json({ success: false, error: 'Conversation not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/businesses/:id/conversations/:conversationId/messages', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const { content } = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const message = storage.addMessageToConversation(businessId, conversationId, {
+            role: 'human',
+            content
+        });
+        if (message) {
+            io.emit('new message', { businessId, conversationId, message });
+            res.status(201).json({ success: true, message });
+        } else {
+            res.status(404).json({ success: false, error: 'Conversation not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Unanswered Questions API endpoints
+app.get('/api/businesses/:id/unanswered-questions', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const questions = storage.getUnansweredQuestions(businessId);
+        res.status(200).json({ success: true, questions });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/unanswered-questions/:questionId', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, questionId } = req.params;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const question = storage.markQuestionAnswered(businessId, questionId);
+        if (question) {
+            res.status(200).json({ success: true, question });
+        } else {
+            res.status(404).json({ success: false, error: 'Question not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Webhooks API endpoints
+app.get('/api/businesses/:id/webhooks', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const webhooks = storage.getWebhooks(businessId);
+        res.status(200).json({ success: true, webhooks });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/businesses/:id/webhooks', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const webhookData = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const webhook = storage.addWebhook(businessId, webhookData);
+        res.status(201).json({ success: true, webhook });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, webhookId } = req.params;
+        const updates = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const webhook = storage.updateWebhook(businessId, webhookId, updates);
+        if (webhook) {
+            res.status(200).json({ success: true, webhook });
+        } else {
+            res.status(404).json({ success: false, error: 'Webhook not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, webhookId } = req.params;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const deleted = storage.deleteWebhook(businessId, webhookId);
+        if (deleted) {
+            res.status(200).json({ success: true });
+        } else {
+            res.status(404).json({ success: false, error: 'Webhook not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Export leads/conversations to CSV
+app.get('/api/businesses/:id/export/:type', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, type } = req.params;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+
+        let csv = '';
+        let filename = '';
+
+        if (type === 'leads') {
+            filename = 'leads.csv';
+            csv = 'id,name,email,phone,company,notes,status,score,createdAt\n';
+            (business.leads || []).forEach(lead => {
+                csv += `${lead.id},"${lead.name}","${lead.email}","${lead.phone}","${lead.company}","${lead.notes}","${lead.status}",${lead.score},"${lead.createdAt}"\n`;
+            });
+        } else if (type === 'conversations') {
+            filename = 'conversations.csv';
+            csv = 'id,visitor_name,visitor_email,visitor_phone,status,score,createdAt,updatedAt\n';
+            (business.conversations || []).forEach(conv => {
+                csv += `${conv.id},"${conv.visitor?.name}","${conv.visitor?.email}","${conv.visitor?.phone}","${conv.status}",${conv.score},"${conv.createdAt}","${conv.updatedAt}"\n`;
+            });
+        } else {
+            return res.status(400).json({ success: false, error: 'Invalid export type' });
+        }
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.status(200).send(csv);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Update business settings
+app.put('/api/businesses/:id/settings', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId } = req.params;
+        const { notificationEmail } = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        business.notificationEmail = notificationEmail;
+        storage.save();
+        res.status(200).json({ success: true, business });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
@@ -353,4 +665,5 @@ app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

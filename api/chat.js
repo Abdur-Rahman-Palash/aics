@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { message, businessId } = req.body;
+        const { message, businessId, conversationId, visitor } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
@@ -71,17 +71,20 @@ module.exports = async (req, res) => {
             business = storage.getBusiness(businessId);
         }
 
-        // First, try to find a matching FAQ from storage (db.json) directly
-        const directMatch = findMatchingFAQFromStorage(message, business);
-        if (directMatch) {
-            // If we find a direct match, just use that answer!
-            return res.status(200).json({
-                success: true,
-                response: directMatch.answer,
-                context: [directMatch]
-            });
+        // Get or create conversation
+        let conversation = null;
+        if (businessId) {
+            if (conversationId) {
+                conversation = storage.getConversation(businessId, conversationId);
+            }
+            if (!conversation) {
+                conversation = storage.createConversation(businessId, visitor);
+            }
         }
 
+        // First, try to find a matching FAQ from storage (db.json) directly
+        const directMatch = findMatchingFAQFromStorage(message, business);
+        
         // Initialize services
         const qdrant = new QdrantManager();
         const gemini = new GeminiAI();
@@ -89,6 +92,7 @@ module.exports = async (req, res) => {
         // Build context - start with empty
         let contextParts = [];
         let similarItems = [];
+        let confidenceScore = 0;
 
         try {
             // Only try Qdrant and Gemini if config is available
@@ -113,6 +117,11 @@ module.exports = async (req, res) => {
                         contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
                     }
                 }
+
+                // Calculate confidence score based on top similarity
+                if (similarItems.length > 0) {
+                    confidenceScore = similarItems[0].score || 0;
+                }
             }
         } catch (error) {
             // Continue without them - we'll use fallback responses
@@ -125,15 +134,20 @@ module.exports = async (req, res) => {
 
         // Check similarity threshold - if no relevant context found, offer talk to human
         const SIMILARITY_THRESHOLD = 0.5;
-        const humanTransferMessage = "I'm sorry, I can only assist with topics related to our business. Please talk to a human agent for other questions.";
+        const CONFIDENCE_THRESHOLD = 0.6;
+        const humanTransferMessage = "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?";
         const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
-        let needsHumanHelp = !hasRelevantContext || similarItems.length === 0;
+        let needsHumanHelp = !hasRelevantContext || similarItems.length === 0 || confidenceScore < CONFIDENCE_THRESHOLD;
         
         // Generate AI response or use fallback
         let aiResponse;
         try {
             if (config.gemini.apiKey) {
-                if (needsHumanHelp) {
+                if (directMatch) {
+                    aiResponse = directMatch.answer;
+                    confidenceScore = 1.0;
+                    needsHumanHelp = false;
+                } else if (needsHumanHelp) {
                     aiResponse = humanTransferMessage;
                 } else {
                     aiResponse = await gemini.generateResponse(message, context);
@@ -145,7 +159,11 @@ module.exports = async (req, res) => {
                 }
             } else {
                 // Fallback if no Gemini API key
-                if (business && business.faqs.length > 0) {
+                if (directMatch) {
+                    aiResponse = directMatch.answer;
+                    confidenceScore = 1.0;
+                    needsHumanHelp = false;
+                } else if (business && business.faqs.length > 0) {
                     aiResponse = "I'm sorry, I couldn't find a direct answer to your question. Please check our FAQ section or contact support.";
                     needsHumanHelp = true;
                 } else {
@@ -166,16 +184,43 @@ module.exports = async (req, res) => {
                 hitFaqId = topFAQ.faqId;
             }
             if (businessId) {
-                storage.recordAnalytics(businessId, hitFaqId);
+                storage.recordAnalytics(businessId, hitFaqId, !needsHumanHelp, needsHumanHelp);
             }
         } catch (error) {
             // Error recording analytics
+        }
+
+        // Store unanswered question if needed
+        if (businessId && needsHumanHelp && !directMatch) {
+            storage.addUnansweredQuestion(businessId, message);
+        }
+
+        // Add messages to conversation
+        if (conversation && businessId) {
+            storage.addMessageToConversation(businessId, conversation.id, {
+                role: 'user',
+                content: message
+            });
+            storage.addMessageToConversation(businessId, conversation.id, {
+                role: 'ai',
+                content: aiResponse,
+                confidence: confidenceScore
+            });
+            
+            // Update conversation status
+            if (needsHumanHelp) {
+                storage.updateConversation(businessId, conversation.id, {
+                    status: 'pending'
+                });
+            }
         }
 
         return res.status(200).json({
             success: true,
             response: aiResponse,
             needsHumanHelp,
+            confidence: confidenceScore,
+            conversationId: conversation ? conversation.id : null,
             context: similarItems
         });
 

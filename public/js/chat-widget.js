@@ -27,6 +27,8 @@ class AICSChatWidget {
             avatar: '🤖'
         };
         this.showingLeadForm = false;
+        this.conversationId = null;
+        this.visitor = {};
         this.init();
     }
 
@@ -240,7 +242,9 @@ class AICSChatWidget {
                 headers,
                 body: JSON.stringify({ 
                     message,
-                    businessId: this.businessId
+                    businessId: this.businessId,
+                    conversationId: this.conversationId,
+                    visitor: this.visitor
                 }),
                 credentials: 'include'
             });
@@ -249,6 +253,10 @@ class AICSChatWidget {
             this.hideTypingIndicator();
             
             if (data.success) {
+                // Store conversation ID for future messages
+                if (data.conversationId) {
+                    this.conversationId = data.conversationId;
+                }
                 this.addMessage(data.response, 'ai');
                 // Check either the flag or look for keywords in the response
                 const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
@@ -372,6 +380,9 @@ class AICSChatWidget {
         const phone = document.getElementById('aics-lead-phone').value;
         const message = document.getElementById('aics-lead-message').value;
 
+        // Store visitor data for future messages
+        this.visitor = { name, email, phone };
+
         try {
             const csrfToken = await getCsrfToken();
             const headers = { 'Content-Type': 'application/json' };
@@ -381,7 +392,7 @@ class AICSChatWidget {
             const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ name, email, phone, message }),
+                body: JSON.stringify({ name, email, phone, message, conversationId: this.conversationId }),
                 credentials: 'include'
             });
 

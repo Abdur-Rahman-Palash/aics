@@ -35,7 +35,7 @@
         .business-details { border-top:1px solid #e0e0e0; padding-top:12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; }
         .detail-item h5 { color:#666; font-size:12px; text-transform:uppercase; margin-bottom:4px; }
         .detail-item p { color:#333; font-size:16px; font-weight:600; }
-        .tab-container { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #e0e0e0; padding-bottom:12px; }
+        .tab-container { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #e0e0e0; padding-bottom:12px; flex-wrap: wrap; }
         .tab-btn { padding:10px 20px; border:none; background:none; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-bottom:3px solid transparent; transition:all 0.2s; }
         .tab-btn.active { color:#667eea; border-bottom-color:#667eea; }
         .tab-content { display:none; }
@@ -51,13 +51,13 @@
         .faq-item-text { flex:1; }
         .faq-item-text h5 { color:#333; margin-bottom:4px; }
         .faq-item-text p { color:#666; font-size:13px; }
-        .knowledge-tab-container { display:flex; gap:4px; margin-bottom:20px; background:#f5f7fa; padding:4px; border-radius:8px; }
-        .knowledge-tab-btn { flex:1; padding:10px 16px; border:none; background:transparent; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-radius:6px; transition:all 0.2s; }
+        .knowledge-tab-container { display:flex; gap:4px; margin-bottom:20px; background:#f5f7fa; padding:4px; border-radius:8px; flex-wrap: wrap; }
+        .knowledge-tab-btn { flex:1; min-width: 120px; padding:10px 16px; border:none; background:transparent; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-radius:6px; transition:all 0.2s; }
         .knowledge-tab-btn.active { background:white; color:#667eea; box-shadow:0 2px 4px rgba(0,0,0,0.08); }
         .knowledge-content { display:none; }
         .knowledge-content.active { display:block; }
-        .source-item { border:1px solid #e0e0e0; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
-        .source-info { flex:1; }
+        .source-item { border:1px solid #e0e0e0; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap: wrap; }
+        .source-info { flex:1; min-width: 200px; }
         .source-status { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; }
         .source-status.pending { background:#fff3cd; color:#856404; }
         .source-status.training { background:#cce5ff; color:#004085; }
@@ -68,6 +68,27 @@
         .file-upload-area.dragover { border-color:#667eea; background:#f0f4ff; }
         .file-upload-icon { font-size:48px; margin-bottom:16px; display:block; }
         .file-upload-text { color:#666; font-size:14px; }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .header { flex-direction: column; gap:16px; align-items: flex-start; }
+            .header h1 { font-size: 24px; }
+            .business-header { flex-direction: column; align-items: flex-start; gap:12px; }
+            .business-actions { width: 100%; }
+            .stat-card h3 { font-size: 13px; }
+            .stat-value { font-size: 28px; }
+        }
+
+        @media (max-width: 480px) {
+            .header { padding: 20px; }
+            .header h1 { font-size: 20px; }
+            .stat-card { padding: 20px; }
+            .stat-value { font-size: 24px; }
+            .section { padding: 16px; }
+            .section h2 { font-size: 18px; }
+            .tab-btn { padding:8px 14px; font-size:13px; }
+        }
     </style>
 </head>
 <body>
@@ -84,17 +105,21 @@
         <div id="message" class="message"></div>
         
         <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Businesses</h3>
-                <div class="stat-value" id="stat-businesses">0</div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <h3>Leads Captured</h3>
+                <div class="stat-value" id="stat-leads">0</div>
             </div>
-            <div class="stat-card">
-                <h3>Total Messages</h3>
-                <div class="stat-value" id="stat-messages">0</div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
+                <h3>AI Resolved</h3>
+                <div class="stat-value" id="stat-ai-resolved">0%</div>
             </div>
-            <div class="stat-card">
-                <h3>Total FAQs</h3>
-                <div class="stat-value" id="stat-faqs">0</div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+                <h3>Open Conversations</h3>
+                <div class="stat-value" id="stat-open-convos">0</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+                <h3>Revenue Opportunities</h3>
+                <div class="stat-value" id="stat-revenue-ops">0</div>
             </div>
         </div>
         
@@ -202,12 +227,27 @@
         });
         
         function renderStats() {
-            const totalMessages = businesses.reduce((sum, b) => sum + (b.analytics?.totalMessages || 0), 0);
-            const totalFaqs = businesses.reduce((sum, b) => sum + (b.faqs?.length || 0), 0);
-            
-            document.getElementById('stat-businesses').textContent = businesses.length;
-            document.getElementById('stat-messages').textContent = totalMessages;
-            document.getElementById('stat-faqs').textContent = totalFaqs;
+            let totalLeads = 0;
+            let totalMessages = 0;
+            let aiResolved = 0;
+            let openConversations = 0;
+            let revenueOpportunities = 0;
+
+            businesses.forEach(business => {
+                totalLeads += (business.analytics?.leadsCaptured || 0);
+                totalMessages += (business.analytics?.totalMessages || 0);
+                aiResolved += (business.analytics?.aiResolved || 0);
+                openConversations += (business.conversations?.filter(c => c.status === 'open' || c.status === 'pending').length || 0);
+                // Revenue opportunities = hot/warm leads (score >=30)
+                revenueOpportunities += (business.leads?.filter(l => l.score >= 30).length || 0);
+            });
+
+            const aiResolvedPercent = totalMessages > 0 ? Math.round((aiResolved / totalMessages) * 100) : 0;
+
+            document.getElementById('stat-leads').textContent = totalLeads;
+            document.getElementById('stat-ai-resolved').textContent = aiResolvedPercent + '%';
+            document.getElementById('stat-open-convos').textContent = openConversations;
+            document.getElementById('stat-revenue-ops').textContent = revenueOpportunities;
         }
         
         function renderBusinessList() {
@@ -323,10 +363,14 @@
             
             html += '<div class="tab-container">';
             html += '<button class="tab-btn active" onclick="switchTab(\'' + business.id + '\', \'knowledge\')">📚 Knowledge Sources</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'inbox\')">💬 Human Inbox</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'leads\')">👥 Leads</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'unanswered\')">❓ Unanswered Questions</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'webhooks\')">🔌 Webhooks</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'settings\')">⚙️ Settings</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
-            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
             html += '</div>';
             
             html += '<div class="tab-content active" id="tab-' + business.id + '-knowledge">';
@@ -422,7 +466,222 @@
             html += '</div>';
             
             html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-inbox">';
+            html += '<h3>Human Inbox</h3>';
+            html += '<div id="inbox-' + business.id + '">';
+            const conversations = (business.conversations || []).sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+            if (conversations.length > 0) {
+                conversations.forEach(conv => {
+                    const statusColors = { open: '#3b82f6', pending: '#f59e0b', closed: '#10b981' };
+                    const statusText = { open: 'Open', pending: 'Pending Follow-up', closed: 'Closed' };
+                    
+                    let convScoreLabel = '';
+                    let convScoreColor = '';
+                    if (conv.score !== undefined) {
+                        convScoreColor = '#6b7280';
+                        if (conv.score >=70) convScoreColor = '#10b981';
+                        else if (conv.score >=30) convScoreColor = '#f59e0b';
+                        else convScoreColor = '#6b7280';
+                    }
+                    
+                    html += '<div class="conversation-item" style="border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">';
+                    html += '<div>';
+                    html += '<h4 style="margin:0 0 6px 0;color:#111;font-size:18px;">' + (conv.visitor?.name || 'Anonymous') + '</h4>';
+                    html += '<p style="margin:0;color:#666;font-size:14px;">' + (conv.visitor?.email || '') + (conv.visitor?.phone ? ' • ' + conv.visitor?.phone : '') + '</p>';
+                    html += '</div>';
+                    html += '<div style="display:flex;gap:10px;align-items:center;">';
+                    html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + statusColors[conv.status] + '20;color:' + statusColors[conv.status] + ';">' + statusText[conv.status] + '</span>';
+                    if (conv.score !== undefined) {
+                        html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + convScoreColor + '20;color:' + convScoreColor + ';">Score: ' + conv.score + '</span>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div style="background:#f8f9fa;padding:16px;border-radius:10px;margin-bottom:16px;">';
+                    if (conv.messages && conv.messages.length >0) {
+                        conv.messages.slice(-3).forEach(msg => {
+                            const roleColor = msg.role === 'user' ? '#3b82f6' : msg.role === 'human' ? '#10b981' : '#667eea';
+                            html += '<div style="margin-bottom:10px;"><strong style="color:' + roleColor + ';font-weight:700;">' + msg.role + ':</strong> ' + msg.content + '</div>';
+                        });
+                    }
+                    html += '</div>';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
+                    html += '<select onchange="updateConversationStatus(\'' + business.id + '\', \'' + conv.id + '\', this.value)" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-weight:600;">';
+                    html += '<option value="open"' + (conv.status === 'open' ? ' selected' : '') + '>Open</option>';
+                    html += '<option value="pending"' + (conv.status === 'pending' ? ' selected' : '') + '>Pending Follow-up</option>';
+                    html += '<option value="closed"' + (conv.status === 'closed' ? ' selected' : '') + '>Closed</option>';
+                    html += '</select>';
+                    html += '<p style="margin:0;color:#888;font-size:13px;">' + new Date(conv.updatedAt || conv.createdAt).toLocaleString() + '</p>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">No conversations yet. Start chatting to create some!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-unanswered">';
+            html += '<h3>Top Unanswered Questions</h3>';
+            html += '<div id="unanswered-' + business.id + '">';
+            const unansweredList = (business.unansweredQuestions || []).filter(q => !q.answered).sort((a, b) => b.count - a.count);
+            if (unansweredList.length > 0) {
+                unansweredList.forEach(q => {
+                    html += '<div class="unanswered-item" style="border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">';
+                    html += '<h4 style="margin:0;color:#111;font-size:16px;line-height:1.4;">' + q.question + '</h4>';
+                    html += '<span style="padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;background:#f59e0b20;color:#f59e0b;">Asked ' + q.count + 'x</span>';
+                    html += '</div>';
+                    html += '<p style="margin:0;color:#888;font-size:13px;">Last asked: ' + new Date(q.lastAskedAt).toLocaleString() + '</p>';
+                    html += '<div style="margin-top:16px;display:flex;gap:8px;">';
+                    html += '<button class="btn btn-primary btn-small" onclick="addFAQFromQuestion(\'' + business.id + '\', \'' + q.question.replace(/'/g, "\\'") + '\', \'' + q.id + '\')">➕ Add as FAQ</button>';
+                    html += '<button class="btn btn-secondary btn-small" onclick="markQuestionAnswered(\'' + business.id + '\', \'' + q.id + '\')">✓ Mark Answered</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">Great! No unanswered questions. Keep going!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-analytics">';
+            html += '<h3>Analytics</h3>';
+            html += '<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); margin-top:16px;">';
+            html += '<div class="stat-card">';
+            html += '<h3>Total Messages</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.totalMessages || 0) + '</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<h3>Resolved by AI</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.aiResolved || 0) + '</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<h3>Escalated to Human</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.humanEscalated || 0) + '</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<h3>Leads Captured</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.leadsCaptured || 0) + '</div>';
+            html += '</div>';
+            html += '<div class="stat-card">';
+            html += '<h3>Total Conversations</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + (business.conversations?.length || 0) + '</div>';
+            html += '</div>';
+            const totalHits = Object.values(business.analytics?.faqHits || {}).reduce((a, b) => a + b, 0);
+            html += '<div class="stat-card">';
+            html += '<h3>Top FAQ Hits</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + totalHits + '</div>';
+            html += '</div>';
+            if (business.analytics?.totalMessages > 0) {
+                const resolutionRate = Math.round(((business.analytics.aiResolved || 0) / business.analytics.totalMessages) * 100);
+                html += '<div class="stat-card">';
+                html += '<h3>Resolution Rate</h3>';
+                html += '<div class="stat-value" style="font-size:28px;">' + resolutionRate + '%</div>';
+                html += '</div>';
+                const hoursSaved = Math.round((business.analytics.aiResolved || 0) * 0.1);
+                html += '<div class="stat-card">';
+                html += '<h3>Est. Hours Saved</h3>';
+                html += '<div class="stat-value" style="font-size:28px;">' + hoursSaved + 'h</div>';
+                html += '</div>';
+            }
+            html += '</div>';
             
+            // Top Questions / Knowledge Gaps
+            html += '<div style="margin-top:32px; display:grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap:24px;">';
+            
+            // Top Unanswered Questions (Knowledge Gaps)
+            html += '<div class="section" style="margin-bottom:0;">';
+            html += '<h3>📌 Top Knowledge Gaps</h3>';
+            const topKnowledgeGaps = (business.unansweredQuestions || []).filter(q => !q.answered).slice(0, 5);
+            if (topKnowledgeGaps.length > 0) {
+                topKnowledgeGaps.forEach(q => {
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e0e0e0;">';
+                    html += '<div><p style="margin:0;color:#333;">' + q.question + '</p><p style="margin:4px 0 0;color:#888;font-size:13px;">Asked ' + q.count + 'x • Last: ' + new Date(q.lastAskedAt).toLocaleDateString() + '</p></div>';
+                    html += '<button class="btn btn-small btn-secondary" onclick="addFAQFromQuestion(\'' + business.id + '\', \'' + q.question.replace(/'/g, "\\'") + '\', \'' + q.id + '\')">Add FAQ</button>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:24px;">Great! No knowledge gaps yet!</p>';
+            }
+            html += '</div>';
+            
+            // Most Active Day
+            html += '<div class="section" style="margin-bottom:0;">';
+            html += '<h3>📅 Most Active Day</h3>';
+            // Calculate most active day from dailyUsage
+            let mostActiveDay = 'No data yet';
+            let mostActiveMessages = 0;
+            if (business.analytics?.dailyUsage && business.analytics.dailyUsage.length > 0) {
+                business.analytics.dailyUsage.forEach(d => {
+                    if (d.messages > mostActiveMessages) {
+                        mostActiveMessages = d.messages;
+                        mostActiveDay = new Date(d.date + 'T00:00:00').toLocaleDateString();
+                    }
+                });
+            }
+            html += '<div style="padding:24px;background:#f8f9fa;border-radius:8px;text-align:center;">';
+            html += '<p style="margin:0;color:#111;font-size:32px;font-weight:700;">' + mostActiveDay + '</p>';
+            html += '<p style="margin:8px 0 0;color:#666;">' + (mostActiveMessages > 0 ? mostActiveMessages + ' messages' : '') + '</p>';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            html += '<div style="margin-top:24px;display:flex;gap:12px;">';
+            html += '<button class="btn btn-primary" onclick="exportData(\'' + business.id + '\', \'leads\')">📥 Export Leads (CSV)</button>';
+            html += '<button class="btn btn-secondary" onclick="exportData(\'' + business.id + '\', \'conversations\')">📥 Export Conversations (CSV)</button>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-webhooks">';
+            html += '<h3>Webhooks</h3>';
+            html += '<form id="webhook-form-' + business.id + '" onsubmit="addWebhook(event, \'' + business.id + '\')" style="margin-bottom:24px;">';
+            html += '<div class="form-group">';
+            html += '<label>Webhook URL</label>';
+            html += '<input type="url" id="webhook-url-' + business.id + '" placeholder="https://example.com/webhook" required>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Events (comma separated)</label>';
+            html += '<input type="text" id="webhook-events-' + business.id + '" placeholder="new_lead, new_conversation, escalation">';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Add Webhook</button>';
+            html += '</form>';
+            html += '<div id="webhooks-list-' + business.id + '">';
+            const webhooks = business.webhooks || [];
+            if (webhooks.length > 0) {
+                webhooks.forEach(wh => {
+                    html += '<div style="border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+                    html += '<div>';
+                    html += '<h4 style="margin:0;color:#333;">' + wh.url + '</h4>';
+                    html += '<p style="margin:0;color:#666;font-size:13px;">Events: ' + (wh.events?.join(', ') || 'All') + '</p>';
+                    html += '</div>';
+                    html += '<div style="display:flex;gap:8px;">';
+                    html += '<button class="btn btn-small" style="background:' + (wh.enabled ? '#10b981' : '#666') + ';color:white;" onclick="toggleWebhook(\'' + business.id + '\', \'' + wh.id + '\', ' + !wh.enabled + ')">' + (wh.enabled ? 'Enabled' : 'Disabled') + '</button>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deleteWebhook(\'' + business.id + '\', \'' + wh.id + '\')">Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:24px;">No webhooks configured.</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-settings">';
+            html += '<h3>Business Settings</h3>';
+            html += '<form id="settings-form-' + business.id + '" onsubmit="updateBusinessSettings(event, \'' + business.id + '\')" style="margin-bottom:24px;">';
+            html += '<div class="form-group">';
+            html += '<label>Notification Email (where we send lead alerts)</label>';
+            html += '<input type="email" id="notification-email-' + business.id + '" placeholder="you@example.com" value="' + (business.notificationEmail || '') + '" />';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Save Settings</button>';
+            html += '</form>';
+            html += '</div>';
+
             html += '<div class="tab-content" id="tab-' + business.id + '-widget">';
             html += '<h3>Customize Widget</h3>';
             html += '<form id="widget-form-' + business.id + '" onsubmit="updateWidgetSettings(event, \'' + business.id + '\')">';
@@ -474,53 +733,6 @@
             html += '</div>';
             html += '</div>';
             
-            html += '</div>';
-            
-            html += '<div class="tab-content" id="tab-' + business.id + '-analytics">';
-            html += '<h3>Analytics</h3>';
-            html += '<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); margin-top:16px;">';
-            html += '<div class="stat-card">';
-            html += '<h3>Total Messages</h3>';
-            html += '<div class="stat-value" style="font-size:28px;">' + (business.analytics?.totalMessages || 0) + '</div>';
-            html += '</div>';
-            html += '<div class="stat-card">';
-            html += '<h3>Top FAQ Hits</h3>';
-            const totalHits = Object.values(business.analytics?.faqHits || {}).reduce((a, b) => a + b, 0);
-            html += '<div class="stat-value" style="font-size:28px;">' + totalHits + '</div>';
-            html += '</div>';
-            html += '</div>';
-            html += '</div>';
-            
-            html += '<div class="tab-content" id="tab-' + business.id + '-leads">';
-            html += '<h3>Leads</h3>';
-            html += '<div id="leads-list-' + business.id + '" style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">';
-            const leads = business.leads || [];
-            if (leads.length > 0) {
-                leads.forEach(lead => {
-                    const statusColor = { new: '#3b82f6', contacted: '#f59e0b', closed: '#10b981' };
-                    const statusText = { new: 'New', contacted: 'Contacted', closed: 'Closed' };
-                    html += '<div class="lead-item" style="border:1px solid #e0e0e0; border-radius:8px; padding:16px;">';
-                    html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">';
-                    html += '<div>';
-                    html += '<h4 style="margin:0 0 4px 0; color:#333;">' + (lead.name || 'Anonymous') + '</h4>';
-                    html += '<p style="margin:0; color:#666; font-size:13px;">' + lead.email + (lead.phone ? ' • ' + lead.phone : '') + '</p>';
-                    html += '</div>';
-                    html += '<select id="lead-status-' + lead.id + '" onchange="updateLeadStatus(\'' + business.id + '\', \'' + lead.id + '\', this.value)" style="padding:4px 10px; border-radius:12px; border:1px solid #e0e0e0; font-size:12px; cursor:pointer; background:' + statusColor[lead.status] + '20; color:' + statusColor[lead.status] + '">';
-                    html += '<option value="new"' + (lead.status === 'new' ? ' selected' : '') + '>New</option>';
-                    html += '<option value="contacted"' + (lead.status === 'contacted' ? ' selected' : '') + '>Contacted</option>';
-                    html += '<option value="closed"' + (lead.status === 'closed' ? ' selected' : '') + '>Closed</option>';
-                    html += '</select>';
-                    html += '</div>';
-                    if (lead.message) {
-                        html += '<p style="margin:0; color:#333; font-size:14px; background:#f8f9fa; padding:10px; border-radius:6px;">' + lead.message + '</p>';
-                    }
-                    html += '<p style="margin:8px 0 0 0; color:#888; font-size:12px;">' + new Date(lead.createdAt).toLocaleString() + '</p>';
-                    html += '</div>';
-                });
-            } else {
-                html += '<p style="color:#666; text-align:center; padding:24px;">No leads yet. Start chatting to collect leads!</p>';
-            }
-            html += '</div>';
             html += '</div>';
             
             return html;
@@ -708,6 +920,134 @@
             }
         } catch (error) {
             showMessage('Failed to verify domain', 'error');
+        }
+    }
+
+    async function updateConversationStatus(businessId, conversationId, status) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/conversations/' + conversationId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Conversation status updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating conversation', 'error');
+        }
+    }
+
+    async function markQuestionAnswered(businessId, questionId) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/unanswered-questions/' + questionId, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Question marked as answered!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error marking question', 'error');
+        }
+    }
+
+    function addFAQFromQuestion(businessId, question, questionId) {
+        showMessage('Opening admin to add FAQ...', 'success');
+        window.open('/admin.html?business=' + businessId + '&question=' + encodeURIComponent(question), '_blank');
+    }
+
+    async function addWebhook(event, businessId) {
+        event.preventDefault();
+        try {
+            const url = document.getElementById('webhook-url-' + businessId).value.trim();
+            const eventsStr = document.getElementById('webhook-events-' + businessId).value.trim();
+            const events = eventsStr ? eventsStr.split(',').map(e => e.trim()) : [];
+            
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/webhooks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, events })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Webhook added!', 'success');
+                document.getElementById('webhook-form-' + businessId).reset();
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding webhook', 'error');
+        }
+    }
+
+    async function toggleWebhook(businessId, webhookId, enabled) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/webhooks/' + webhookId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Webhook updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating webhook', 'error');
+        }
+    }
+
+    async function deleteWebhook(businessId, webhookId) {
+        if (!confirm('Are you sure you want to delete this webhook?')) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/webhooks/' + webhookId, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Webhook deleted!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting webhook', 'error');
+        }
+    }
+
+    function exportData(businessId, type) {
+        window.open('/api/businesses/' + businessId + '/export/' + type, '_blank');
+    }
+
+    async function updateBusinessSettings(event, businessId) {
+        event.preventDefault();
+        try {
+            const notificationEmail = document.getElementById('notification-email-' + businessId).value;
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notificationEmail })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Settings saved successfully!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error saving settings: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error saving settings', 'error');
         }
     }
 

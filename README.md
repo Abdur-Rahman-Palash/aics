@@ -1,8 +1,8 @@
-# 🚀 AICS - AI Customer Support SaaS
+# 🚀 AICS - AI Customer Support & Lead Capture SaaS
 
 **Sell more, support less.**
 
-A complete, white-label AI customer support chatbot platform that lets you embed a smart bot on any website in minutes. Built for small businesses, agencies, and developers – and **100% ready to deploy on Render.com**!
+A complete, white-label AI customer support and lead capture platform that lets you embed a smart bot on any website in minutes. Built for small businesses, agencies, and developers – and **100% ready to deploy on Render.com**!
 
 ---
 
@@ -11,15 +11,18 @@ A complete, white-label AI customer support chatbot platform that lets you embed
 Imagine having a 24/7 employee that:
 - ✅ Answers customer questions instantly
 - ✅ Captures leads even when you're asleep
+- ✅ Captures leads with automated scoring
 - ✅ Learns from your website, PDFs, and FAQs
+- ✅ Identifies knowledge gaps for you to fix
 - ✅ Looks like *your* brand
+- ✅ Notifies you immediately of new leads via email
 - ✅ Costs way less than hiring another support person
 
 That's exactly what AICS gives you – no coding required!
 
 ---
 
-## �️ Tech Stack (For Developers)
+## 🛠️ Tech Stack (For Developers)
 
 AICS is built with modern, reliable tools that make deployment and customization a breeze:
 
@@ -42,6 +45,7 @@ AICS is built with modern, reliable tools that make deployment and customization
         <li>Trained on your unique knowledge</li>
         <li>Human-like responses</li>
         <li>Understands context</li>
+        <li>Confidence-based responses</li>
       </ul>
     </td>
     <td valign="top">
@@ -50,14 +54,47 @@ AICS is built with modern, reliable tools that make deployment and customization
         <li>Scrape your website</li>
         <li>Upload PDFs</li>
         <li>Add FAQs manually</li>
+        <li>Add FAQs from unanswered questions</li>
       </ul>
     </td>
     <td valign="top">
-      <h3>👥 Lead Capture</h3>
+      <h3>👥 Advanced Lead Capture</h3>
       <ul>
         <li>Shows form when bot can't help</li>
         <li>Collects name, email, phone</li>
-        <li>Real-time alerts (coming soon)</li>
+        <li>Automated lead scoring (Hot/Warm/Cold)</li>
+        <li>Real-time alerts via email</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>💬 Human Inbox</h3>
+      <ul>
+        <li>View all conversations</li>
+        <li>Filter conversations by status</li>
+        <li>Continue conversations from dashboard</li>
+        <li>Update conversation statuses</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>📊 Analytics Dashboard</h3>
+      <ul>
+        <li>Total conversations</li>
+        <li>Resolved by AI</li>
+        <li>Escalated to human</li>
+        <li>Leads captured</li>
+        <li>Resolution rate</li>
+        <li>Knowledge gaps</li>
+        <li>Top unanswered questions</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h3>🔌 Webhooks</h3>
+      <ul>
+        <li>Send events to Zapier, Make, n8n</li>
+        <li>Trigger on new lead, new conversation, escalation</li>
+        <li>Custom webhook URLs</li>
       </ul>
     </td>
   </tr>
@@ -118,6 +155,12 @@ SESSION_SECRET=change-this-to-a-long-random-secret-key
 GEMINI_API_KEY=your-google-gemini-api-key-here
 QDRANT_URL=https://your-qdrant-cluster-url (optional but recommended)
 QDRANT_API_KEY=your-qdrant-api-key (optional)
+SMTP_HOST=your-smtp-host (optional, for email notifications)
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-username
+SMTP_PASS=your-smtp-password
+SMTP_FROM=noreply@yourdomain.com
 ```
 
 ### Step 5: Deploy!
@@ -143,12 +186,17 @@ Want to run it on your computer first? Here's how:
 ### For Business Owners
 1. **Sign Up / Login**: Go to your AICS instance and make an account
 2. **Create Your Business**: Add your business name and domain
-3. **Train the Bot**:
+3. **Set Up Notifications**: Enter your email address in business settings to get lead alerts
+4. **Train the Bot**:
    - Enter your website URL (we'll scrape it)
    - Upload PDF documents
    - Add FAQs manually
-4. **Customize**: Change colors, avatar, and widget title
-5. **Embed It**: Copy the embed code and paste it on your website before `</body>`
+5. **Monitor Dashboard**:
+   - Check your Human Inbox for conversations
+   - View your Analytics
+   - Fix knowledge gaps from unanswered questions
+6. **Customize**: Change colors, avatar, and widget title
+7. **Embed It**: Copy the embed code and paste it on your website before `</body>`
 
 ### For Developers
 Embed the widget in seconds:
@@ -167,14 +215,23 @@ Or customize it:
 
 ---
 
-## 📈 Roadmap (Upcoming Features That Add Value!)
+## 📈 Roadmap (Done & Upcoming)
 
-- [ ] Email/SMS notifications for new leads
+✅ **Done**:
+- ✅ Human Inbox
+- ✅ Lead Scoring (Hot/Warm/Cold)
+- ✅ Email notifications for new leads
+- ✅ Webhooks for Zapier, Make, n8n
+- ✅ Advanced analytics dashboard
+- ✅ Unanswered questions detection & knowledge gap identification
+- ✅ CSV export of leads and conversations
+- ✅ Full dashboard responsiveness
+
+🔜 **Upcoming**:
+- [ ] SMS notifications
 - [ ] Multi-language support (English + more)
 - [ ] Advanced analytics dashboard
-- [ ] Direct human handoff
 - [ ] SSO integration
-- [ ] Webhooks for zapier/automations
 - [ ] More database options out of the box
 
 ---
