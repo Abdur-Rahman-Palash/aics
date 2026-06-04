@@ -90,14 +90,17 @@ module.exports = async (req, res) => {
                         request.on('error', (err) => {
                             console.log('[VERIFY] HTML verification error:', err.message);
                             resolve(false);
-                        });resolve(false);
                         });
+                        
                         request.setTimeout(5000, () => {
                             request.destroy();
                             resolve(false);
                         });
                     });
                 } catch (httpError) {
+                    console.log('[VERIFY] HTTP error:', httpError);
+                }
+            } else {
                 return res.status(400).json({ success: false, error: 'Invalid verification method' });
             }
 

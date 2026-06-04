@@ -589,6 +589,11 @@ app.delete('/api/businesses/:id', (req, res) => {
         hasSession: !!req.session,
         userId: req.session?.userId
     });
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
         const business = storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             console.log('[DELETE] Business not found:', businessId);
@@ -602,12 +607,16 @@ app.delete('/api/businesses/:id', (req, res) => {
         } else {
             console.log('[DELETE] Failed to delete business:', businessId);
             res.status(400).json({ success: false, error: 'Failed to delete business' });
-        }return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const deleted = storage.deleteBusiness(businessId, req.session.userId);
-        if (deleted) {
-            res.status(200).json({ success: true, message: 'Business deleted successfully' });
-        } else {
+    } catch (error) {
+        console.error('[DELETE] Error deleting business:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Export CSV endpoint
+app.get('/api/businesses/:id/export/:type', (req, res) => {
+    if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
@@ -785,6 +794,10 @@ app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
