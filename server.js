@@ -89,15 +89,8 @@ const GeminiAI = require('./lib/gemini');
 const app = express();
 // Trust proxy (for Render HTTPS)
 app.set('trust proxy', 1);
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*", // Allow all origins for Socket.IO (or restrict to your domain)
-        methods: ["GET", "POST"],
-        credentials: true
-    }
-});
 const PORT = process.env.PORT || 3000;
+let server, io;
 
 // Check for default session secret in production
 const isProduction = process.env.NODE_ENV === 'production';
@@ -338,12 +331,14 @@ app.post('/api/businesses/:id/leads', async (req, res) => {
         const business = storage.getBusiness(businessId);
         const newLead = storage.addLead(businessId, req.body);
         if (newLead) {
-            // Emit real-time event for new lead
-            io.emit('new lead', { businessId, lead: newLead });
-            // Send email notification
-            if (business) {
-                sendLeadNotification(business, newLead);
-            }
+                // Emit real-time event for new lead
+                if (io) {
+                    io.emit('new lead', { businessId, lead: newLead });
+                }
+                // Send email notification
+                if (business) {
+                    sendLeadNotification(business, newLead);
+                }
             res.status(201).json({ success: true, lead: newLead });
         } else {
             res.status(404).json({ success: false, error: 'Business not found' });
@@ -387,9 +382,11 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
         }
         const updatedLead = storage.updateLead(businessId, leadId, { status, ...updates });
         if (updatedLead) {
-            // Emit real-time event for lead status update
-            io.emit('lead status updated', { businessId, lead: updatedLead });
-            res.status(200).json({ success: true, lead: updatedLead });
+                // Emit real-time event for lead status update
+                if (io) {
+                    io.emit('lead status updated', { businessId, lead: updatedLead });
+                }
+                res.status(200).json({ success: true, lead: updatedLead });
         } else {
             res.status(404).json({ success: false, error: 'Lead not found' });
         }
@@ -719,39 +716,7 @@ app.put('/api/businesses/:id/google-sheets', (req, res) => {
     }
 });
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-    socket.on('send message', async (userMessage) => {
-        try {
-            // Initialize services
-            const qdrant = new QdrantManager();
-            const gemini = new GeminiAI();
 
-            // Generate embedding for user message
-            const queryEmbedding = await gemini.generateEmbedding(userMessage);
-
-            // Search Qdrant for similar FAQs
-            const similarFAQs = await qdrant.searchSimilar(queryEmbedding);
-
-            // Build context from similar FAQs
-            let context = 'No FAQ context available.';
-            if (similarFAQs.length > 0) {
-                context = similarFAQs.map(faq => 
-                    `Q: ${faq.question}\nA: ${faq.answer}`
-                ).join('\n\n');
-            }
-
-            // Generate AI response
-            const aiResponse = await gemini.generateResponse(userMessage, context);
-
-            // Emit AI response back to client
-            socket.emit('ai response', aiResponse);
-
-        } catch (error) {
-            socket.emit('ai response', 'Sorry, something went wrong. Please try again.');
-        }
-    });
-});
 
 // Serve static files
 app.get('/', (req, res) => {
@@ -795,6 +760,51 @@ app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 if (require.main === module) {
+  server = http.createServer(app);
+  io = new Server(server, {
+    cors: {
+      origin: "*", // Allow all origins for Socket.IO (or restrict to your domain)
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
+
+  // Socket.IO connection handling
+  io.on('connection', (socket) => {
+    socket.on('send message', async (userMessage) => {
+      try {
+        // Initialize services
+        const QdrantManager = require('./lib/qdrant');
+        const GeminiAI = require('./lib/gemini');
+        const qdrant = new QdrantManager();
+        const gemini = new GeminiAI();
+
+        // Generate embedding for user message
+        const queryEmbedding = await gemini.generateEmbedding(userMessage);
+
+        // Search Qdrant for similar FAQs
+        const similarFAQs = await qdrant.searchSimilar(queryEmbedding);
+
+        // Build context from similar FAQs
+        let context = 'No FAQ context available.';
+        if (similarFAQs.length > 0) {
+          context = similarFAQs.map(faq => 
+            `Q: ${faq.question}\nA: ${faq.answer}`
+          ).join('\n\n');
+        }
+
+        // Generate AI response
+        const aiResponse = await gemini.generateResponse(userMessage, context);
+
+        // Emit AI response back to client
+        socket.emit('ai response', aiResponse);
+
+      } catch (error) {
+        socket.emit('ai response', 'Sorry, something went wrong. Please try again.');
+      }
+    });
+  });
+
   server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
