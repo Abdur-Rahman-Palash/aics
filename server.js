@@ -198,7 +198,6 @@ app.use('/api', (req, res, next) => {
     if (!isStateChanging || isExcluded) {
         next();
     } else {
-        
         try {
             const csrfCheckResult = doubleCsrfProtection(req, res, (err) => {
                 if (err) {
@@ -215,12 +214,10 @@ app.use('/api', (req, res, next) => {
                         });
                     }
                 } else {
-                    console.log('[CSRF] CSRF validation passed for', req.method, req.path);
                     next();
                 }
             });
-            
-            // Handle case where doubleCsrfProtection doesn't call callbackor) {
+        } catch (error) {
             console.error('[CSRF] Exception in CSRF middleware:', {
                 message: error.message,
                 stack: error.stack
