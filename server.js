@@ -130,16 +130,31 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// CORS Middleware - allow cross-origin requests from embedded widgets
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    // Allow requests from any origin for API endpoints (needed for embedded widget)
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 // Security Headers
 app.use((req, res, next) => {
     // Prevent MIME sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
     // Prevent clickjacking
-    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow framing on same origin
     // XSS protection
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    // CSP - Content Security Policy
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cdn.socket.io ws://localhost:3000 wss://localhost:3000; font-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
+    // CSP - Content Security Policy - Allow cross-origin connections for embedded widget
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss: ws:; font-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'");
     // Referrer Policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Permissions Policy
@@ -166,7 +181,7 @@ app.get('/api/csrf-token', (req, res) => {
         const csrfToken = generateCsrfToken(req, res);
         res.json({ success: true, csrfToken });
     } catch (error) {
-        console.error('Error generating CSRF token:', error);
+        console.error('[CSRF] Error generating CSRF token:', error.message);
         // If CSRF token generation fails, still return success with null token
         res.json({ success: true, csrfToken: null });
     }
@@ -174,14 +189,49 @@ app.get('/api/csrf-token', (req, res) => {
 
 // Apply CSRF protection to all state-changing routes except /api/chat and public lead endpoints
 app.use('/api', (req, res, next) => {
-    if (
-        ['GET', 'HEAD', 'OPTIONS'].includes(req.method) || 
-        req.path === '/chat' || 
-        req.path.match(/^\/businesses\/[^/]+\/leads$/)
-    ) {
+    const isStateChanging = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+    // Exclude chat, leads, and verify endpoints for now
+    const isExcluded = req.path === '/chat' || 
+                      req.path.match(/^\/businesses\/[^/]+\/leads$/) ||
+                      req.path.match(/^\/businesses\/[^/]+\/verify$/);
+    
+    if (!isStateChanging || isExcluded) {
         next();
     } else {
-        doubleCsrfProtection(req, res, next);
+        
+        try {
+            const csrfCheckResult = doubleCsrfProtection(req, res, (err) => {
+                if (err) {
+                    console.error('[CSRF] CSRF validation failed:', {
+                        error: err.message || err,
+                        status: err.statusCode || 400,
+                        code: err.code,
+                        stack: err.stack
+                    });
+                    if (!res.headersSent) {
+                        return res.status(err.statusCode || 400).json({ 
+                            success: false, 
+                            error: 'CSRF validation failed: ' + (err.message || err.code || 'unknown error')
+                        });
+                    }
+                } else {
+                    console.log('[CSRF] CSRF validation passed for', req.method, req.path);
+                    next();
+                }
+            });
+            
+            // Handle case where doubleCsrfProtection doesn't call callbackor) {
+            console.error('[CSRF] Exception in CSRF middleware:', {
+                message: error.message,
+                stack: error.stack
+            });
+            if (!res.headersSent) {
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'CSRF error: ' + error.message 
+                });
+            }
+        }
     }
 });
 
@@ -535,9 +585,32 @@ app.delete('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
     }
 });
 
-// Export leads/conversations to CSV
-app.get('/api/businesses/:id/export/:type', (req, res) => {
-    if (!req.session || !req.session.userId) {
+// Delete a business
+app.delete('/api/businesses/:id', (req, res) => {
+    console.log('[DELETE] Business delete request:', {
+        businessId: req.params.id,
+        hasSession: !!req.session,
+        userId: req.session?.userId
+    });
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            console.log('[DELETE] Business not found:', businessId);
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        console.log('[DELETE] Deleting business:', businessId);
+        const deleted = storage.deleteBusiness(businessId, req.session.userId);
+        if (deleted) {
+            console.log('[DELETE] Business deleted successfully:', businessId);
+            res.status(200).json({ success: true, message: 'Business deleted successfully' });
+        } else {
+            console.log('[DELETE] Failed to delete business:', businessId);
+            res.status(400).json({ success: false, error: 'Failed to delete business' });
+        }return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const deleted = storage.deleteBusiness(businessId, req.session.userId);
+        if (deleted) {
+            res.status(200).json({ success: true, message: 'Business deleted successfully' });
+        } else {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
@@ -703,6 +776,11 @@ app.get('/dashboard.html', (req, res) => {
         return res.redirect('/login.html');
     }
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// 404 handler for API routes - return JSON before static file handler
+app.use('/api', (req, res) => {
+    res.status(404).json({ success: false, error: 'API endpoint not found', path: req.path, method: req.method });
 });
 
 // Serve static files (css, js, etc.)

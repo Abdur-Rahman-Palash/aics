@@ -10,29 +10,43 @@ async function getCsrfToken() {
         const response = await fetch('/api/csrf-token', {
             credentials: 'include'
         });
+        if (!response.ok) {
+            return null;
+        }
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.csrfToken) {
             cachedCsrfToken = data.csrfToken;
             return cachedCsrfToken;
+        } else {
+            return null;
         }
     } catch (error) {
-        console.warn('Error fetching CSRF token:', error);
     }
     return null;
 }
 
 // Fetch with CSRF token
 async function fetchWithCsrf(url, options = {}) {
-    const csrfToken = await getCsrfToken();
-    const headers = options.headers || {};
-    
-    if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
-        headers['X-CSRF-Token'] = csrfToken;
+    try {
+        const csrfToken = await getCsrfToken();
+        
+        // Create a new headers object by merging existing headers
+        const headers = {
+            ...(options.headers || {})
+        };
+        
+        if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            credentials: 'include'
+        });
+        
+        return response;
+    } catch (error) {
+        throw error;
     }
-    
-    return fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include'
-    });
 }

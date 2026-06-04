@@ -1159,8 +1159,22 @@
             }
             
             try {
-                showMessage('Business deletion coming soon!', 'success');
+                showMessage('Deleting business...', 'success');
+                const response = await fetchWithCsrf('/api/businesses/' + businessId, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Business deleted successfully!', 'success');
+                    loadBusinesses(); // Refresh to remove deleted business
+                } else {
+                    showMessage('Error deleting business: ' + (data.error || 'Unknown error'), 'error');
+                }
             } catch (error) {
+                console.error('Error deleting business:', error);
                 showMessage('Error deleting business', 'error');
             }
         }
@@ -1222,6 +1236,7 @@
             loadBusinesses();
         }
         
+        // Run init on page load
         init();
     </script>
 </body>
