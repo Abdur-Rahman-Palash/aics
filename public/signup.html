@@ -131,9 +131,9 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage('Sign up successful! Redirecting to dashboard...', 'success');
+                    showMessage('Sign up successful! Redirecting to login...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/login.html';
                     }, 1000);
                 } else {
                     showMessage(data.error, 'error');

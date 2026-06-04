@@ -27,6 +27,8 @@ class AICSChatWidget {
             avatar: '🤖'
         };
         this.showingLeadForm = false;
+        this.justSubmittedLeadForm = false;
+        this.lastLeadFormMessage = '';
         this.init();
     }
 
@@ -216,9 +218,40 @@ class AICSChatWidget {
         }
     }
 
+    isMessageRelevant(message, formMessage) {
+        const normalizeText = (text) => text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+        const messageWords = normalizeText(message);
+        const formWords = normalizeText(formMessage);
+        const commonWords = messageWords.filter(word => formWords.includes(word));
+        console.log('isMessageRelevant: messageWords:', messageWords);
+        console.log('isMessageRelevant: formWords:', formWords);
+        console.log('isMessageRelevant: commonWords:', commonWords);
+        return commonWords.length > 0;
+    }
+
     async sendMessage() {
         const message = this.inputField.value.trim();
         if (!message) return;
+
+        console.log('sendMessage called with message:', message);
+        console.log('justSubmittedLeadForm:', this.justSubmittedLeadForm);
+        console.log('lastLeadFormMessage:', this.lastLeadFormMessage);
+
+        // Check if user just submitted a lead form
+        if (this.justSubmittedLeadForm) {
+            const relevant = this.isMessageRelevant(message, this.lastLeadFormMessage);
+            console.log('isMessageRelevant returned:', relevant);
+            if (!relevant) {
+                // Add user message
+                this.addMessage(message, 'user');
+                this.inputField.value = '';
+                // Show the required response
+                this.addMessage('It looks like your question is not related to the form you submitted. Please ask a question relevant to your request so I can assist you better.', 'ai');
+                return;
+            }
+            // Reset the flag if message is relevant
+            this.justSubmittedLeadForm = false;
+        }
 
         // Add user message
         this.addMessage(message, 'user');
@@ -372,6 +405,8 @@ class AICSChatWidget {
         const phone = document.getElementById('aics-lead-phone').value;
         const message = document.getElementById('aics-lead-message').value;
 
+        console.log('submitLeadForm called with message:', message);
+
         try {
             const csrfToken = await getCsrfToken();
             const headers = { 'Content-Type': 'application/json' };
@@ -386,6 +421,7 @@ class AICSChatWidget {
             });
 
             const data = await response.json();
+            console.log('submitLeadForm response:', data);
 
             if (data.success) {
                 // Remove form and show success message
@@ -393,12 +429,16 @@ class AICSChatWidget {
                 formDiv.innerHTML = '<div>Thank you! We\'ve received your request and will get back to you soon.</div>';
                 
                 this.showingLeadForm = false;
+                this.justSubmittedLeadForm = true;
+                this.lastLeadFormMessage = message;
+                console.log('Set justSubmittedLeadForm to true, lastLeadFormMessage to:', this.lastLeadFormMessage);
                 this.inputField.disabled = false;
                 this.sendBtn.disabled = false;
             } else {
                 this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
             }
         } catch (error) {
+            console.error('submitLeadForm error:', error);
             this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
         }
     }

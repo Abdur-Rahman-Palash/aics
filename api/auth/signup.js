@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
         }
         
         const user = await storage.createUser(email, password, name);
-        req.session.userId = user.id;
+        // Don't set session yet - user needs to login first
         res.status(201).json({ success: true, user });
     } catch (error) {
         res.status(400).json({ success: false, error: error.message });
