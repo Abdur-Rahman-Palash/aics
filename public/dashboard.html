@@ -226,6 +226,11 @@
             loadBusinesses(); // Refresh the dashboard to show the updated status
         });
         
+        // Auto-refresh dashboard every 3 seconds to check training status
+        setInterval(() => {
+            loadBusinesses();
+        }, 3000);
+        
         function renderStats() {
             let totalLeads = 0;
             let totalMessages = 0;

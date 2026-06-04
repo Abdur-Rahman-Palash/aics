@@ -110,6 +110,7 @@ module.exports = async (req, res) => {
 
                 // Search Qdrant for similar content (FAQs + chunks)
                 similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
+                console.log('[CHAT] Found similar items:', JSON.stringify(similarItems, null, 2));
 
                 // Process similar items
                 for (const item of similarItems) {
@@ -124,6 +125,8 @@ module.exports = async (req, res) => {
                 if (similarItems.length > 0) {
                     confidenceScore = similarItems[0].score || 0;
                 }
+                console.log('[CHAT] Confidence score:', confidenceScore);
+                console.log('[CHAT] Context parts:', contextParts);
             }
         } catch (error) {
             // Continue without them - we'll use fallback responses
@@ -135,8 +138,8 @@ module.exports = async (req, res) => {
         }
 
         // Check similarity threshold - if no relevant context found, offer talk to human
-        const SIMILARITY_THRESHOLD = 0.5;
-        const CONFIDENCE_THRESHOLD = 0.6;
+        const SIMILARITY_THRESHOLD = 0.1; // Lowered to make it easier to find matches!
+        const CONFIDENCE_THRESHOLD = 0.1;
         const humanTransferMessage = "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?";
         const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
         let needsHumanHelp = !hasRelevantContext || similarItems.length === 0 || confidenceScore < CONFIDENCE_THRESHOLD;
