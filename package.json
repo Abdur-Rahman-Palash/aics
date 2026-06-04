@@ -4,8 +4,8 @@
   "description": "AI Customer Support SaaS",
   "main": "server.js",
   "scripts": {
-    "dev": "node --max-old-space-size=4096 server.js",
-    "start": "node --max-old-space-size=4096 server.js",
+    "dev": "node --max-old-space-size=8192 server.js",
+    "start": "node --max-old-space-size=8192 server.js",
     "vercel-dev": "vercel dev"
   },
   "keywords": [
