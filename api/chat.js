@@ -137,12 +137,12 @@ module.exports = async (req, res) => {
             context = contextParts.join('\n\n---\n\n');
         }
 
-        // Check similarity threshold - if no relevant context found, offer talk to human
-        const SIMILARITY_THRESHOLD = 0.1; // Lowered to make it easier to find matches!
-        const CONFIDENCE_THRESHOLD = 0.1;
+        // Check similarity threshold - try to use ANY context we find, even low confidence!
+        const SIMILARITY_THRESHOLD = 0.05; // Super low to get any possible matches!
+        const CONFIDENCE_THRESHOLD = 0.05;
         const humanTransferMessage = "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?";
         const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
-        let needsHumanHelp = !hasRelevantContext || similarItems.length === 0 || confidenceScore < CONFIDENCE_THRESHOLD;
+        let needsHumanHelp = false; // Start with false, only set to true if no response makes sense
         
         // Generate AI response or use fallback
         let aiResponse;
@@ -152,9 +152,7 @@ module.exports = async (req, res) => {
                     aiResponse = directMatch.answer;
                     confidenceScore = 1.0;
                     needsHumanHelp = false;
-                } else if (needsHumanHelp) {
-                    aiResponse = humanTransferMessage;
-                } else {
+                } else if (contextParts.length > 0) { // If we have ANY context, try to use it!
                     // Get conversation history for LangChain memory
                     let conversationHistory = [];
                     if (conversation && conversation.messages) {
@@ -167,10 +165,13 @@ module.exports = async (req, res) => {
                         conversationHistory
                     );
                     // Check if AI response mentions human/escalate, set needsHumanHelp if so
-                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(aiResponse);
+                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know/i.test(aiResponse);
                     if (hasHumanKeywords) {
                         needsHumanHelp = true;
                     }
+                } else { // If no context at all, show lead form
+                    aiResponse = humanTransferMessage;
+                    needsHumanHelp = true;
                 }
             } else {
                 // Fallback if no Gemini API key
