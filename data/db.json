@@ -273,10 +273,10 @@
       },
       "leads": [],
       "analytics": {
-        "totalMessages": 6,
+        "totalMessages": 7,
         "faqHits": {},
         "lastActive": "2026-06-03T16:49:29.213Z",
-        "humanEscalated": 1
+        "humanEscalated": 2
       },
       "notificationEmail": "",
       "conversations": [
@@ -337,6 +337,35 @@
           "score": 0,
           "createdAt": "2026-06-04T04:34:56.273Z",
           "updatedAt": "2026-06-04T04:34:58.641Z"
+        },
+        {
+          "id": "630b63c2-9889-4948-a3bd-c1c5998a31fd",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "f674c308-8338-4054-acbb-e23d3064e84c",
+              "role": "user",
+              "content": "i need your service",
+              "confidence": null,
+              "timestamp": "2026-06-04T07:55:18.161Z"
+            },
+            {
+              "id": "c9fc11c8-af2f-41e3-880a-6d7f6dd9290a",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-04T07:55:18.168Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T07:55:15.357Z",
+          "updatedAt": "2026-06-04T07:55:18.172Z"
         }
       ],
       "unansweredQuestions": [
@@ -352,6 +381,13 @@
           "question": "Where are you located?",
           "count": 1,
           "lastAskedAt": "2026-06-04T04:34:58.638Z",
+          "answered": false
+        },
+        {
+          "id": "e97c9237-1aea-45a7-a51f-c5bb92f58801",
+          "question": "i need your service",
+          "count": 1,
+          "lastAskedAt": "2026-06-04T07:55:18.154Z",
           "answered": false
         }
       ],
@@ -395,6 +431,219 @@
       "conversations": [],
       "unansweredQuestions": [],
       "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
+    },
+    {
+      "id": "68ba4bc8-1985-4e76-a312-3e5b56abb762",
+      "name": "InvoicePro",
+      "domain": "http://localhost:5173/",
+      "userId": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
+      "createdAt": "2026-06-04T06:30:44.996Z",
+      "qdrantCollection": "aics_invoicepro",
+      "widgetSettings": {
+        "title": "InvoicePro Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "notificationEmail": "",
+      "verification": {
+        "status": "verified",
+        "method": "html",
+        "token": "0c152b5873cb0f5684a698d889982c58",
+        "verifiedAt": "2026-06-04T06:34:46.126Z"
+      },
+      "faqs": [
+        {
+          "id": "88bc58ff-283b-47b5-86a2-6ff1dfa66e5f",
+          "questionEn": "How do I create a new invoice?",
+          "questionBn": null,
+          "answerEn": "Quick steps:\n1. Dashboard → Click Invoice module card\n2. Click CREATE\n3. Fill in customer info + products\n4. Click Done → Preview → Final to save",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-04T07:49:16.665Z"
+        }
+      ],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": []
+      },
+      "leads": [
+        {
+          "id": "0c8fbf90-0120-4f28-adcb-c269690e2f52",
+          "name": "Md Abdur Rahman",
+          "email": "abdurrahmanpalashbd@gmail.com",
+          "phone": "01786433078",
+          "company": "",
+          "notes": "",
+          "message": " i need book",
+          "status": "new",
+          "score": 40,
+          "conversationId": "6661f0c2-c967-45a9-aac3-8a3ecdab3ee2",
+          "createdAt": "2026-06-04T08:01:37.413Z"
+        }
+      ],
+      "conversations": [
+        {
+          "id": "1a228897-2df1-4039-8ce4-1eb8399efbf8",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "614e588b-8128-4bd3-8f00-600b7a64c101",
+              "role": "user",
+              "content": "How do I create a new invoice?",
+              "confidence": null,
+              "timestamp": "2026-06-04T07:52:32.791Z"
+            },
+            {
+              "id": "c269c518-50d8-4fd6-8719-1ec6743ba216",
+              "role": "ai",
+              "content": "Quick steps:\n1. Dashboard → Click Invoice module card\n2. Click CREATE\n3. Fill in customer info + products\n4. Click Done → Preview → Final to save",
+              "confidence": 1,
+              "timestamp": "2026-06-04T07:52:32.796Z"
+            }
+          ],
+          "status": "open",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T07:52:30.029Z",
+          "updatedAt": "2026-06-04T07:52:32.796Z"
+        },
+        {
+          "id": "a63039cb-ec6b-48d4-b55c-d15b1a0eb55b",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "4800f89e-a94f-4421-bb53-3b029beb272b",
+              "role": "user",
+              "content": "i need your service",
+              "confidence": null,
+              "timestamp": "2026-06-04T07:53:10.569Z"
+            },
+            {
+              "id": "2948da0b-6d41-4744-9ed7-e5cd0f1afa0a",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": 0.5413429,
+              "timestamp": "2026-06-04T07:53:10.575Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T07:53:07.875Z",
+          "updatedAt": "2026-06-04T07:53:10.579Z"
+        },
+        {
+          "id": "dd857ed9-9f35-4603-974a-0698ff1b0945",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "ab0850a2-197e-4eb4-aa66-4f2cd904ba53",
+              "role": "user",
+              "content": "How do I create a new invoice?",
+              "confidence": null,
+              "timestamp": "2026-06-04T08:00:57.009Z"
+            },
+            {
+              "id": "e62935e2-3e16-44d6-b03d-805d59e24668",
+              "role": "ai",
+              "content": "Quick steps:\n1. Dashboard → Click Invoice module card\n2. Click CREATE\n3. Fill in customer info + products\n4. Click Done → Preview → Final to save",
+              "confidence": 1,
+              "timestamp": "2026-06-04T08:00:57.011Z"
+            }
+          ],
+          "status": "open",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T08:00:53.997Z",
+          "updatedAt": "2026-06-04T08:00:57.011Z"
+        },
+        {
+          "id": "6661f0c2-c967-45a9-aac3-8a3ecdab3ee2",
+          "visitor": {
+            "name": "Md Abdur Rahman",
+            "email": "abdurrahmanpalashbd@gmail.com",
+            "phone": "01786433078"
+          },
+          "messages": [
+            {
+              "id": "5255a315-fdd0-4367-93be-41f702210466",
+              "role": "user",
+              "content": "How do I create a new invoice?",
+              "confidence": null,
+              "timestamp": "2026-06-04T08:01:09.488Z"
+            },
+            {
+              "id": "c26b6cdd-5cf0-445f-ba06-3c5e642b426c",
+              "role": "ai",
+              "content": "Quick steps:\n1. Dashboard → Click Invoice module card\n2. Click CREATE\n3. Fill in customer info + products\n4. Click Done → Preview → Final to save",
+              "confidence": 1,
+              "timestamp": "2026-06-04T08:01:09.492Z"
+            },
+            {
+              "id": "176afdbe-8ef3-445a-a289-739e4f343066",
+              "role": "user",
+              "content": "i need your service",
+              "confidence": null,
+              "timestamp": "2026-06-04T08:01:25.571Z"
+            },
+            {
+              "id": "925c330b-4a38-4e6c-a545-12e226a4acf1",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": 0.5413429,
+              "timestamp": "2026-06-04T08:01:25.574Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": "0c8fbf90-0120-4f28-adcb-c269690e2f52",
+          "score": 40,
+          "createdAt": "2026-06-04T08:01:06.929Z",
+          "updatedAt": "2026-06-04T08:01:25.578Z"
+        }
+      ],
+      "unansweredQuestions": [
+        {
+          "id": "fcd5a195-a21e-4aa6-9969-560a4ee0b0f6",
+          "question": "i need your service",
+          "count": 2,
+          "lastAskedAt": "2026-06-04T08:01:25.567Z",
+          "answered": false
+        }
+      ],
+      "webhooks": [],
+      "analytics": {
+        "totalMessages": 5,
+        "aiResolved": 3,
+        "humanEscalated": 2,
+        "leadsCaptured": 1,
+        "faqHits": {},
+        "lastActive": "2026-06-04T08:01:25.562Z",
+        "dailyUsage": [
+          {
+            "date": "2026-06-04",
+            "messages": 5,
+            "leads": 0
+          }
+        ],
+        "weeklyUsage": []
+      },
       "googleSheets": {
         "enabled": false,
         "spreadsheetId": "",

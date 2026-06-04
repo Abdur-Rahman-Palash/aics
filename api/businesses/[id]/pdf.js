@@ -86,21 +86,23 @@ module.exports = async (req, res) => {
 
             // Try to run training (with timeout for serverless)
             try {
+                console.log('Starting PDF/docx training for', req.file.originalname);
                 // Update status to training
                 const businessRef = storage.getBusiness(businessId);
                 const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
                 if (pdfIndex !== -1) {
                     businessRef.knowledgeSources.pdfs[pdfIndex].status = 'training';
-                    storage.save();
                 }
 
-                // Run actual training with timeout (10 seconds for serverless)
+                // Run actual training - increase timeout to 60 seconds for local testing!
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Training timed out')), 10000)
+                    setTimeout(() => reject(new Error('Training timed out')), 60000)
                 );
                 const filePath = path.join(uploadsDir, req.file.filename);
+                console.log('Calling trainDocument on filePath:', filePath);
                 const trainingPromise = trainDocument(businessId, filePath, req.file.originalname, businessRef.qdrantCollection);
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
+                console.log('PDF/docx training complete:', result);
 
                 // Update status to completed
                 const businessRef2 = storage.getBusiness(businessId);
@@ -109,18 +111,19 @@ module.exports = async (req, res) => {
                     businessRef2.knowledgeSources.pdfs[pdfIndex2].status = 'completed';
                     businessRef2.knowledgeSources.pdfs[pdfIndex2].lastTrainedAt = new Date().toISOString();
                     businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
-                    storage.save();
                 }
             } catch (error) {
+                console.error('PDF/docx training failed:', error);
                 // Update status to failed
                 const businessRef = storage.getBusiness(businessId);
                 const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
                 if (pdfIndex !== -1) {
                     businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
                     businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
-                    storage.save();
                 }
             }
+            // Save only ONCE at the very end
+            storage.save();
 
             return res.status(201).json({ success: true, pdf: newPdf });
 

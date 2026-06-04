@@ -44,20 +44,22 @@ module.exports = async (req, res) => {
 
             // Try to run training (with timeout for serverless)
             try {
+                console.log('Starting website training for', url);
                 // Update status to training
                 const businessRef = storage.getBusiness(businessId);
                 const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
                 if (websiteIndex !== -1) {
                     businessRef.knowledgeSources.websites[websiteIndex].status = 'training';
-                    storage.save();
                 }
 
-                // Run actual training with timeout (10 seconds for serverless)
+                // Run actual training - increase timeout to 60 seconds for local testing!
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Training timed out')), 10000)
+                    setTimeout(() => reject(new Error('Training timed out')), 60000)
                 );
+                console.log('Calling trainWebsite');
                 const trainingPromise = trainWebsite(businessId, url, businessRef.qdrantCollection);
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
+                console.log('Training complete:', result);
 
                 // Update status to completed
                 const businessRef2 = storage.getBusiness(businessId);
@@ -66,18 +68,19 @@ module.exports = async (req, res) => {
                     businessRef2.knowledgeSources.websites[websiteIndex2].status = 'completed';
                     businessRef2.knowledgeSources.websites[websiteIndex2].lastTrainedAt = new Date().toISOString();
                     businessRef2.knowledgeSources.websites[websiteIndex2].chunksCount = result.chunksCount;
-                    storage.save();
                 }
             } catch (error) {
+                console.error('Website training failed:', error);
                 // Update status to failed
                 const businessRef = storage.getBusiness(businessId);
                 const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
                 if (websiteIndex !== -1) {
                     businessRef.knowledgeSources.websites[websiteIndex].status = 'failed';
                     businessRef.knowledgeSources.websites[websiteIndex].error = error.message;
-                    storage.save();
                 }
             }
+            // Only save ONCE at the very end!
+            storage.save();
 
         return res.status(201).json({ success: true, website: newWebsite });
 
