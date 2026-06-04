@@ -368,6 +368,7 @@
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'unanswered\')">❓ Unanswered Questions</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'webhooks\')">🔌 Webhooks</button>';
+            html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'google-sheets\')">📊 Google Sheets</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'settings\')">⚙️ Settings</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
             html += '<button class="tab-btn" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
@@ -668,6 +669,36 @@
             } else {
                 html += '<p style="color:#666;text-align:center;padding:24px;">No webhooks configured.</p>';
             }
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-google-sheets">';
+            html += '<h3>Google Sheets Integration</h3>';
+            html += '<p style="color:#666;margin-bottom:24px;">Sync your leads to Google Sheets for easy CRM management!</p>';
+            html += '<form id="google-sheets-form-' + business.id + '" onsubmit="updateGoogleSheets(event, \'' + business.id + '\')" style="margin-bottom:24px;">';
+            html += '<div class="form-group">';
+            html += '<label><input type="checkbox" id="google-sheets-enabled-' + business.id + '"> Enable Google Sheets Sync</label>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Spreadsheet ID</label>';
+            html += '<input type="text" id="google-sheets-spreadsheet-id-' + business.id + '" placeholder="1234567890abcdefghijklmnopqrstuvwxyz">';
+            html += '<p style="font-size:12px;color:#888;margin-top:4px;">Find this in your Google Sheets URL (between /d/ and /edit)</p>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Service Account Key (JSON)</label>';
+            html += '<textarea id="google-sheets-service-account-key-' + business.id + '" placeholder="Paste your service account JSON here" rows="8" style="width:100%;font-family:monospace;"></textarea>';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Save Google Sheets Settings</button>';
+            html += '</form>';
+            html += '<div style="margin-top:24px;padding:16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;">';
+            html += '<h4 style="margin:0 0 8px 0;color:#854d0e;">Setup Instructions</h4>';
+            html += '<ol style="margin:0;padding-left:20px;color:#666;">';
+            html += '<li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> and create a new project</li>';
+            html += '<li>Enable the Google Sheets API</li>';
+            html += '<li>Create a service account and download the JSON key</li>';
+            html += '<li>Share your Google Sheet with the service account email</li>';
+            html += '<li>Enter the Spreadsheet ID and paste the service account key above</li>';
+            html += '</ol>';
             html += '</div>';
             html += '</div>';
 
@@ -1048,6 +1079,34 @@
             }
         } catch (error) {
             showMessage('Error saving settings', 'error');
+        }
+    }
+
+    async function updateGoogleSheets(event, businessId) {
+        event.preventDefault();
+        try {
+            const enabled = document.getElementById('google-sheets-enabled-' + businessId).checked;
+            const spreadsheetId = document.getElementById('google-sheets-spreadsheet-id-' + businessId).value.trim();
+            const serviceAccountKey = document.getElementById('google-sheets-service-account-key-' + businessId).value.trim();
+            
+            const payload = { enabled };
+            if (spreadsheetId) payload.spreadsheetId = spreadsheetId;
+            if (serviceAccountKey) payload.serviceAccountKey = serviceAccountKey;
+
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/google-sheets', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Google Sheets settings saved successfully!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error saving settings: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error saving Google Sheets settings', 'error');
         }
     }
 

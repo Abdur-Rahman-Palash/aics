@@ -3,6 +3,7 @@
 
 const QdrantManager = require('../lib/qdrant');
 const GeminiAI = require('../lib/gemini');
+const LangChainIntegration = require('../lib/langchain'); // New LangChain integration
 const storage = require('../lib/storage');
 const config = require('../lib/config');
 
@@ -88,6 +89,7 @@ module.exports = async (req, res) => {
         // Initialize services
         const qdrant = new QdrantManager();
         const gemini = new GeminiAI();
+        const langchain = new LangChainIntegration(); // New LangChain instance
 
         // Build context - start with empty
         let contextParts = [];
@@ -150,7 +152,17 @@ module.exports = async (req, res) => {
                 } else if (needsHumanHelp) {
                     aiResponse = humanTransferMessage;
                 } else {
-                    aiResponse = await gemini.generateResponse(message, context);
+                    // Get conversation history for LangChain memory
+                    let conversationHistory = [];
+                    if (conversation && conversation.messages) {
+                        conversationHistory = conversation.messages;
+                    }
+
+                    aiResponse = await langchain.generateResponse(
+                        message,
+                        context,
+                        conversationHistory
+                    );
                     // Check if AI response mentions human/escalate, set needsHumanHelp if so
                     const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(aiResponse);
                     if (hasHumanKeywords) {

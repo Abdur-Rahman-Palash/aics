@@ -164,7 +164,12 @@
       "notificationEmail": "",
       "conversations": [],
       "unansweredQuestions": [],
-      "webhooks": []
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     },
     {
       "id": "4b7b0c4b-8b9e-4cbb-84e9-4cf553b2a027",
@@ -197,7 +202,12 @@
       "notificationEmail": "",
       "conversations": [],
       "unansweredQuestions": [],
-      "webhooks": []
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     },
     {
       "id": "1e10e7b6-b640-4538-8c71-a06ace13ac06",
@@ -231,7 +241,12 @@
       "notificationEmail": "",
       "conversations": [],
       "unansweredQuestions": [],
-      "webhooks": []
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     },
     {
       "id": "46dc719b-ca9e-4c09-8a0f-a7cd2d5aa79a",
@@ -444,7 +459,12 @@
           "answered": true
         }
       ],
-      "webhooks": []
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     },
     {
       "id": "678a5997-624f-46de-ba9b-ed85910bd133",
@@ -471,14 +491,94 @@
       },
       "leads": [],
       "analytics": {
-        "totalMessages": 4,
+        "totalMessages": 6,
         "faqHits": {},
-        "lastActive": "2026-06-03T16:49:29.213Z"
+        "lastActive": "2026-06-03T16:49:29.213Z",
+        "humanEscalated": 1
       },
       "notificationEmail": "",
-      "conversations": [],
-      "unansweredQuestions": [],
-      "webhooks": []
+      "conversations": [
+        {
+          "id": "f705b91f-d969-4ecc-983b-23158a643526",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "60c9427d-c92d-4e6a-afbc-37fd22162646",
+              "role": "user",
+              "content": "How can I contact support?",
+              "confidence": null,
+              "timestamp": "2026-06-04T04:29:14.830Z"
+            },
+            {
+              "id": "2bfb757b-4d22-4487-b347-6833ffcba5d1",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-04T04:29:14.832Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T04:29:12.248Z",
+          "updatedAt": "2026-06-04T04:29:14.834Z"
+        },
+        {
+          "id": "dc5f7a8a-6c0d-4697-82ad-a8758f9cb168",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "ad654140-a156-4e57-af18-fd188cfc76b9",
+              "role": "user",
+              "content": "Where are you located?",
+              "confidence": null,
+              "timestamp": "2026-06-04T04:34:58.639Z"
+            },
+            {
+              "id": "8dc9fe37-7997-4baf-9a64-0ba1db25bb9e",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-04T04:34:58.640Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-04T04:34:56.273Z",
+          "updatedAt": "2026-06-04T04:34:58.641Z"
+        }
+      ],
+      "unansweredQuestions": [
+        {
+          "id": "cb72b768-e94e-415d-a05a-7a3c711a0f46",
+          "question": "How can I contact support?",
+          "count": 1,
+          "lastAskedAt": "2026-06-04T04:29:14.827Z",
+          "answered": false
+        },
+        {
+          "id": "c024f5d5-95be-422c-aebd-95ea11d5df16",
+          "question": "Where are you located?",
+          "count": 1,
+          "lastAskedAt": "2026-06-04T04:34:58.638Z",
+          "answered": false
+        }
+      ],
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     },
     {
       "id": "c49370b9-9224-4528-9c02-146a3133460f",
@@ -512,7 +612,12 @@
       "notificationEmail": "",
       "conversations": [],
       "unansweredQuestions": [],
-      "webhooks": []
+      "webhooks": [],
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
     }
   ]
 }

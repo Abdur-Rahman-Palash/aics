@@ -594,6 +594,52 @@ app.put('/api/businesses/:id/settings', (req, res) => {
     }
 });
 
+// Google Sheets API endpoints
+app.get('/api/businesses/:id/google-sheets', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        // Don't return service account key for security
+        const googleSheets = {
+            enabled: business.googleSheets?.enabled || false,
+            spreadsheetId: business.googleSheets?.spreadsheetId || ''
+        };
+        res.status(200).json({ success: true, googleSheets });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/google-sheets', (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const businessId = req.params.id;
+        const { enabled, spreadsheetId, serviceAccountKey } = req.body;
+        const business = storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        business.googleSheets = {
+            ...business.googleSheets,
+            enabled: enabled ?? business.googleSheets.enabled,
+            spreadsheetId: spreadsheetId ?? business.googleSheets.spreadsheetId,
+            serviceAccountKey: serviceAccountKey ?? business.googleSheets.serviceAccountKey
+        };
+        storage.save();
+        res.status(200).json({ success: true, googleSheets: { enabled: business.googleSheets.enabled, spreadsheetId: business.googleSheets.spreadsheetId } });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     socket.on('send message', async (userMessage) => {
