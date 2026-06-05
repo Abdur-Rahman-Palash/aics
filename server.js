@@ -183,10 +183,11 @@ app.get('/api/csrf-token', (req, res) => {
 // Apply CSRF protection to all state-changing routes except /api/chat and public lead endpoints
 app.use('/api', (req, res, next) => {
     const isStateChanging = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
-    // Exclude chat, leads, and verify endpoints for now
+    // Exclude chat, leads, verify, and auth endpoints for now
     const isExcluded = req.path === '/chat' || 
                       req.path.match(/^\/businesses\/[^/]+\/leads$/) ||
-                      req.path.match(/^\/businesses\/[^/]+\/verify$/);
+                      req.path.match(/^\/businesses\/[^/]+\/verify$/) ||
+                      req.path.startsWith('/auth/');
     
     if (!isStateChanging || isExcluded) {
         next();
