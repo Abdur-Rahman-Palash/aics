@@ -24,12 +24,19 @@ const sessionMiddleware = cookieSession({
 });
 
 module.exports = async (req, res) => {
-    // Apply session middleware first!
-    await new Promise((resolve) => sessionMiddleware(req, res, resolve));
+    // Apply session middleware only if not already present (for serverless)
+    if (!req.session) {
+        console.log('[VERIFY] Applying session middleware');
+        await new Promise((resolve) => sessionMiddleware(req, res, resolve));
+    } else {
+        console.log('[VERIFY] Session already exists (from server.js)');
+    }
+    
     // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
 
     console.log('[VERIFY] Incoming request:', {
         method: req.method,
@@ -38,6 +45,7 @@ module.exports = async (req, res) => {
         body: req.body,
         hasSession: !!req.session,
         sessionUserId: req.session?.userId,
+        headers: req.headers,
     });
 
     if (req.method === 'OPTIONS') {
