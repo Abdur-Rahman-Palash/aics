@@ -42,7 +42,6 @@ class AICSChatWidget {
         
         this.createWidget();
         this.attachEventListeners();
-        await this.loadSuggestedFAQs();
     }
 
     async loadWidgetSettings() {
@@ -86,8 +85,6 @@ class AICSChatWidget {
                     <button class="aics-close-btn">&times;</button>
                 </div>
             </div>
-            <p class="aics-suggested-header">Try asking:</p>
-            <div class="aics-suggested-questions" id="aics-suggested"></div>
             <div class="aics-chat-messages" id="aics-messages">
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
@@ -103,7 +100,6 @@ class AICSChatWidget {
         this.inputField = document.getElementById('aics-input');
         this.sendBtn = document.getElementById('aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
-        this.suggestedContainer = document.getElementById('aics-suggested');
         this.chatHeader = this.chatContainer.querySelector('.aics-chat-header');
         
         // Drag state
@@ -339,46 +335,7 @@ class AICSChatWidget {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
-    async loadSuggestedFAQs() {
-        const defaultQuestions = [
-            'What are your business hours?',
-            'Do you offer refunds?',
-            'How can I contact support?',
-            'Where are you located?'
-        ];
 
-        let questions = defaultQuestions;
-
-        if (this.businessId) {
-            try {
-                const response = await fetch(`/api/businesses/${this.businessId}/faqs`);
-                const data = await response.json();
-                if (data.success && Array.isArray(data.faqs) && data.faqs.length > 0) {
-                    questions = data.faqs
-                        .slice(0, 6)
-                        .map(faq => faq.questionEn || faq.questionBn)
-                        .filter(Boolean);
-                }
-            } catch (error) {
-                // Error log removed
-            }
-        }
-
-        this.suggestedContainer.innerHTML = '';
-
-        questions.forEach(q => {
-            const btn = document.createElement('button');
-            btn.className = 'aics-suggested-btn';
-            btn.textContent = q;
-            btn.addEventListener('click', () => this.sendMessageFromSuggestion(q));
-            this.suggestedContainer.appendChild(btn);
-        });
-    }
-
-    sendMessageFromSuggestion(question) {
-        this.inputField.value = question;
-        this.sendMessage();
-    }
 
     showLeadForm() {
         this.showingLeadForm = true;

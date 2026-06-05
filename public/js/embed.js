@@ -88,8 +88,6 @@
                 </div>
                 <button class="aics-close-btn">&times;</button>
             </div>
-            <p class="aics-suggested-header">Try asking:</p>
-            <div class="aics-suggested-questions" id="aics-suggested"></div>
             <div class="aics-chat-messages" id="aics-messages">
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
@@ -108,51 +106,11 @@
         const inputField = document.getElementById('aics-input');
         const sendBtn = document.getElementById('aics-send');
         const closeBtn = chatContainer.querySelector('.aics-close-btn');
-        const suggestedContainer = document.getElementById('aics-suggested');
         const chatHeader = chatContainer.querySelector('.aics-chat-header');
         
         // Drag state
         let isDragging = false;
         let dragOffset = { x: 0, y: 0 };
-
-        // Load suggested FAQs
-        async function loadSuggestedFAQs() {
-            const defaultQuestions = [
-                'What are your business hours?',
-                'Do you offer refunds?',
-                'How can I contact support?',
-                'Where are you located?'
-            ];
-
-            let questions = defaultQuestions;
-
-            if (businessId) {
-                try {
-                    const response = await fetch(`${apiOrigin}/api/businesses/${businessId}/faqs`);
-                    const data = await response.json();
-                    if (data.success && Array.isArray(data.faqs) && data.faqs.length > 0) {
-                        questions = data.faqs
-                            .slice(0, 6)
-                            .map(faq => faq.questionEn || faq.questionBn)
-                            .filter(Boolean);
-                    }
-                } catch (error) {
-                    // Do nothing
-                }
-            }
-
-            suggestedContainer.innerHTML = '';
-
-            questions.forEach(q => {
-                const btn = document.createElement('button');
-                btn.className = 'aics-suggested-btn';
-                btn.textContent = q;
-                btn.addEventListener('click', () => sendMessageFromSuggestion(q));
-                suggestedContainer.appendChild(btn);
-            });
-        }
-
-        loadSuggestedFAQs();
 
         // Attach Event Listeners
         floatBtn.addEventListener('click', toggleChat);
@@ -267,10 +225,6 @@
         }
         function scrollToBottom() {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-        async function sendMessageFromSuggestion(question) {
-            inputField.value = question;
-            sendMessage();
         }
         async function sendMessage() {
             const message = inputField.value.trim();

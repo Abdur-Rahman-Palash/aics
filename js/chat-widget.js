@@ -27,6 +27,8 @@ class AICSChatWidget {
             avatar: '🤖'
         };
         this.showingLeadForm = false;
+        this.conversationId = null;
+        this.visitor = {};
         this.justSubmittedLeadForm = false;
         this.lastLeadFormMessage = '';
         this.init();
@@ -40,7 +42,6 @@ class AICSChatWidget {
         
         this.createWidget();
         this.attachEventListeners();
-        await this.loadSuggestedFAQs();
     }
 
     async loadWidgetSettings() {
@@ -52,7 +53,7 @@ class AICSChatWidget {
                 this.widgetSettings = { ...this.widgetSettings, ...data.settings };
             }
         } catch (error) {
-            // Log error removed
+            // Error log removed
         }
     }
 
@@ -84,8 +85,6 @@ class AICSChatWidget {
                     <button class="aics-close-btn">&times;</button>
                 </div>
             </div>
-            <p class="aics-suggested-header">Try asking:</p>
-            <div class="aics-suggested-questions" id="aics-suggested"></div>
             <div class="aics-chat-messages" id="aics-messages">
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
@@ -101,7 +100,6 @@ class AICSChatWidget {
         this.inputField = document.getElementById('aics-input');
         this.sendBtn = document.getElementById('aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
-        this.suggestedContainer = document.getElementById('aics-suggested');
         this.chatHeader = this.chatContainer.querySelector('.aics-chat-header');
         
         // Drag state
@@ -273,7 +271,9 @@ class AICSChatWidget {
                 headers,
                 body: JSON.stringify({ 
                     message,
-                    businessId: this.businessId
+                    businessId: this.businessId,
+                    conversationId: this.conversationId,
+                    visitor: this.visitor
                 }),
                 credentials: 'include'
             });
@@ -282,6 +282,8 @@ class AICSChatWidget {
             this.hideTypingIndicator();
             
             if (data.success) {
+                // Store conversation ID for future messages
+                if (data.conversationId) { this.conversationId = data.conversationId; }
                 this.addMessage(data.response, 'ai');
                 // Check either the flag or look for keywords in the response
                 const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
@@ -322,55 +324,13 @@ class AICSChatWidget {
 
     hideTypingIndicator() {
         const typing = document.getElementById('aics-typing');
-        if (typing) {
-            typing.remove();
-        }
+        if (typing) { typing.remove(); }
     }
 
     scrollToBottom() {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
-    async loadSuggestedFAQs() {
-        const defaultQuestions = [
-            'What are your business hours?',
-            'Do you offer refunds?',
-            'How can I contact support?',
-            'Where are you located?'
-        ];
-
-        let questions = defaultQuestions;
-
-        if (this.businessId) {
-            try {
-                const response = await fetch(`/api/businesses/${this.businessId}/faqs`);
-                const data = await response.json();
-                if (data.success && Array.isArray(data.faqs) && data.faqs.length > 0) {
-                    questions = data.faqs
-                        .slice(0, 6)
-                        .map(faq => faq.questionEn || faq.questionBn)
-                        .filter(Boolean);
-                }
-            } catch (error) {
-                // Error log removed
-            }
-        }
-
-        this.suggestedContainer.innerHTML = '';
-
-        questions.forEach(q => {
-            const btn = document.createElement('button');
-            btn.className = 'aics-suggested-btn';
-            btn.textContent = q;
-            btn.addEventListener('click', () => this.sendMessageFromSuggestion(q));
-            this.suggestedContainer.appendChild(btn);
-        });
-    }
-
-    sendMessageFromSuggestion(question) {
-        this.inputField.value = question;
-        this.sendMessage();
-    }
 
     showLeadForm() {
         this.showingLeadForm = true;
@@ -407,20 +367,22 @@ class AICSChatWidget {
 
         console.log('submitLeadForm called with message:', message);
 
+        // Store visitor data for future messages
+        this.visitor = { name, email, phone };
+
         try {
             const csrfToken = await getCsrfToken();
             const headers = { 'Content-Type': 'application/json' };
-            if (csrfToken) {
-                headers['X-CSRF-Token'] = csrfToken;
-            }
+            if (csrfToken) { headers['X-CSRF-Token'] = csrfToken; }
             const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ name, email, phone, message }),
+                body: JSON.stringify({ name, email, phone, message, conversationId: this.conversationId }),
                 credentials: 'include'
             });
 
             const data = await response.json();
+
             console.log('submitLeadForm response:', data);
 
             if (data.success) {

@@ -12,6 +12,7 @@
         const scriptTag = scriptTags[scriptTags.length - 1];
         const businessId = scriptTag ? scriptTag.getAttribute('data-business-id') : null;
         const scriptSrc = scriptTag ? scriptTag.src : null;
+        const apiOrigin = scriptSrc ? new URL(scriptSrc).origin : window.location.origin;
 
         // Inject Styles
         const css = `
@@ -31,11 +32,6 @@
             .aics-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
             .aics-close-btn:active { transform: scale(0.9); }
             .aics-chat-messages { flex: 1; min-height: 0; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
-            .aics-suggested-header { font-size: 13px; color: #666; padding: 16px 16px 0 16px; margin: 0; background: #f5f7fa; flex-shrink: 0; min-width: 0; }
-            .aics-suggested-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 0 16px 16px 16px; background: #f5f7fa; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; min-width: 0; }
-            .aics-suggested-btn { background: white; border: 1px solid #667eea; color: #667eea; padding: 8px 12px; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
-            .aics-suggested-btn:hover { background: #667eea; color: white; }
-            .aics-suggested-btn:active { transform: scale(0.95); }
             .aics-message { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word; word-break: break-word; }
             .aics-message.ai { background: white; color: #333; border-bottom-left-radius: 4px; align-self: flex-start; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
             .aics-message.user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
@@ -64,6 +60,11 @@
         style.appendChild(document.createTextNode(css));
         document.head.appendChild(style);
 
+        // State variables
+        let showingLeadForm = false;
+        let conversationId = null;
+        let visitor = {};
+
         // Create Elements
         const floatBtn = document.createElement('button');
         floatBtn.className = 'aics-float-btn';
@@ -82,8 +83,6 @@
                 </div>
                 <button class="aics-close-btn">&times;</button>
             </div>
-            <p class="aics-suggested-header">Try asking:</p>
-            <div class="aics-suggested-questions" id="aics-suggested"></div>
             <div class="aics-chat-messages" id="aics-messages">
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
@@ -102,18 +101,11 @@
         const inputField = document.getElementById('aics-input');
         const sendBtn = document.getElementById('aics-send');
         const closeBtn = chatContainer.querySelector('.aics-close-btn');
-        const suggestedContainer = document.getElementById('aics-suggested');
         const chatHeader = chatContainer.querySelector('.aics-chat-header');
         
         // Drag state
         let isDragging = false;
         let dragOffset = { x: 0, y: 0 };
-
-        suggestedContainer.innerHTML = `
-            <button class="aics-suggested-btn">What are your business hours?</button>
-            <button class="aics-suggested-btn">Do you offer refunds?</button>
-            <button class="aics-suggested-btn">How can I contact support?</button>
-        `;
 
         // Attach Event Listeners
         floatBtn.addEventListener('click', toggleChat);
@@ -226,44 +218,118 @@
             const typingDiv = document.getElementById('aics-typing');
             if (typingDiv) typingDiv.remove();
         }
-        async function sendMessageFromSuggestion(question) {
-            inputField.value = question;
-            sendMessage();
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         async function sendMessage() {
             const message = inputField.value.trim();
             if (!message) return;
+            
+            // Add user message
             addMessage(message, 'user');
             inputField.value = '';
             sendBtn.disabled = true;
             showTypingIndicator();
 
-            const apiOrigin = scriptSrc ? new URL(scriptSrc).origin : window.location.origin;
             const apiUrl = `${apiOrigin}/api/chat`;
-            const payload = { message };
-            if (businessId) {
-                payload.businessId = businessId;
-            }
+            const payload = { 
+                message, 
+                businessId: businessId, 
+                conversationId: conversationId,
+                visitor: visitor
+            };
 
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
                 const data = await response.json();
                 hideTypingIndicator();
-                addMessage(data.success ? data.response : 'Sorry, something went wrong.', 'ai');
+                
+                if (data.success) {
+                    // Store conversation ID
+                    if (data.conversationId) {
+                        conversationId = data.conversationId;
+                    }
+                    addMessage(data.response, 'ai');
+                    // Check for human help needed
+                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
+                    if (data.needsHumanHelp || hasHumanKeywords) {
+                        setTimeout(() => showLeadForm(), 500);
+                    }
+                } else {
+                    addMessage('Sorry, something went wrong.', 'ai');
+                }
             } catch (err) {
                 hideTypingIndicator();
                 addMessage('Sorry, check internet connection.', 'ai');
             }
             sendBtn.disabled = false;
         }
-        // Add listeners to suggested buttons
-        const suggestedButtons = suggestedContainer.querySelectorAll('.aics-suggested-btn');
-        suggestedButtons.forEach(btn => btn.addEventListener('click', (e) => sendMessageFromSuggestion(e.target.textContent)));
+
+        // Lead form functions
+        function showLeadForm() {
+            showingLeadForm = true;
+            inputField.disabled = true;
+            sendBtn.disabled = true;
+
+            // Add lead form message
+            const formDiv = document.createElement('div');
+            formDiv.className = 'aics-message ai';
+            formDiv.innerHTML = `
+                <div style="margin-bottom: 12px;">Sure! Please fill out the form below and our team will get back to you shortly.</div>
+                <form id="aics-lead-form" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="aics-lead-name" placeholder="Your Name" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                    <input type="email" id="aics-lead-email" placeholder="Your Email" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                    <input type="tel" id="aics-lead-phone" placeholder="Your Phone (optional)" style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                    <textarea id="aics-lead-message" placeholder="How can we help you?" required style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                    <button type="submit" style="padding: 10px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Send Request</button>
+                </form>
+            `;
+            messagesContainer.appendChild(formDiv);
+            scrollToBottom();
+
+            // Attach form submit listener
+            const form = document.getElementById('aics-lead-form');
+            form.addEventListener('submit', submitLeadForm);
+        }
+
+        async function submitLeadForm(e) {
+            e.preventDefault();
+            const name = document.getElementById('aics-lead-name').value;
+            const email = document.getElementById('aics-lead-email').value;
+            const phone = document.getElementById('aics-lead-phone').value;
+            const message = document.getElementById('aics-lead-message').value;
+
+            // Store visitor data for future messages
+            visitor = { name, email, phone };
+
+            try {
+                const response = await fetch(`${apiOrigin}/api/businesses/${businessId}/leads`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, message, conversationId: conversationId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove form and show success message
+                    const formDiv = document.getElementById('aics-lead-form').parentElement;
+                    formDiv.innerHTML = '<div>Thank you! We\'ve received your request and will get back to you soon.</div>';
+                    
+                    showingLeadForm = false;
+                    inputField.disabled = false;
+                    sendBtn.disabled = false;
+                } else {
+                    addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+                }
+            } catch (error) {
+                addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+            }
+        }
     }
 
     // Initialize Widget

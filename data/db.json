@@ -311,10 +311,10 @@
       },
       "leads": [],
       "analytics": {
-        "totalMessages": 7,
+        "totalMessages": 9,
         "faqHits": {},
         "lastActive": "2026-06-03T16:49:29.213Z",
-        "humanEscalated": 2
+        "humanEscalated": 4
       },
       "notificationEmail": "",
       "conversations": [
@@ -404,6 +404,64 @@
           "score": 0,
           "createdAt": "2026-06-04T07:55:15.357Z",
           "updatedAt": "2026-06-04T07:55:18.172Z"
+        },
+        {
+          "id": "567993e4-0bec-4656-8c0c-8e213c940c6f",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "1c78a6e6-4f72-4984-b894-c71142299ff5",
+              "role": "user",
+              "content": "Do you offer refunds?",
+              "confidence": null,
+              "timestamp": "2026-06-05T08:29:47.297Z"
+            },
+            {
+              "id": "b06c4280-a5c5-4be2-8fe8-24af53f4464a",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-05T08:29:47.297Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-05T08:29:46.605Z",
+          "updatedAt": "2026-06-05T08:29:47.297Z"
+        },
+        {
+          "id": "5a64201d-1353-40ec-b43a-3a07d9575680",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "bee07c45-efee-44b9-ba09-5ffae3342586",
+              "role": "user",
+              "content": "hello",
+              "confidence": null,
+              "timestamp": "2026-06-05T08:32:29.005Z"
+            },
+            {
+              "id": "1ee33101-df66-4ceb-aab7-cb42c1bb5ab0",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-05T08:32:29.005Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-05T08:32:28.331Z",
+          "updatedAt": "2026-06-05T08:32:29.005Z"
         }
       ],
       "unansweredQuestions": [
@@ -426,6 +484,20 @@
           "question": "i need your service",
           "count": 1,
           "lastAskedAt": "2026-06-04T07:55:18.154Z",
+          "answered": false
+        },
+        {
+          "id": "fb45495b-0460-42ef-b4cf-6fcba2edee3b",
+          "question": "Do you offer refunds?",
+          "count": 1,
+          "lastAskedAt": "2026-06-05T08:29:47.297Z",
+          "answered": false
+        },
+        {
+          "id": "b493410a-6722-48c5-92a9-2f6e85369e60",
+          "question": "hello",
+          "count": 1,
+          "lastAskedAt": "2026-06-05T08:32:29.005Z",
           "answered": false
         }
       ],
@@ -564,11 +636,11 @@
       }
     },
     {
-      "id": "cd180e12-3733-42bc-b848-2a4c04b7b910",
+      "id": "fcf1b8ec-a1ae-4bb2-a51f-f2b3edd85348",
       "name": "InvoicePro",
-      "domain": "http://locdalhost:5173/",
+      "domain": "http://localhost:5173/",
       "userId": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
-      "createdAt": "2026-06-05T06:56:26.122Z",
+      "createdAt": "2026-06-05T08:34:06.339Z",
       "qdrantCollection": "aics_invoicepro",
       "widgetSettings": {
         "title": "InvoicePro Support",
@@ -577,48 +649,40 @@
       },
       "notificationEmail": "",
       "verification": {
-        "status": "verified",
-        "method": "html",
-        "token": "2bcedee0759462f0eda32d40c86fac7f",
-        "verifiedAt": "2026-06-05T06:57:00.154Z"
+        "status": "unverified",
+        "method": null,
+        "token": "c7df3da6482636402f4d01f63037f0bb",
+        "verifiedAt": null
       },
-      "faqs": [],
+      "faqs": [
+        {
+          "id": "71823025-37d0-4fd6-9e06-458768fd99f9",
+          "questionEn": "Hello",
+          "questionBn": null,
+          "answerEn": "Hi, How Can I Help You?",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-05T08:34:44.106Z"
+        }
+      ],
       "knowledgeSources": {
         "websites": [],
         "pdfs": [
           {
-            "id": "f5429400-bb49-44e3-938e-a7e663da286a",
+            "id": "712907c1-f2ff-4b52-9904-647bc8359c5a",
             "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
-            "fileName": "1780642627911-403647849.pdf",
-            "status": "failed",
-            "createdAt": "2026-06-05T06:57:07.914Z",
-            "lastTrainedAt": null,
-            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent: fetch failed"
-          },
-          {
-            "id": "61675d83-d36c-4754-b02d-96944e2c91d6",
-            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
-            "fileName": "1780642916761-170182665.pdf",
+            "fileName": "1780648497755-166591934.pdf",
             "status": "completed",
-            "createdAt": "2026-06-05T07:01:56.763Z",
-            "lastTrainedAt": "2026-06-05T07:02:00.624Z",
+            "createdAt": "2026-06-05T08:34:57.758Z",
+            "lastTrainedAt": "2026-06-05T08:35:01.342Z",
             "chunksCount": 5
-          },
-          {
-            "id": "43a8e094-1160-4624-a4ed-d8bda874710d",
-            "name": "Product-MonthlySales-Price-Rating-TargetAge-KeyFea.csv",
-            "fileName": "1780645597348-814099338.csv",
-            "status": "completed",
-            "createdAt": "2026-06-05T07:46:37.354Z",
-            "lastTrainedAt": "2026-06-05T07:46:39.655Z",
-            "chunksCount": 3
           }
         ]
       },
       "leads": [],
       "conversations": [
         {
-          "id": "51dd2c8d-0d37-46d6-aded-b615153bdb99",
+          "id": "4c15a411-a6d4-4fef-a12a-27e096e00a5a",
           "visitor": {
             "name": "",
             "email": "",
@@ -626,114 +690,58 @@
           },
           "messages": [
             {
-              "id": "5c39d1ac-d53e-4394-95df-f3f9eca55d70",
+              "id": "32127d8a-31a2-430f-9c85-7e8e4bb4a5f9",
               "role": "user",
-              "content": "How do I use this system?",
+              "content": "hello",
               "confidence": null,
-              "timestamp": "2026-06-05T07:02:20.705Z"
+              "timestamp": "2026-06-05T08:36:06.327Z"
             },
             {
-              "id": "cd121722-fe05-4165-a124-4d375ecf459c",
+              "id": "8b356a0b-553f-4b2e-8efb-115a92c5ad33",
               "role": "ai",
-              "content": "To use the system, you can use the navigation bar or the dashboard module cards to access different features:\n\n* **Invoice:** Create or view invoices.\n* **Payments:** Check payments and view transactions.\n* **Store:** Manage products and check stock.\n* **Settings:** Update your company information.",
-              "confidence": 0.6088523941958816,
-              "timestamp": "2026-06-05T07:02:20.705Z"
+              "content": "Hi, How Can I Help You?",
+              "confidence": 1,
+              "timestamp": "2026-06-05T08:36:06.327Z"
             },
             {
-              "id": "c45e3d8b-9439-4221-8623-c5fcb8fc1dad",
+              "id": "782793ba-564f-4cda-b4dd-a989e6ae69ae",
               "role": "user",
-              "content": "Where do I update my company information?",
+              "content": "Show me recent transactions",
               "confidence": null,
-              "timestamp": "2026-06-05T07:03:29.316Z"
+              "timestamp": "2026-06-05T08:36:20.024Z"
             },
             {
-              "id": "20322426-00bd-4e93-9eb9-6eefaa7d37b7",
+              "id": "9abca9cc-e66e-414a-976d-cdb4c051235e",
               "role": "ai",
-              "content": "To update your company information, follow these steps:\n\n1. Click **Settings** in the top-right navigation bar.\n2. Fill in or update your company name, address, phone number, email, owner name, and owner title.\n3. Click **Save Changes**.",
-              "confidence": 0.6003598666600903,
-              "timestamp": "2026-06-05T07:03:29.316Z"
-            },
-            {
-              "id": "20c91555-17fa-48f4-88c5-ac449099840d",
-              "role": "user",
-              "content": "Do you offer refunds?",
-              "confidence": null,
-              "timestamp": "2026-06-05T07:03:40.722Z"
-            },
-            {
-              "id": "2f1e89e8-9d17-41a3-955a-963d320fde45",
-              "role": "ai",
-              "content": "I'm sorry, but I don't have information about our refund policy in the current documentation. Would you like me to escalate this to a human support agent who can assist you further?",
-              "confidence": 0.5605134840894759,
-              "timestamp": "2026-06-05T07:03:40.722Z"
-            }
-          ],
-          "status": "pending",
-          "leadId": null,
-          "score": 0,
-          "createdAt": "2026-06-05T07:02:17.455Z",
-          "updatedAt": "2026-06-05T07:03:40.722Z"
-        },
-        {
-          "id": "d1dfcacc-a815-4547-b83d-ce209a83b429",
-          "visitor": {
-            "name": "",
-            "email": "",
-            "phone": ""
-          },
-          "messages": [
-            {
-              "id": "c8605aa2-1d04-4af6-9669-659bbefc32ee",
-              "role": "user",
-              "content": "What's the total earnings?",
-              "confidence": null,
-              "timestamp": "2026-06-05T07:08:08.686Z"
-            },
-            {
-              "id": "2c280acc-966f-473b-a854-598e64eb5ac4",
-              "role": "ai",
-              "content": "Based on our system, you can find this information in two places:\n* The **Dashboard** shows your **Total Revenue**.\n* The **Payments** page shows your **Total Earnings** in its top stats grid.",
-              "confidence": 0.6273952709644308,
-              "timestamp": "2026-06-05T07:08:08.686Z"
+              "content": "To view your recent transactions, please go to **Payments**. Your recent transactions are listed in the table located below the top stats grid.",
+              "confidence": 0.6495647251026914,
+              "timestamp": "2026-06-05T08:36:20.024Z"
             }
           ],
           "status": "open",
           "leadId": null,
           "score": 0,
-          "createdAt": "2026-06-05T07:08:05.526Z",
-          "updatedAt": "2026-06-05T07:08:08.686Z"
+          "createdAt": "2026-06-05T08:36:05.520Z",
+          "updatedAt": "2026-06-05T08:36:20.024Z"
         }
       ],
-      "unansweredQuestions": [
-        {
-          "id": "136caee9-55cb-4d79-b4f1-4740b7e15f19",
-          "question": "Do you offer refunds?",
-          "count": 1,
-          "lastAskedAt": "2026-06-05T07:03:40.722Z",
-          "answered": true
-        }
-      ],
+      "unansweredQuestions": [],
       "webhooks": [],
       "analytics": {
-        "totalMessages": 4,
-        "aiResolved": 3,
-        "humanEscalated": 1,
+        "totalMessages": 2,
+        "aiResolved": 2,
+        "humanEscalated": 0,
         "leadsCaptured": 0,
         "faqHits": {},
-        "lastActive": "2026-06-05T07:08:08.686Z",
+        "lastActive": "2026-06-05T08:36:20.024Z",
         "dailyUsage": [
           {
             "date": "2026-06-05",
-            "messages": 4,
+            "messages": 2,
             "leads": 0
           }
         ],
         "weeklyUsage": []
-      },
-      "googleSheets": {
-        "enabled": false,
-        "spreadsheetId": "",
-        "serviceAccountKey": ""
       }
     }
   ]
