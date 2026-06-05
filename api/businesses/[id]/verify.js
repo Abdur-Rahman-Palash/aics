@@ -102,49 +102,24 @@ module.exports = async (req, res) => {
                 try {
                     const https = require('https');
                     const http = require('http');
-                    const url = require('url');
                     
-                    let targetUrl = `${protocol}${domain}/aics-verification-${business.verification.token}.html`;
+                    const url = `${protocol}${domain}/aics-verification-${business.verification.token}.html`;
+                    
+                    const httpModule = protocol === 'https://' ? https : http;
                     
                     isVerified = await new Promise((resolve) => {
-                        const makeRequest = (currentUrl) => {
-                            const parsedUrl = url.parse(currentUrl);
-                            const httpModule = parsedUrl.protocol === 'https:' ? https : http;
-                            
-                            const options = {
-                                hostname: parsedUrl.hostname,
-                                port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
-                                path: parsedUrl.path,
-                                method: 'GET',
-                                headers: {
-                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-                                }
-                            };
-                            
-                            const request = httpModule.request(options, (response) => {
-                                // Handle redirects (3xx status codes)
-                                if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-                                    const newUrl = url.resolve(currentUrl, response.headers.location);
-                                    makeRequest(newUrl);
-                                    return;
-                                }
-                                
-                                resolve(response.statusCode === 200);
-                            });
-                            
-                            request.on('error', (err) => {
-                                resolve(false);
-                            });
-                            
-                            request.setTimeout(10000, () => { // 10 second timeout for Render environment
-                                request.destroy();
-                                resolve(false);
-                            });
-                            
-                            request.end();
-                        };
+                        const request = httpModule.get(url, (response) => {
+                            resolve(response.statusCode === 200);
+                        });
                         
-                        makeRequest(targetUrl);
+                        request.on('error', (err) => {
+                            resolve(false);
+                        });
+                        
+                        request.setTimeout(5000, () => {
+                            request.destroy();
+                            resolve(false);
+                        });
                     });
                 } catch (httpError) {
                     // If request fails, verification fails

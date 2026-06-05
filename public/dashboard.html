@@ -298,54 +298,18 @@
         function renderBusinessDetails(business) {
         let html = '';
         
-        // Verification section
-        const isVerified = business.verification?.status === 'verified';
-        const verificationToken = business.verification?.token || '';
-        
-        html += '<div class="section" style="margin-bottom: 16px; background: ' + (isVerified ? '#f0fdf4' : '#fffbeb') + '; border: 1px solid ' + (isVerified ? '#86efac' : '#fcd34d') + ';">';
+        // Domain section
+        html += '<div class="section" style="margin-bottom: 16px; background: #f0f9ff; border: 1px solid #bfdbfe;">';
         html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">';
-        html += '<h3 style="margin: 0; color: ' + (isVerified ? '#166534' : '#854d0e') + ';">';
-        html += isVerified ? '✅ Domain Verified' : '⚠️ Verify Your Domain';
-        html += '</h3>';
-        if (!isVerified) {
-            html += '<div style="display: flex; gap: 8px;">';
-            html += '<button class="btn btn-primary btn-small" onclick="verifyDomain(\'' + business.id + '\', \'dns\')">Verify via DNS</button>';
-            html += '<button class="btn btn-secondary btn-small" onclick="verifyDomain(\'' + business.id + '\', \'html\')">Verify via HTML</button>';
-            html += '</div>';
-        }
+        html += '<h3 style="margin: 0; color: #1e40af;">📍 Domain</h3>';
         html += '</div>';
-        
-        if (!isVerified) {
-            html += '<div id="verification-options-' + business.id + '">';
-            
-            // DNS Verification Instructions
-            html += '<div style="margin-bottom: 16px; background: white; padding: 16px; border-radius: 8px;">';
-            html += '<h4 style="margin: 0 0 8px 0; color: #333;">Method 1: DNS TXT Record (Recommended)</h4>';
-            html += '<p style="margin: 0 0 12px 0; color: #666;">Add this TXT record to your domain\'s DNS settings:</p>';
-            html += '<div style="background: #f5f5f5; padding: 12px; border-radius: 8px; font-family: monospace; word-break: break-all;">';
-            html += 'Host: @ <br>';
-            html += 'Type: TXT <br>';
-            html += 'Value: aics-verification=' + verificationToken;
-            html += '</div>';
-            html += '</div>';
-            
-            // HTML Verification Instructions
-            html += '<div style="background: white; padding: 16px; border-radius: 8px;">';
-            html += '<h4 style="margin: 0 0 8px 0; color: #333;">Method 2: HTML File Upload</h4>';
-            html += '<p style="margin: 0 0 12px 0; color: #666;">Upload this file to your website\'s root directory:</p>';
-            html += '<div style="background: #f5f5f5; padding: 12px; border-radius: 8px; font-family: monospace;">';
-            html += 'Filename: aics-verification-' + verificationToken + '.html';
-            html += '</div>';
-            html += '<p style="margin: 8px 0 0 0; color: #666; font-size: 12px;">The file can be empty or contain any content</p>';
-            html += '</div>';
-            
-            html += '</div>';
-        } else {
-            html += '<p style="margin: 0; color: #166534;">';
-            html += 'Verified on ' + new Date(business.verification.verifiedAt).toLocaleString() + ' via ' + (business.verification.method === 'dns' ? 'DNS TXT Record' : 'HTML File');
-            html += '</p>';
-        }
-        
+        html += '<div style="display: flex; gap: 8px; align-items: flex-end;">';
+        html += '<div style="flex-grow: 1;">';
+        html += '<label style="font-size: 14px; font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Website URL</label>';
+        html += '<input type="url" id="domain-' + business.id + '" value="' + business.domain + '" placeholder="https://yourcompany.com" style="width: 100%; padding: 10px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">';
+        html += '</div>';
+        html += '<button class="btn btn-primary" onclick="updateDomain(\'' + business.id + '\')">Save</button>';
+        html += '</div>';
         html += '</div>';
         
         html += '<div class="business-details">';
@@ -934,25 +898,30 @@
             }
         }
         
-        async function verifyDomain(businessId, method) {
+        async function updateDomain(businessId) {
         try {
-            showMessage('Verifying domain...', 'success');
-            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/verify', {
-                method: 'POST',
+            const domain = document.getElementById('domain-' + businessId).value.trim();
+            if (!domain) {
+                showMessage('Please enter a domain', 'error');
+                return;
+            }
+            showMessage('Saving domain...', 'success');
+            const response = await fetchWithCsrf('/api/businesses/' + businessId, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ method })
+                body: JSON.stringify({ domain })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                showMessage(data.message, 'success');
-                loadBusinesses(); // Refresh to show updated status
+                showMessage('Domain saved successfully!', 'success');
+                loadBusinesses(); // Refresh to show updated domain
             } else {
                 showMessage(data.error, 'error');
             }
         } catch (error) {
-            showMessage('Failed to verify domain', 'error');
+            showMessage('Failed to save domain', 'error');
         }
     }
 
