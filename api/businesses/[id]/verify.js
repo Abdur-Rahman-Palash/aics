@@ -2,13 +2,43 @@
 // Verifies domain ownership
 
 const dns = require('dns').promises;
+const cookieSession = require('cookie-session');
 const storage = require('../../../lib/storage');
+require('dotenv').config();
+
+// Check for default session secret in production
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'your-secret-key-change-this-in-production')) {
+    console.warn('WARNING: Using default or missing SESSION_SECRET in production! This is a security risk. Please set a strong SESSION_SECRET in your environment variables.');
+}
+
+// Middleware for session handling
+const sessionMiddleware = cookieSession({
+    name: 'aics-session',
+    keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/'
+});
 
 module.exports = async (req, res) => {
+    // Apply session middleware first!
+    await new Promise((resolve) => sessionMiddleware(req, res, resolve));
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    console.log('[VERIFY] Incoming request:', {
+        method: req.method,
+        params: req.params,
+        query: req.query,
+        body: req.body,
+        hasSession: !!req.session,
+        sessionUserId: req.session?.userId,
+    });
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -19,20 +49,24 @@ module.exports = async (req, res) => {
         const { method } = req.body;
 
         if (!businessId) {
+            console.error('[VERIFY] Missing businessId');
             return res.status(400).json({ success: false, error: 'Business ID is required' });
         }
 
         if (!method) {
+            console.error('[VERIFY] Missing verification method');
             return res.status(400).json({ success: false, error: 'Verification method is required' });
         }
 
         // Check auth
         if (!req.session || !req.session.userId) {
+            console.error('[VERIFY] Unauthorized: no session userId');
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
 
         const business = storage.getBusiness(businessId, req.session.userId);
         if (!business) {
+            console.error('[VERIFY] Business not found');
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
 
@@ -123,7 +157,11 @@ module.exports = async (req, res) => {
 
         return res.status(405).json({ error: 'Method not allowed' });
     } catch (error) {
-        console.error('[VERIFY] Unexpected error:', error);
+        console.error('[VERIFY] Unexpected error:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+        });
         return res.status(500).json({ success: false, error: error.message });
     }
 };

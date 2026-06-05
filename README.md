@@ -11,11 +11,12 @@ A complete, white-label AI customer support and lead capture platform that lets 
 Imagine having a 24/7 employee that:
 - ✅ Answers customer questions instantly
 - ✅ Captures leads even when you're asleep
-- ✅ Captures leads with automated scoring
+- ✅ Captures leads with automated scoring (Hot/Warm/Cold)
 - ✅ Learns from your website, PDFs, and FAQs
 - ✅ Identifies knowledge gaps for you to fix
 - ✅ Looks like *your* brand
 - ✅ Notifies you immediately of new leads via email
+- ✅ Keeps conversations focused on the lead's request after form submission
 - ✅ Costs way less than hiring another support person
 
 That's exactly what AICS gives you – no coding required!
@@ -64,6 +65,7 @@ AICS is built with modern, reliable tools that make deployment and customization
         <li>Collects name, email, phone</li>
         <li>Automated lead scoring (Hot/Warm/Cold)</li>
         <li>Real-time alerts via email</li>
+        <li>Relevance check after form submission to stay on topic</li>
       </ul>
     </td>
   </tr>
@@ -226,11 +228,12 @@ Or customize it:
 - ✅ Unanswered questions detection & knowledge gap identification
 - ✅ CSV export of leads and conversations
 - ✅ Full dashboard responsiveness
+- ✅ Lead form relevance check to keep conversations on-topic
+- ✅ Improved signup flow (redirect to login after signup)
 
 🔜 **Upcoming**:
 - [ ] SMS notifications
 - [ ] Multi-language support (English + more)
-- [ ] Advanced analytics dashboard
 - [ ] SSO integration
 - [ ] More database options out of the box
 

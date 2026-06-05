@@ -26,14 +26,21 @@ function isRateLimited(ip) {
     return false;
 }
 
+// Check for default session secret in production
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'your-secret-key-change-this-in-production')) {
+    console.warn('WARNING: Using default or missing SESSION_SECRET in production! This is a security risk. Please set a strong SESSION_SECRET in your environment variables.');
+}
+
 // Middleware for session handling
 const sessionMiddleware = cookieSession({
     name: 'aics-session',
     keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/'
 });
 
 module.exports = async (req, res) => {
