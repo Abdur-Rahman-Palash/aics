@@ -300,21 +300,38 @@ app.post('/api/chat', (req, res) => chatHandler(req, res));
 app.post('/api/upload-faqs', (req, res) => uploadFaqsHandler(req, res));
 app.get('/api/get-faqs', (req, res) => getFaqsHandler(req, res));
 app.all('/api/businesses', (req, res) => businessesHandler(req, res));
-app.put('/api/businesses/:id', (req, res) => {
-    console.log('[PUT /api/businesses/:id] Hit the route!', req.params, req.body);
+app.all('/api/businesses/:id', (req, res) => {
+    console.log('[/api/businesses/:id] Hit the route!', req.method, req.params, req.body);
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId } = req.params;
-        const business = storage.getBusiness(businessId, req.session.userId);
-        if (!business) {
-            return res.status(404).json({ success: false, error: 'Business not found' });
+        
+        if (req.method === 'GET') {
+            const business = storage.getBusiness(businessId, req.session.userId);
+            if (!business) {
+                return res.status(404).json({ success: false, error: 'Business not found' });
+            }
+            return res.status(200).json({ success: true, business });
+        } else if (req.method === 'PUT') {
+            const business = storage.getBusiness(businessId, req.session.userId);
+            if (!business) {
+                return res.status(404).json({ success: false, error: 'Business not found' });
+            }
+            const updatedBusiness = storage.updateBusiness(businessId, req.body);
+            return res.status(200).json({ success: true, business: updatedBusiness });
+        } else if (req.method === 'DELETE') {
+            const deleted = storage.deleteBusiness(businessId, req.session.userId);
+            if (!deleted) {
+                return res.status(404).json({ success: false, error: 'Business not found' });
+            }
+            return res.status(200).json({ success: true });
+        } else {
+            return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
-        const updatedBusiness = storage.updateBusiness(businessId, req.body);
-        res.status(200).json({ success: true, business: updatedBusiness });
     } catch (error) {
-        console.error('[PUT /api/businesses/:id] Error:', error);
+        console.error('[/api/businesses/:id] Error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
