@@ -345,7 +345,7 @@
             html += '<div class="knowledge-tab-container">';
             html += '<button class="knowledge-tab-btn active" onclick="switchKnowledgeTab(\'' + business.id + '\', \'faqs\')">📚 FAQs</button>';
             html += '<button class="knowledge-tab-btn" onclick="switchKnowledgeTab(\'' + business.id + '\', \'website\')">🌐 Website</button>';
-            html += '<button class="knowledge-tab-btn" onclick="switchKnowledgeTab(\'' + business.id + '\', \'pdf\')">📄 PDF</button>';
+            html += '<button class="knowledge-tab-btn" onclick="switchKnowledgeTab(\'' + business.id + '\', \'pdf\')">📄 Documents</button>';
             html += '</div>';
             
             // FAQs Content
@@ -403,13 +403,13 @@
             html += '</div>';
             html += '</div>';
             
-            // PDF Content
+            // Documents Content
             html += '<div class="knowledge-content" id="knowledge-' + business.id + '-pdf">';
-            html += '<h3 style="margin-bottom:16px;">PDF & DOCX Training</h3>';
+            html += '<h3 style="margin-bottom:16px;">Documents Training (PDF, DOCX, TXT, CSV, Excel)</h3>';
             html += '<div id="pdf-upload-area-' + business.id + '" class="file-upload-area" onclick="document.getElementById(\'pdf-input-' + business.id + '\').click()">';
             html += '<span class="file-upload-icon">📄</span>';
-            html += '<p class="file-upload-text">Click or drag and drop to upload PDFs or DOCX</p>';
-            html += '<input type="file" id="pdf-input-' + business.id + '" accept=".pdf,.docx" multiple style="display:none;" onchange="uploadPdfs(event, \'' + business.id + '\')">';
+            html += '<p class="file-upload-text">Click or drag and drop to upload PDFs, DOCX, TXT, CSV, or Excel files</p>';
+            html += '<input type="file" id="pdf-input-' + business.id + '" accept=".pdf,.docx,.txt,.csv,.xlsx,.xls" multiple style="display:none;" onchange="uploadPdfs(event, \'' + business.id + '\')">';
             html += '</div>';
             html += '<div style="margin-top:24px;">';
             html += '<h4 style="margin-bottom:12px; color:#666;">Uploaded Files</h4>';

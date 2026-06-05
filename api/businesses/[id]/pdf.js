@@ -43,14 +43,14 @@ const storageConfig = multer.diskStorage({
     },
 });
 
-// File filter to accept only PDF and DOCX
+// File filter to accept PDF, DOCX, TXT, CSV, Excel files
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['.pdf', '.docx'];
+    const allowedTypes = ['.pdf', '.docx', '.txt', '.csv', '.xlsx', '.xls'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedTypes.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Only PDF and DOCX files are allowed!'));
+        cb(new Error('Only PDF, DOCX, TXT, CSV, Excel (.xls/.xlsx) files are allowed!'));
     }
 };
 
