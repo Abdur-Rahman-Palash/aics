@@ -146,50 +146,116 @@ module.exports = async (req, res) => {
         
         // Generate AI response or use fallback
         let aiResponse;
+        // 🔑 Keyword matching fallback - works even without API!
+        function findAnswerFromContext(msg, ctxParts) {
+            const normalizedMsg = msg.toLowerCase();
+            
+            // Look for questions in our context chunks (since your PDF is FAQ-style)
+            for (let part of ctxParts) {
+                // Check if this part contains a Q&A pair
+                const qMatch = part.match(/Q:\s*(.+?)\s*A:\s*(.+?)(?=\s*##|$|\s*Q:)/is);
+                if (qMatch) {
+                    const question = qMatch[1].toLowerCase();
+                    const answer = qMatch[2].trim();
+                    // Check if user's question is similar to this FAQ question
+                    const msgWords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
+                    const qWords = question.split(/\s+/).filter(w => w.length > 2);
+                    const matches = msgWords.filter(w => qWords.includes(w));
+                    if (matches.length >= 2) {
+                        return answer;
+                    }
+                }
+                
+                // Check for keywords in the part
+                const partLower = part.toLowerCase();
+                const keywords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
+                const hasEnoughKeywords = keywords.filter(k => partLower.includes(k)).length >= 2;
+                if (hasEnoughKeywords) {
+                    // Extract the relevant part
+                    const sentences = part.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
+                    const relevantSentences = sentences.filter(s => 
+                        keywords.some(k => s.toLowerCase().includes(k))
+                    );
+                    if (relevantSentences.length > 0) {
+                        return relevantSentences.join('. ') + '.';
+                    }
+                }
+            }
+            
+            return null;
+        }
+        
         try {
-            if (config.gemini.apiKey) {
-                if (directMatch) {
-                    aiResponse = directMatch.answer;
-                    confidenceScore = 1.0;
+            if (directMatch) {
+                aiResponse = directMatch.answer;
+                confidenceScore = 1.0;
+                needsHumanHelp = false;
+            } else if (contextParts.length > 0) { // If we have ANY context, try to use it!
+                // First try our keyword fallback
+                const keywordAnswer = findAnswerFromContext(message, contextParts);
+                if (keywordAnswer) {
+                    console.log('[CHAT] Found answer via keyword matching!');
+                    aiResponse = keywordAnswer;
                     needsHumanHelp = false;
-                } else if (contextParts.length > 0) { // If we have ANY context, try to use it!
+                    confidenceScore = 0.8;
+                } 
+                // If keyword didn't find, try AI (if API is available)
+                else if (config.gemini.apiKey) {
                     // Get conversation history for LangChain memory
                     let conversationHistory = [];
                     if (conversation && conversation.messages) {
                         conversationHistory = conversation.messages;
                     }
 
-                    aiResponse = await langchain.generateResponse(
-                        message,
-                        context,
-                        conversationHistory
-                    );
+                    try {
+                        console.log('[CHAT] Calling langchain.generateResponse');
+                        aiResponse = await langchain.generateResponse(
+                            message,
+                            context,
+                            conversationHistory
+                        );
+                        console.log('[CHAT] langchain.generateResponse returned:', aiResponse);
+                    } catch (langchainError) {
+                        console.warn('[CHAT] Langchain failed, falling back to direct gemini.js', langchainError);
+                        try {
+                            aiResponse = await gemini.generateResponse(message, context);
+                            console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
+                        } catch (geminiError) {
+                            console.warn('[CHAT] Gemini API failed, using last resort: keyword fallback', geminiError);
+                            // Last resort - just return the top context chunk
+                            aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
+                            needsHumanHelp = true;
+                        }
+                    }
+                    
                     // Check if AI response mentions human/escalate, set needsHumanHelp if so
                     const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know/i.test(aiResponse);
                     if (hasHumanKeywords) {
                         needsHumanHelp = true;
                     }
-                } else { // If no context at all, show lead form
-                    aiResponse = humanTransferMessage;
-                    needsHumanHelp = true;
-                }
-            } else {
-                // Fallback if no Gemini API key
-                if (directMatch) {
-                    aiResponse = directMatch.answer;
-                    confidenceScore = 1.0;
-                    needsHumanHelp = false;
-                } else if (business && business.faqs.length > 0) {
-                    aiResponse = "I'm sorry, I couldn't find a direct answer to your question. Please check our FAQ section or contact support.";
-                    needsHumanHelp = true;
                 } else {
-                    aiResponse = "Hi! Thanks for reaching out. Our team will get back to you soon.";
+                    // No API key, just return the top context
+                    aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
                     needsHumanHelp = true;
                 }
+            } else { // If no context at all, show lead form
+                aiResponse = humanTransferMessage;
+                needsHumanHelp = true;
             }
         } catch (error) {
-            // Fallback response
-            aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later.";
+            console.error('[CHAT] Error generating response:', error);
+            console.error('[CHAT] Error stack:', error.stack);
+            // Final fallback: try keyword matching or return context
+            const keywordAnswer = findAnswerFromContext(message, contextParts);
+            if (keywordAnswer) {
+                aiResponse = keywordAnswer;
+                needsHumanHelp = false;
+            } else if (contextParts.length > 0) {
+                aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
+                needsHumanHelp = true;
+            } else {
+                aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later. Error: " + error.message;
+            }
         }
 
         // Record analytics if business ID is provided (try/catch to not crash)

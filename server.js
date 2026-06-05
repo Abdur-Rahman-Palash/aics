@@ -706,6 +706,8 @@ app.put('/api/businesses/:id/settings', (req, res) => {
     }
 });
 
+
+
 // Google Sheets API endpoints
 app.get('/api/businesses/:id/google-sheets', (req, res) => {
     if (!req.session || !req.session.userId) {

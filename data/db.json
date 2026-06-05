@@ -55,6 +55,20 @@
       "password": "$2b$10$Im.5IgMJp9ssEt.Km6t9NO5aXipAmCAAn25dSkDhdom48SfKelkSK",
       "name": "Tokir miya",
       "createdAt": "2026-06-04T18:00:40.775Z"
+    },
+    {
+      "id": "241c2447-4054-45b0-9f3a-154f1d515fce",
+      "email": "mostakimaakther474@gmail.com",
+      "password": "$2b$10$8BZcWcKouDqCrzuny.o9z.Bp.n31L4fR5D2gBl5xzrJzQ1tgQVDVW",
+      "name": "Abdur Rahman Palash",
+      "createdAt": "2026-06-05T09:14:47.407Z"
+    },
+    {
+      "id": "666d910f-6e0b-40e9-9f03-b0717b01a4c5",
+      "email": "rockyvaibd247@gmail.com",
+      "password": "$2b$10$AwJfTONBVMvku5jK6jgSBOGjt7NtU37720yCEzoTk6fbHn1y4i7c.",
+      "name": "Rocky vai",
+      "createdAt": "2026-06-05T17:49:59.891Z"
     }
   ],
   "businesses": [
@@ -723,25 +737,260 @@
           "score": 0,
           "createdAt": "2026-06-05T08:36:05.520Z",
           "updatedAt": "2026-06-05T08:36:20.024Z"
+        },
+        {
+          "id": "296f05e7-5615-4a16-bd5d-e1ebe3024f2a",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "5d2ff93a-16f2-4d78-acdc-8b3650cc341e",
+              "role": "user",
+              "content": "hello",
+              "confidence": null,
+              "timestamp": "2026-06-05T10:28:17.408Z"
+            },
+            {
+              "id": "a8aa6312-6924-4b2d-b3a9-0776157df085",
+              "role": "ai",
+              "content": "Hi, How Can I Help You?",
+              "confidence": 1,
+              "timestamp": "2026-06-05T10:28:17.408Z"
+            },
+            {
+              "id": "1021768c-9669-441c-9b1f-617dd6d37eaa",
+              "role": "user",
+              "content": "who are you?",
+              "confidence": null,
+              "timestamp": "2026-06-05T10:30:34.381Z"
+            },
+            {
+              "id": "1c9d90fa-0440-4ffe-840c-cfe9400dd2c8",
+              "role": "ai",
+              "content": "I'm sorry, I couldn't generate a response right now. Please try again later.",
+              "confidence": 0.5404251880490796,
+              "timestamp": "2026-06-05T10:30:34.381Z"
+            }
+          ],
+          "status": "open",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-05T10:28:16.576Z",
+          "updatedAt": "2026-06-05T10:30:34.381Z"
         }
       ],
       "unansweredQuestions": [],
       "webhooks": [],
       "analytics": {
-        "totalMessages": 2,
-        "aiResolved": 2,
+        "totalMessages": 4,
+        "aiResolved": 4,
         "humanEscalated": 0,
         "leadsCaptured": 0,
         "faqHits": {},
-        "lastActive": "2026-06-05T08:36:20.024Z",
+        "lastActive": "2026-06-05T10:30:34.381Z",
         "dailyUsage": [
           {
             "date": "2026-06-05",
-            "messages": 2,
+            "messages": 4,
             "leads": 0
           }
         ],
         "weeklyUsage": []
+      },
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
+      }
+    },
+    {
+      "id": "eb2dd3bd-4a46-4c16-be31-3a47fe1b0758",
+      "name": "invoice pro",
+      "domain": "http://localhost:5173/",
+      "userId": "666d910f-6e0b-40e9-9f03-b0717b01a4c5",
+      "createdAt": "2026-06-05T18:10:30.340Z",
+      "qdrantCollection": "aics_invoice_pro",
+      "widgetSettings": {
+        "title": "invoice pro Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "notificationEmail": "",
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "9e6f34ae5d1bc70e0ceab34840f624ee",
+        "verifiedAt": null
+      },
+      "faqs": [
+        {
+          "id": "b05c77dc-5fd3-4483-9a70-28850a52dbe5",
+          "questionEn": "hi",
+          "questionBn": null,
+          "answerEn": "hello",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-05T18:11:04.202Z"
+        }
+      ],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": [
+          {
+            "id": "c5e4bcbc-fe8d-43c7-801b-602ed3287a4e",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780683077387-470830762.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-05T18:11:17.392Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:embedContent: [404 Not Found] models/gemini-2.0-flash-exp is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+          },
+          {
+            "id": "c86186b2-dce3-40f9-a7c1-94aa704ab533",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780683355149-294100518.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-05T18:15:55.158Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:embedContent: [404 Not Found] models/gemini-2.0-flash-exp is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+          },
+          {
+            "id": "fbe1ad18-d8d4-459b-9816-50994bf0dd61",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780683805913-395005006.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-05T18:23:25.923Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent: [404 Not Found] models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+          },
+          {
+            "id": "5b46350c-a18d-4188-a2c0-bf58cd8478bb",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780683830397-38259364.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-05T18:23:50.399Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent: [404 Not Found] models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+          },
+          {
+            "id": "32fecf0e-5f97-4052-8b61-a504fda1f69c",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780684440831-868118053.pdf",
+            "status": "completed",
+            "createdAt": "2026-06-05T18:34:00.841Z",
+            "lastTrainedAt": "2026-06-05T18:34:05.335Z",
+            "chunksCount": 5
+          }
+        ]
+      },
+      "leads": [],
+      "conversations": [
+        {
+          "id": "4c86593f-f99d-4035-b382-1d0b1ab3a1b3",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "2cc06262-5f0b-45d4-ae46-83679bcddba1",
+              "role": "user",
+              "content": "How do I mark an invoice as paid?",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:24:48.293Z"
+            },
+            {
+              "id": "c018a723-1ada-415a-910b-9a211b355b52",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:24:48.293Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-05T18:24:48.021Z",
+          "updatedAt": "2026-06-05T18:24:48.293Z"
+        },
+        {
+          "id": "bc3dc839-56fe-4f79-aedd-fb62986a1c55",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "035e56ba-3a2e-4ede-8288-5af49705798c",
+              "role": "user",
+              "content": "hi",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:34:32.158Z"
+            },
+            {
+              "id": "752e7876-b971-471d-bf5d-db0937072ea3",
+              "role": "ai",
+              "content": "hello",
+              "confidence": 1,
+              "timestamp": "2026-06-05T18:34:32.158Z"
+            },
+            {
+              "id": "a62c4541-cbb3-454b-bc27-1f28ddd88686",
+              "role": "user",
+              "content": "How do I mark an invoice as paid?",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:34:42.585Z"
+            },
+            {
+              "id": "40927445-5a0a-4401-9563-cf8c72e9a3ff",
+              "role": "ai",
+              "content": "pdf\n# Invoice Management System Q&A (For PDF) ## Invoice‐Related ### Q: How do I create a new invoice. Dashboard → Click Invoice module card. ### Q: Show me all pending invoices A: 1. Navigate to Invoices (via nav bar or Invoice Options → VIEW). A: Dashboard shows real‐time Total Revenue , Total Invoices , Pending Payments , and Total Products in the top stats grid. ### Q: How do I mark an invoice as paid. Go to Invoices. Find the pending invoice. Click Mark as Paid in its Action column. ### Q: Can you search for invoice INV-0001. Go to Invoices. Type the invoice ID or customer name in the search bar. ### Q: How do I add a discount to an invoice. Create/edit an invoice.",
+              "confidence": 0.8,
+              "timestamp": "2026-06-05T18:34:42.585Z"
+            }
+          ],
+          "status": "open",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-05T18:34:31.477Z",
+          "updatedAt": "2026-06-05T18:34:42.585Z"
+        }
+      ],
+      "unansweredQuestions": [
+        {
+          "id": "6d8afc6c-fcce-4871-89b4-1711ee1d7ebc",
+          "question": "How do I mark an invoice as paid?",
+          "count": 1,
+          "lastAskedAt": "2026-06-05T18:24:48.292Z",
+          "answered": false
+        }
+      ],
+      "webhooks": [],
+      "analytics": {
+        "totalMessages": 3,
+        "aiResolved": 2,
+        "humanEscalated": 1,
+        "leadsCaptured": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-05T18:34:42.585Z",
+        "dailyUsage": [
+          {
+            "date": "2026-06-05",
+            "messages": 3,
+            "leads": 0
+          }
+        ],
+        "weeklyUsage": []
+      },
+      "googleSheets": {
+        "enabled": false,
+        "spreadsheetId": "",
+        "serviceAccountKey": ""
       }
     }
   ]
