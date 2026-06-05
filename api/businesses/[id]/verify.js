@@ -85,9 +85,13 @@ module.exports = async (req, res) => {
         }
 
         if (req.method === 'POST') {
+            console.log('[VERIFY] Starting POST verification');
+            console.log('[VERIFY] Business object:', JSON.stringify(business, null, 2));
             // Parse domain once - remove protocol if present
             let domain = business.domain.trim();
             let protocol = 'https://';
+            
+            console.log('[VERIFY] Original domain:', domain);
             
             if (domain.startsWith('https://')) {
                 protocol = 'https://';
@@ -99,72 +103,104 @@ module.exports = async (req, res) => {
             
             // Remove trailing slash and path if present
             domain = domain.split('/')[0];
+            console.log('[VERIFY] Cleaned domain:', domain, 'Protocol:', protocol);
+            console.log('[VERIFY] Verification token:', business.verification?.token);
             
             // Verify domain using specified method
             let isVerified = false;
+            console.log('[VERIFY] Using verification method:', method);
 
             if (method === 'dns') {
-                // DNS TXT record verification
+                console.log('[VERIFY] Starting DNS TXT verification');
                 try {
+                    console.log('[VERIFY] Resolving TXT records for:', domain);
                     const txtRecords = await dns.resolveTxt(domain);
+                    console.log('[VERIFY] Got TXT records:', JSON.stringify(txtRecords, null, 2));
                     const expectedRecord = `aics-verification=${business.verification.token}`;
+                    console.log('[VERIFY] Looking for TXT record:', expectedRecord);
                     
                     // Check all TXT records
                     for (const record of txtRecords) {
                         const joinedRecord = record.join('');
+                        console.log('[VERIFY] Checking TXT record part:', joinedRecord);
                         if (joinedRecord.includes(expectedRecord)) {
+                            console.log('[VERIFY] Found matching TXT record!');
                             isVerified = true;
                             break;
                         }
                     }
                 } catch (dnsError) {
-                    // If domain doesn't exist or no TXT records, verification fails
+                    console.error('[VERIFY] DNS verification error:', {
+                        message: dnsError.message,
+                        stack: dnsError.stack,
+                        code: dnsError.code
+                    });
                 }
             } else if (method === 'html') {
-                // HTML file verification (check for aics-verification-[token].html)
+                console.log('[VERIFY] Starting HTML file verification');
                 try {
                     const https = require('https');
                     const http = require('http');
                     
                     const url = `${protocol}${domain}/aics-verification-${business.verification.token}.html`;
+                    console.log('[VERIFY] Checking HTML URL:', url);
                     
                     const httpModule = protocol === 'https://' ? https : http;
+                    console.log('[VERIFY] Using HTTP module:', protocol);
                     
                     isVerified = await new Promise((resolve) => {
+                        console.log('[VERIFY] Making request to:', url);
                         const request = httpModule.get(url, (response) => {
+                            console.log('[VERIFY] HTML request status code:', response.statusCode);
                             resolve(response.statusCode === 200);
                         });
                         
                         request.on('error', (err) => {
-                            console.log('[VERIFY] HTML verification error:', err.message);
+                            console.error('[VERIFY] HTML verification request error:', {
+                                message: err.message,
+                                stack: err.stack,
+                                code: err.code
+                            });
                             resolve(false);
                         });
                         
                         request.setTimeout(5000, () => {
+                            console.warn('[VERIFY] HTML request timed out after 5 seconds');
                             request.destroy();
                             resolve(false);
                         });
                     });
+                    console.log('[VERIFY] HTML verification result:', isVerified);
                 } catch (httpError) {
-                    console.log('[VERIFY] HTTP error:', httpError);
+                    console.error('[VERIFY] HTML verification error:', {
+                        message: httpError.message,
+                        stack: httpError.stack,
+                        name: httpError.name
+                    });
                 }
             } else {
+                console.error('[VERIFY] Invalid verification method:', method);
                 return res.status(400).json({ success: false, error: 'Invalid verification method' });
             }
 
+            console.log('[VERIFY] Final verification result:', isVerified);
             if (isVerified) {
+                console.log('[VERIFY] Updating storage with verified status');
                 // Update verification status
                 storage.updateVerification(businessId, {
                     status: 'verified',
                     method,
                     verifiedAt: new Date().toISOString()
                 });
+                console.log('[VERIFY] Storage updated successfully');
 
                 return res.status(200).json({ success: true, message: 'Domain verified successfully' });
             } else {
+                console.log('[VERIFY] Verification failed, preparing error message');
                 const errorMessage = method === 'dns' 
                     ? `Verification failed. Couldn't find TXT record "aics-verification=${business.verification.token}" on ${domain}.`
                     : `Verification failed. Couldn't access ${protocol}${domain}/aics-verification-${business.verification.token}.html. Please make sure the file exists and is publicly accessible.`;
+                console.log('[VERIFY] Returning error:', errorMessage);
                 return res.status(400).json({ success: false, error: errorMessage });
             }
         }
