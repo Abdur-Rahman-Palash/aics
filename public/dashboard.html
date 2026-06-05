@@ -489,6 +489,54 @@
             html += '</div>';
             html += '</div>';
 
+            html += '<div class="tab-content" id="tab-' + business.id + '-leads">';
+            html += '<h3>Leads (' + (business.leads?.length || 0) + ')</h3>';
+            html += '<div id="leads-list-' + business.id + '">';
+            const leads = business.leads || [];
+            if (leads.length > 0) {
+                leads.forEach(lead => {
+                    const statusColors = { 
+                        new: '#3b82f6', 
+                        contacted: '#f59e0b', 
+                        qualified: '#10b981', 
+                        converted: '#8b5cf6', 
+                        lost: '#6b7280' 
+                    };
+                    const scoreColor = lead.score >= 70 ? '#10b981' : lead.score >=30 ? '#f59e0b' : '#6b7280';
+                    html += '<div class="lead-item" style="border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">';
+                    html += '<div>';
+                    html += '<h4 style="margin:0;color:#111;font-size:18px;">' + lead.name + '</h4>';
+                    html += '<p style="margin:4px 0 0;color:#666;font-size:14px;">' + lead.email + (lead.phone ? ' • ' + lead.phone : '') + '</p>';
+                    html += '</div>';
+                    html += '<div style="display:flex;gap:8px;align-items:center;">';
+                    html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + statusColors[lead.status] + '20;color:' + statusColors[lead.status] + ';">' + lead.status.charAt(0).toUpperCase() + lead.status.slice(1) + '</span>';
+                    html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + scoreColor + '20;color:' + scoreColor + ';">Score: ' + lead.score + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                    if (lead.message || lead.notes) {
+                        html += '<div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:12px;">';
+                        html += '<p style="margin:0;color:#333;font-size:14px;"><strong>Message:</strong> ' + (lead.message || lead.notes) + '</p>';
+                        html += '</div>';
+                    }
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
+                    html += '<select onchange="updateLeadStatus(\'' + business.id + '\', \'' + lead.id + '\', this.value)" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-weight:600;">';
+                    html += '<option value="new"' + (lead.status === 'new' ? ' selected' : '') + '>New</option>';
+                    html += '<option value="contacted"' + (lead.status === 'contacted' ? ' selected' : '') + '>Contacted</option>';
+                    html += '<option value="qualified"' + (lead.status === 'qualified' ? ' selected' : '') + '>Qualified</option>';
+                    html += '<option value="converted"' + (lead.status === 'converted' ? ' selected' : '') + '>Converted</option>';
+                    html += '<option value="lost"' + (lead.status === 'lost' ? ' selected' : '') + '>Lost</option>';
+                    html += '</select>';
+                    html += '<p style="margin:0;color:#888;font-size:13px;">' + new Date(lead.createdAt).toLocaleString() + '</p>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">No leads yet. Start chatting to capture some!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
             html += '<div class="tab-content" id="tab-' + business.id + '-unanswered">';
             html += '<h3>Top Unanswered Questions</h3>';
             html += '<div id="unanswered-' + business.id + '">';
