@@ -53,29 +53,35 @@ module.exports = async (req, res) => {
     }
 
     try {
+        console.log('[VERIFY] Parsing request...');
         const businessId = req.params.id || req.query.id;
+        console.log('[VERIFY] businessId:', businessId);
+        
         const { method } = req.body;
+        console.log('[VERIFY] method from body:', method);
 
         if (!businessId) {
             console.error('[VERIFY] Missing businessId');
-            return res.status(400).json({ success: false, error: 'Business ID is required' });
+            return res.status(400).json({ success: false, error: 'Business ID is required', debug: { params: req.params, query: req.query } });
         }
 
         if (!method) {
             console.error('[VERIFY] Missing verification method');
-            return res.status(400).json({ success: false, error: 'Verification method is required' });
+            return res.status(400).json({ success: false, error: 'Verification method is required', debug: { body: req.body } });
         }
 
         // Check auth
+        console.log('[VERIFY] Checking auth...');
         if (!req.session || !req.session.userId) {
             console.error('[VERIFY] Unauthorized: no session userId');
-            return res.status(401).json({ success: false, error: 'Unauthorized' });
+            return res.status(401).json({ success: false, error: 'Unauthorized', debug: { hasSession: !!req.session, userId: req.session?.userId, cookies: req.headers.cookie } });
         }
+        console.log('[VERIFY] Authenticated as:', req.session.userId);
 
         const business = storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             console.error('[VERIFY] Business not found');
-            return res.status(404).json({ success: false, error: 'Business not found' });
+            return res.status(404).json({ success: false, error: 'Business not found', debug: { businessId } });
         }
 
         if (req.method === 'POST') {
