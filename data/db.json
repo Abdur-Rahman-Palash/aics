@@ -650,163 +650,6 @@
       }
     },
     {
-      "id": "fcf1b8ec-a1ae-4bb2-a51f-f2b3edd85348",
-      "name": "InvoicePro",
-      "domain": "http://localhost:5173/",
-      "userId": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
-      "createdAt": "2026-06-05T08:34:06.339Z",
-      "qdrantCollection": "aics_invoicepro",
-      "widgetSettings": {
-        "title": "InvoicePro Support",
-        "primaryColor": "#667eea",
-        "avatar": "🤖"
-      },
-      "notificationEmail": "",
-      "verification": {
-        "status": "unverified",
-        "method": null,
-        "token": "c7df3da6482636402f4d01f63037f0bb",
-        "verifiedAt": null
-      },
-      "faqs": [
-        {
-          "id": "71823025-37d0-4fd6-9e06-458768fd99f9",
-          "questionEn": "Hello",
-          "questionBn": null,
-          "answerEn": "Hi, How Can I Help You?",
-          "answerBn": null,
-          "isSuggested": false,
-          "createdAt": "2026-06-05T08:34:44.106Z"
-        }
-      ],
-      "knowledgeSources": {
-        "websites": [],
-        "pdfs": [
-          {
-            "id": "712907c1-f2ff-4b52-9904-647bc8359c5a",
-            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
-            "fileName": "1780648497755-166591934.pdf",
-            "status": "completed",
-            "createdAt": "2026-06-05T08:34:57.758Z",
-            "lastTrainedAt": "2026-06-05T08:35:01.342Z",
-            "chunksCount": 5
-          }
-        ]
-      },
-      "leads": [],
-      "conversations": [
-        {
-          "id": "4c15a411-a6d4-4fef-a12a-27e096e00a5a",
-          "visitor": {
-            "name": "",
-            "email": "",
-            "phone": ""
-          },
-          "messages": [
-            {
-              "id": "32127d8a-31a2-430f-9c85-7e8e4bb4a5f9",
-              "role": "user",
-              "content": "hello",
-              "confidence": null,
-              "timestamp": "2026-06-05T08:36:06.327Z"
-            },
-            {
-              "id": "8b356a0b-553f-4b2e-8efb-115a92c5ad33",
-              "role": "ai",
-              "content": "Hi, How Can I Help You?",
-              "confidence": 1,
-              "timestamp": "2026-06-05T08:36:06.327Z"
-            },
-            {
-              "id": "782793ba-564f-4cda-b4dd-a989e6ae69ae",
-              "role": "user",
-              "content": "Show me recent transactions",
-              "confidence": null,
-              "timestamp": "2026-06-05T08:36:20.024Z"
-            },
-            {
-              "id": "9abca9cc-e66e-414a-976d-cdb4c051235e",
-              "role": "ai",
-              "content": "To view your recent transactions, please go to **Payments**. Your recent transactions are listed in the table located below the top stats grid.",
-              "confidence": 0.6495647251026914,
-              "timestamp": "2026-06-05T08:36:20.024Z"
-            }
-          ],
-          "status": "open",
-          "leadId": null,
-          "score": 0,
-          "createdAt": "2026-06-05T08:36:05.520Z",
-          "updatedAt": "2026-06-05T08:36:20.024Z"
-        },
-        {
-          "id": "296f05e7-5615-4a16-bd5d-e1ebe3024f2a",
-          "visitor": {
-            "name": "",
-            "email": "",
-            "phone": ""
-          },
-          "messages": [
-            {
-              "id": "5d2ff93a-16f2-4d78-acdc-8b3650cc341e",
-              "role": "user",
-              "content": "hello",
-              "confidence": null,
-              "timestamp": "2026-06-05T10:28:17.408Z"
-            },
-            {
-              "id": "a8aa6312-6924-4b2d-b3a9-0776157df085",
-              "role": "ai",
-              "content": "Hi, How Can I Help You?",
-              "confidence": 1,
-              "timestamp": "2026-06-05T10:28:17.408Z"
-            },
-            {
-              "id": "1021768c-9669-441c-9b1f-617dd6d37eaa",
-              "role": "user",
-              "content": "who are you?",
-              "confidence": null,
-              "timestamp": "2026-06-05T10:30:34.381Z"
-            },
-            {
-              "id": "1c9d90fa-0440-4ffe-840c-cfe9400dd2c8",
-              "role": "ai",
-              "content": "I'm sorry, I couldn't generate a response right now. Please try again later.",
-              "confidence": 0.5404251880490796,
-              "timestamp": "2026-06-05T10:30:34.381Z"
-            }
-          ],
-          "status": "open",
-          "leadId": null,
-          "score": 0,
-          "createdAt": "2026-06-05T10:28:16.576Z",
-          "updatedAt": "2026-06-05T10:30:34.381Z"
-        }
-      ],
-      "unansweredQuestions": [],
-      "webhooks": [],
-      "analytics": {
-        "totalMessages": 4,
-        "aiResolved": 4,
-        "humanEscalated": 0,
-        "leadsCaptured": 0,
-        "faqHits": {},
-        "lastActive": "2026-06-05T10:30:34.381Z",
-        "dailyUsage": [
-          {
-            "date": "2026-06-05",
-            "messages": 4,
-            "leads": 0
-          }
-        ],
-        "weeklyUsage": []
-      },
-      "googleSheets": {
-        "enabled": false,
-        "spreadsheetId": "",
-        "serviceAccountKey": ""
-      }
-    },
-    {
       "id": "eb2dd3bd-4a46-4c16-be31-3a47fe1b0758",
       "name": "invoice pro",
       "domain": "http://localhost:5173/",
@@ -883,6 +726,15 @@
             "createdAt": "2026-06-05T18:34:00.841Z",
             "lastTrainedAt": "2026-06-05T18:34:05.335Z",
             "chunksCount": 5
+          },
+          {
+            "id": "b40184d4-a95c-4be6-b6db-f9437e629ed3",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780685014928-369644857.pdf",
+            "status": "completed",
+            "createdAt": "2026-06-05T18:43:34.929Z",
+            "lastTrainedAt": "2026-06-05T18:43:38.292Z",
+            "chunksCount": 5
           }
         ]
       },
@@ -952,13 +804,84 @@
               "content": "pdf\n# Invoice Management System Q&A (For PDF) ## Invoice‐Related ### Q: How do I create a new invoice. Dashboard → Click Invoice module card. ### Q: Show me all pending invoices A: 1. Navigate to Invoices (via nav bar or Invoice Options → VIEW). A: Dashboard shows real‐time Total Revenue , Total Invoices , Pending Payments , and Total Products in the top stats grid. ### Q: How do I mark an invoice as paid. Go to Invoices. Find the pending invoice. Click Mark as Paid in its Action column. ### Q: Can you search for invoice INV-0001. Go to Invoices. Type the invoice ID or customer name in the search bar. ### Q: How do I add a discount to an invoice. Create/edit an invoice.",
               "confidence": 0.8,
               "timestamp": "2026-06-05T18:34:42.585Z"
+            },
+            {
+              "id": "98f78dca-ebcc-4eca-83ef-f4b7bdcca46a",
+              "role": "user",
+              "content": "What's the total revenue this month?",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:36:07.680Z"
+            },
+            {
+              "id": "8364bd20-64a5-4fa6-a885-dfec16ba03e0",
+              "role": "ai",
+              "content": "hello",
+              "confidence": 1,
+              "timestamp": "2026-06-05T18:36:07.680Z"
+            },
+            {
+              "id": "7e0bdd0c-2863-402d-ba5b-da4afb88adf4",
+              "role": "user",
+              "content": "What's the total revenue this month?",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:36:20.610Z"
+            },
+            {
+              "id": "8039bf11-7db3-4bb2-a19b-766e2ef0ef3f",
+              "role": "ai",
+              "content": "hello",
+              "confidence": 1,
+              "timestamp": "2026-06-05T18:36:20.610Z"
+            },
+            {
+              "id": "7238f024-5fbf-47bb-9762-929297830049",
+              "role": "user",
+              "content": "Show me all pending invoices",
+              "confidence": null,
+              "timestamp": "2026-06-05T18:36:35.131Z"
+            },
+            {
+              "id": "1265e495-dc8c-48d1-84f8-bcf08a754aa0",
+              "role": "ai",
+              "content": "### Q: How many pending payments are there. A: Dashboard shows Pending Payments in the top stats grid. A: Dashboard shows Total Revenue , and the Payments page shows Total Earnings in its top stats grid. Open an invoice (via Dashboard recent invoices or Invoices page link).",
+              "confidence": 0.8,
+              "timestamp": "2026-06-05T18:36:35.131Z"
             }
           ],
           "status": "open",
           "leadId": null,
           "score": 0,
           "createdAt": "2026-06-05T18:34:31.477Z",
-          "updatedAt": "2026-06-05T18:34:42.585Z"
+          "updatedAt": "2026-06-05T18:36:35.131Z"
+        },
+        {
+          "id": "2534540a-9b6d-4f0f-873a-4b4f075a21c4",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "cc80b296-f4be-4511-9f5b-d86da38fbd1e",
+              "role": "user",
+              "content": "hello",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:02:32.326Z"
+            },
+            {
+              "id": "4a9eb615-8a2c-4b82-8ea9-9ed0ff26be66",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:02:32.326Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-06T08:02:32.319Z",
+          "updatedAt": "2026-06-06T08:02:32.327Z"
         }
       ],
       "unansweredQuestions": [
@@ -968,20 +891,32 @@
           "count": 1,
           "lastAskedAt": "2026-06-05T18:24:48.292Z",
           "answered": false
+        },
+        {
+          "id": "0a2c94cd-059c-4522-868e-18f714c57b19",
+          "question": "hello",
+          "count": 1,
+          "lastAskedAt": "2026-06-06T08:02:32.326Z",
+          "answered": false
         }
       ],
       "webhooks": [],
       "analytics": {
-        "totalMessages": 3,
-        "aiResolved": 2,
-        "humanEscalated": 1,
+        "totalMessages": 7,
+        "aiResolved": 5,
+        "humanEscalated": 2,
         "leadsCaptured": 0,
         "faqHits": {},
-        "lastActive": "2026-06-05T18:34:42.585Z",
+        "lastActive": "2026-06-06T08:02:32.326Z",
         "dailyUsage": [
           {
             "date": "2026-06-05",
-            "messages": 3,
+            "messages": 6,
+            "leads": 0
+          },
+          {
+            "date": "2026-06-06",
+            "messages": 1,
             "leads": 0
           }
         ],
@@ -991,6 +926,178 @@
         "enabled": false,
         "spreadsheetId": "",
         "serviceAccountKey": ""
+      }
+    },
+    {
+      "id": "9fe6a9eb-6266-4e69-8055-b304ff00b4c8",
+      "name": "InvoicePro",
+      "domain": "http://localhost:5173/",
+      "userId": "b9e7ed49-4c4e-421a-b034-12126fc5adcd",
+      "createdAt": "2026-06-06T08:00:36.821Z",
+      "qdrantCollection": "aics_invoicepro",
+      "widgetSettings": {
+        "title": "InvoicePro Support",
+        "primaryColor": "#667eea",
+        "avatar": "🤖"
+      },
+      "notificationEmail": "",
+      "verification": {
+        "status": "unverified",
+        "method": null,
+        "token": "4837c6219322a17351bf8fdcbf995276",
+        "verifiedAt": null
+      },
+      "faqs": [
+        {
+          "id": "26b2f158-05ab-43f4-908d-110a046797e9",
+          "questionEn": "hello",
+          "questionBn": null,
+          "answerEn": "hi",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-06T08:00:58.856Z"
+        },
+        {
+          "id": "71252fd7-f9ba-4f8e-9798-aec9b3138fad",
+          "questionEn": "tumi ke",
+          "questionBn": null,
+          "answerEn": "ami ai",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-06T08:01:08.720Z"
+        },
+        {
+          "id": "2f83cc45-8127-4675-9f06-be41560d159e",
+          "questionEn": "who are you?",
+          "questionBn": null,
+          "answerEn": "ai",
+          "answerBn": null,
+          "isSuggested": false,
+          "createdAt": "2026-06-06T08:01:20.783Z"
+        }
+      ],
+      "knowledgeSources": {
+        "websites": [],
+        "pdfs": [
+          {
+            "id": "5e9eec43-7a81-43c2-a456-243a2f117e60",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780732921893-644120042.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-06T08:02:01.901Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent: fetch failed"
+          },
+          {
+            "id": "46f7e729-9dd0-497d-a23b-79a8d14e1b31",
+            "name": "5266f896-9ad7-422f-8240-8e10449ace30.pdf",
+            "fileName": "1780733081173-385588816.pdf",
+            "status": "failed",
+            "createdAt": "2026-06-06T08:04:41.179Z",
+            "lastTrainedAt": null,
+            "error": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent: fetch failed"
+          }
+        ]
+      },
+      "leads": [],
+      "conversations": [
+        {
+          "id": "3108f034-808c-47e0-8f07-3b8e639f27e6",
+          "visitor": {
+            "name": "",
+            "email": "",
+            "phone": ""
+          },
+          "messages": [
+            {
+              "id": "91ba6daf-869d-4967-a7bf-c43c4b789ff8",
+              "role": "user",
+              "content": "tumi ke",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:03:00.301Z"
+            },
+            {
+              "id": "98a1f91b-52d8-4645-8138-e00445ece5ca",
+              "role": "ai",
+              "content": "ami ai",
+              "confidence": 1,
+              "timestamp": "2026-06-06T08:03:00.301Z"
+            },
+            {
+              "id": "94250a85-f52a-4d97-ac78-dcebd2b670aa",
+              "role": "user",
+              "content": "hello",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:03:37.592Z"
+            },
+            {
+              "id": "e61a8c87-c900-4e09-a388-cd96500db5fc",
+              "role": "ai",
+              "content": "hi",
+              "confidence": 1,
+              "timestamp": "2026-06-06T08:03:37.592Z"
+            },
+            {
+              "id": "18576b3b-60c0-44dd-958e-d2350ec514d9",
+              "role": "user",
+              "content": "who are you?",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:03:49.000Z"
+            },
+            {
+              "id": "3a4ba587-ca0f-4178-b738-63fa28df590f",
+              "role": "ai",
+              "content": "ai",
+              "confidence": 1,
+              "timestamp": "2026-06-06T08:03:49.000Z"
+            },
+            {
+              "id": "c62b317a-90a7-4044-a0cd-65a8c4214878",
+              "role": "user",
+              "content": "hi",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:03:53.229Z"
+            },
+            {
+              "id": "8fe6b765-34e9-45a9-990a-ae9cc80df5fd",
+              "role": "ai",
+              "content": "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+              "confidence": null,
+              "timestamp": "2026-06-06T08:03:53.229Z"
+            }
+          ],
+          "status": "pending",
+          "leadId": null,
+          "score": 0,
+          "createdAt": "2026-06-06T08:03:00.294Z",
+          "updatedAt": "2026-06-06T08:03:53.229Z"
+        }
+      ],
+      "unansweredQuestions": [
+        {
+          "id": "93ec6c22-ac9a-4cd0-96f2-18b156587283",
+          "question": "hi",
+          "count": 1,
+          "lastAskedAt": "2026-06-06T08:03:53.229Z",
+          "answered": false
+        }
+      ],
+      "webhooks": [],
+      "analytics": {
+        "totalMessages": 4,
+        "aiResolved": 3,
+        "humanEscalated": 1,
+        "leadsCaptured": 0,
+        "faqHits": {},
+        "lastActive": "2026-06-06T08:03:53.229Z",
+        "dailyUsage": [
+          {
+            "date": "2026-06-06",
+            "messages": 4,
+            "leads": 0
+          }
+        ],
+        "weeklyUsage": []
       }
     }
   ]

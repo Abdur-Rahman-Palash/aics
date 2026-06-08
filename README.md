@@ -1,163 +1,114 @@
-# 🚀 AICS - AI Customer Support & Lead Capture SaaS
+# 🚀 AICS — AI Customer Support & Lead Capture SaaS
 
 **Sell more, support less.**
 
-A complete, white-label AI customer support and lead capture platform that lets you embed a smart bot on any website in minutes. Built for small businesses, agencies, and developers – and **100% ready to deploy on Render.com**!
+AICS is a white-label AI customer support and lead capture app you can embed on any website in minutes. It is built for small businesses, agencies, and developers, and is ready to deploy on Render.com right now.
 
 ---
 
-## 🎯 Why AICS? (For Non-Tech People)
+## 🔍 What is AICS?
 
-Imagine having a 24/7 employee that:
-- ✅ Answers customer questions instantly
-- ✅ Captures leads even when you're asleep
-- ✅ Captures leads with automated scoring (Hot/Warm/Cold)
-- ✅ Learns from your website, PDFs, and FAQs
-- ✅ Identifies knowledge gaps for you to fix
-- ✅ Looks like *your* brand
-- ✅ Notifies you immediately of new leads via email
-- ✅ Keeps conversations focused on the lead's request after form submission
-- ✅ Costs way less than hiring another support person
+AICS combines an AI-powered chatbot, lead capture, and a human inbox into one product.
 
-That's exactly what AICS gives you – no coding required!
+- Fast training from websites, PDFs, and FAQs
+- Automated lead capture with Hot/Warm/Cold scoring
+- Alerts for new leads and escalations
+- Dashboard analytics and knowledge gap tracking
+- Customizable widget design for your brand
 
 ---
 
-## 🛠️ Tech Stack (For Developers)
+## 👥 Who is it for?
 
-AICS is built with modern, reliable tools that make deployment and customization a breeze:
+AICS works well for:
 
-- **Backend**: Node.js + Express (production-proven)
-- **AI Brain**: Google Gemini (state-of-the-art language models)
-- **Smart Search**: Qdrant (vector search for accurate knowledge retrieval)
-- **Database**: Simple JSON storage (easy to swap to PostgreSQL/MongoDB if needed)
-- **Frontend**: Vanilla JS + CSS (lightning-fast, no heavy frameworks)
-- **Deployment**: **Render.com** (we've already set up render.yaml for you!)
+- Small businesses that want 24/7 customer support without hiring extra staff
+- Agencies offering branded support bots to clients
+- Developers building a white-label chatbot and lead capture solution
+- Teams that need a faster way to convert website visitors into leads
 
 ---
 
-## ✨ Key Features That Sell
+## 📣 Marketing Pitch
 
-<table>
-  <tr>
-    <td valign="top">
-      <h3>🤖 Smart AI Chatbot</h3>
-      <ul>
-        <li>Trained on your unique knowledge</li>
-        <li>Human-like responses</li>
-        <li>Understands context</li>
-        <li>Confidence-based responses</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>📚 Easy Training</h3>
-      <ul>
-        <li>Scrape your website</li>
-        <li>Upload PDFs</li>
-        <li>Add FAQs manually</li>
-        <li>Add FAQs from unanswered questions</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>👥 Advanced Lead Capture</h3>
-      <ul>
-        <li>Shows form when bot can't help</li>
-        <li>Collects name, email, phone</li>
-        <li>Automated lead scoring (Hot/Warm/Cold)</li>
-        <li>Real-time alerts via email</li>
-        <li>Relevance check after form submission to stay on topic</li>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <h3>💬 Human Inbox</h3>
-      <ul>
-        <li>View all conversations</li>
-        <li>Filter conversations by status</li>
-        <li>Continue conversations from dashboard</li>
-        <li>Update conversation statuses</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>📊 Analytics Dashboard</h3>
-      <ul>
-        <li>Total conversations</li>
-        <li>Resolved by AI</li>
-        <li>Escalated to human</li>
-        <li>Leads captured</li>
-        <li>Resolution rate</li>
-        <li>Knowledge gaps</li>
-        <li>Top unanswered questions</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>🔌 Webhooks</h3>
-      <ul>
-        <li>Send events to Zapier, Make, n8n</li>
-        <li>Trigger on new lead, new conversation, escalation</li>
-        <li>Custom webhook URLs</li>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <h3>🎨 Fully Customizable</h3>
-      <ul>
-        <li>Change colors, avatar, title</li>
-        <li>Matches your brand</li>
-        <li>Draggable on desktop</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>📱 Mobile-Friendly</h3>
-      <ul>
-        <li>Looks perfect on phones</li>
-        <li>Works on tablets</li>
-        <li>Responsive by default</li>
-      </ul>
-    </td>
-    <td valign="top">
-      <h3>🔒 Secure</h3>
-      <ul>
-        <li>User authentication</li>
-        <li>CSRF protection</li>
-        <li>Rate limiting</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+AICS solves the biggest growth challenge for small businesses and agencies: converting website visitors into qualified leads without adding support cost.
+
+- **Problem:** Visitors leave without answers, support teams get overwhelmed, and leads get lost.
+- **Solution:** AICS delivers a branded AI chatbot, intelligent lead capture, and a human follow-up workflow in one package.
+- **Why it wins:** quick deployment, easy training, automated scoring, and meaningful alerts so businesses can act faster.
+
+Use AICS to turn conversations into revenue, reduce support load, and keep customer interactions on brand.
 
 ---
 
-## 🚀 Deploy to Render in 5 Minutes (It Really Works!)
+## ✨ Why AICS?
 
-Yes, **everything is already set up for Render.com**! Here's how to do it:
+AICS helps you:
 
-### Step 1: Fork This Repo
-Click "Use this template" or "Fork" on GitHub to get your own copy of AICS.
+- Answer customer questions instantly
+- Capture leads when you’re offline
+- Score leads automatically
+- Keep conversations on topic after form submission
+- Find knowledge gaps from unanswered questions
+- Match your branding with a fully customizable widget
 
-### Step 2: Create a Render Account
-Go to [render.com](https://render.com) and sign up (free tier works great!).
+---
 
-### Step 3: Create a New Web Service
-1. Connect your GitHub account
-2. Select your forked AICS repository
-3. Use these settings:
-   - **Runtime**: Node.js
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+## 🧩 Key Features
 
-### Step 4: Set Environment Variables
-Add these in Render's dashboard (make sure NODE_ENV is production):
+- **AI Chatbot**: Trained on your content with context-aware responses
+- **Easy Training**: Scrape your website, upload PDFs, or add FAQs manually
+- **Lead Capture**: Show a form when the bot can’t resolve a request
+- **Lead Scoring**: Hot/Warm/Cold lead classification
+- **Notifications**: Email alerts for new leads and escalations
+- **Human Inbox**: Review, filter, and continue conversations from the dashboard
+- **Analytics**: Track conversations, resolutions, escalations, leads, and knowledge gaps
+- **Webhooks**: Send events to Zapier, Make, n8n, or custom endpoints
+- **Customization**: Change widget colors, title, avatar, and branding
+- **Mobile Friendly**: Responsive design for phones and tablets
+- **Security**: User authentication, CSRF protection, and rate limiting
+
+---
+
+## 🛠️ Tech Stack
+
+AICS is built with modern, reliable tools:
+
+- Backend: Node.js + Express
+- AI: Google Gemini + LangChain
+- Vector Search: Qdrant
+- Database: LowDB JSON storage (easy to swap to PostgreSQL/MongoDB)
+- Frontend: Vanilla JavaScript + CSS
+- Deployment: Render.com (render.yaml included)
+
+---
+
+## 🚀 Deploy to Render
+
+AICS is ready to deploy on Render.
+
+### 1. Fork this repo
+Use GitHub’s fork button or template option.
+
+### 2. Create a Render account
+Render’s free tier is enough to get started.
+
+### 3. Create a new web service
+- Runtime: Node.js
+- Build Command: `npm install`
+- Start Command: `npm start`
+
+### 4. Configure environment variables
+Set these values in Render:
+
 ```env
 PORT=3000
 NODE_ENV=production
-SESSION_SECRET=change-this-to-a-long-random-secret-key
-GEMINI_API_KEY=your-google-gemini-api-key-here
-QDRANT_URL=https://your-qdrant-cluster-url (optional but recommended)
-QDRANT_API_KEY=your-qdrant-api-key (optional)
-SMTP_HOST=your-smtp-host (optional, for email notifications)
+SESSION_SECRET=your-long-random-secret
+GEMINI_API_KEY=your-google-gemini-api-key
+QDRANT_URL=https://your-qdrant-cluster-url
+QDRANT_API_KEY=your-qdrant-api-key
+SMTP_HOST=your-smtp-host
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=your-smtp-username
@@ -165,50 +116,61 @@ SMTP_PASS=your-smtp-password
 SMTP_FROM=noreply@yourdomain.com
 ```
 
-### Step 5: Deploy!
-Hit "Save & Deploy" – Render will take care of the rest! 🎉
+> `QDRANT_URL` and `QDRANT_API_KEY` are optional but recommended for better search accuracy.
+
+### 5. Deploy
+Save and deploy your service on Render.
 
 ---
 
-## 💻 Local Development
+## 💻 Run Locally
 
-Want to run it on your computer first? Here's how:
-
-1. Install Node.js (v16 or later)
-2. Clone the repo: `git clone https://github.com/yourusername/aics.git`
-3. Install dependencies: `npm install`
-4. Create a `.env` file (copy from `.env.example`)
-5. Start the server: `npm run dev`
-6. Visit http://localhost:3000
+1. Install Node.js v16 or later
+2. Clone the repository
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Copy `.env.example` to `.env` and update values
+5. Start the app:
+   ```bash
+   npm run dev
+   ```
+6. Open `http://localhost:3000`
 
 ---
 
-## 🔧 How to Use It (Step by Step)
+## ⚙️ Configuration
 
-### For Business Owners
-1. **Sign Up / Login**: Go to your AICS instance and make an account
-2. **Create Your Business**: Add your business name and domain
-3. **Set Up Notifications**: Enter your email address in business settings to get lead alerts
-4. **Train the Bot**:
-   - Enter your website URL (we'll scrape it)
-   - Upload PDF documents
-   - Add FAQs manually
-5. **Monitor Dashboard**:
-   - Check your Human Inbox for conversations
-   - View your Analytics
-   - Fix knowledge gaps from unanswered questions
-6. **Customize**: Change colors, avatar, and widget title
-7. **Embed It**: Copy the embed code and paste it on your website before `</body>`
+Copy `.env.example` to `.env` and configure the following values:
 
-### For Developers
-Embed the widget in seconds:
+- `PORT`
+- `NODE_ENV`
+- `SESSION_SECRET`
+- `GEMINI_API_KEY`
+- `QDRANT_URL` (optional)
+- `QDRANT_API_KEY` (optional)
+- `SMTP_HOST` (optional)
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
+---
+
+## 🌐 Widget Embed
+
+Use the widget by adding this script to your website:
+
 ```html
 <script src="https://your-aics-instance.onrender.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
 ```
 
-Or customize it:
+Customize the widget:
+
 ```html
-<script src="https://your-aics-instance.onrender.com/js/embed.js" 
+<script src="https://your-aics-instance.onrender.com/js/embed.js"
   data-business-id="YOUR_BUSINESS_ID"
   data-widget-title="My Awesome Support"
   data-widget-color="#667eea"
@@ -217,49 +179,48 @@ Or customize it:
 
 ---
 
-## 📈 Roadmap (Done & Upcoming)
+## 📈 Roadmap
 
-✅ **Done**:
-- ✅ Human Inbox
-- ✅ Lead Scoring (Hot/Warm/Cold)
-- ✅ Email notifications for new leads
-- ✅ Webhooks for Zapier, Make, n8n
-- ✅ Advanced analytics dashboard
-- ✅ Unanswered questions detection & knowledge gap identification
-- ✅ CSV export of leads and conversations
-- ✅ Full dashboard responsiveness
-- ✅ Lead form relevance check to keep conversations on-topic
-- ✅ Improved signup flow (redirect to login after signup)
+### Done
+- Human Inbox
+- Lead Scoring (Hot/Warm/Cold)
+- Email notifications for new leads
+- Webhooks for Zapier, Make, n8n
+- Advanced analytics dashboard
+- Knowledge gap detection
+- CSV export for leads and conversations
+- Responsive dashboard
+- Lead form relevance check
+- Improved signup flow
 
-🔜 **Upcoming**:
-- [ ] SMS notifications
-- [ ] Multi-language support (English + more)
-- [ ] SSO integration
-- [ ] More database options out of the box
-
----
-
-## 💡 Ready to Sell This?
-
-AICS is perfect for:
-- 🛠️ Developers building SaaS products
-- 🏢 Agencies serving small businesses
-- 🏪 Small business owners wanting their own support bot
-
-The MIT license lets you use it commercially – go make money! 💰
+### Upcoming
+- SMS notifications
+- Multi-language support
+- SSO integration
+- More database options out of the box
 
 ---
 
-## 📝 License
+## 💡 Who should use AICS?
 
-MIT License - go nuts! Use it for personal or commercial projects.
+- Developers building SaaS products
+- Agencies serving small businesses
+- Small business owners who want a branded support bot
 
----
-
-## 🙋 Need Help?
-
-Open an issue on GitHub, or reach out! We're here to help.
+The MIT license lets you use this commercially.
 
 ---
 
-Made with ❤️ for builders and businesses everywhere!
+## 📄 License
+
+MIT License
+
+---
+
+## 🙋 Need help?
+
+Open an issue on GitHub or reach out if you need assistance.
+
+---
+
+Made with ❤️ for builders and businesses everywhere.
