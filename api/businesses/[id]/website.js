@@ -3,12 +3,37 @@
 
 const getStorage = require('../../../lib/storage');
 const { trainWebsite } = require('../../../lib/training');
+const cookieSession = require('cookie-session');
+require('dotenv').config();
+
+// Check for default session secret in production
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'your-secret-key-change-this-in-production')) {
+    console.warn('WARNING: Using default or missing SESSION_SECRET in production! This is a security risk. Please set a strong SESSION_SECRET in your environment variables.');
+}
+
+// Middleware for session handling
+const sessionMiddleware = cookieSession({
+    name: 'aics-session',
+    keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/'
+});
 
 module.exports = async (req, res) => {
+    // Apply session middleware only if not already present (for serverless)
+    if (!req.session) {
+        await new Promise((resolve) => sessionMiddleware(req, res, resolve));
+    }
+
     // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -25,11 +50,13 @@ module.exports = async (req, res) => {
         
         // Check authentication
         if (!req.session || !req.session.userId) {
+            console.error('[Website] Unauthorized: no session userId');
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
         
         const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
+            console.error('[Website] Business not found');
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
         const { url } = req.body;

@@ -100,18 +100,20 @@ module.exports = async (req, res) => {
         let confidenceScore = 0;
 
         try {
-            // Only try Qdrant and Gemini if config is available
-            if (config.gemini.apiKey && config.qdrant.url && config.qdrant.apiKey) {
+            // Only try if gemini api key is available (we're using local vector storage now!)
+            if (config.gemini.apiKey) {
                 // Determine which collection to use
                 let collectionName = config.qdrant.collectionName; // Default
                 if (business) {
                     collectionName = business.qdrantCollection;
                 }
+                console.log('[CHAT] Using collection:', collectionName);
 
                 // Generate embedding for user message
                 const queryEmbedding = await gemini.generateEmbedding(message);
+                console.log('[CHAT] Generated query embedding');
 
-                // Search Qdrant for similar content (FAQs + chunks)
+                // Search Local Vector Storage for similar content (FAQs + chunks)
                 similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
                 console.log('[CHAT] Found similar items:', JSON.stringify(similarItems, null, 2));
 
@@ -132,6 +134,7 @@ module.exports = async (req, res) => {
                 console.log('[CHAT] Context parts:', contextParts);
             }
         } catch (error) {
+            console.error('[CHAT] Error in vector search:', error);
             // Continue without them - we'll use fallback responses
         }
 
@@ -152,40 +155,49 @@ module.exports = async (req, res) => {
         // 🔑 Keyword matching fallback - works even without API!
         function findAnswerFromContext(msg, ctxParts) {
             const normalizedMsg = msg.toLowerCase();
+            let bestMatch = null;
+            let bestMatchScore = 0;
             
             // Look for questions in our context chunks (since your PDF is FAQ-style)
             for (let part of ctxParts) {
-                // Check if this part contains a Q&A pair
-                const qMatch = part.match(/Q:\s*(.+?)\s*A:\s*(.+?)(?=\s*##|$|\s*Q:)/is);
-                if (qMatch) {
-                    const question = qMatch[1].toLowerCase();
+                // Check if this part contains a Q&A pair (more precise matching)
+                const qMatches = [...part.matchAll(/Q:\s*(.+?)\s*A:\s*(.+?)(?=\s*Q:|$)/gis)];
+                for (const qMatch of qMatches) {
+                    const question = qMatch[1].toLowerCase().trim();
                     const answer = qMatch[2].trim();
+                    
                     // Check if user's question is similar to this FAQ question
                     const msgWords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
                     const qWords = question.split(/\s+/).filter(w => w.length > 2);
                     const matches = msgWords.filter(w => qWords.includes(w));
-                    if (matches.length >= 2) {
-                        return answer;
+                    const score = matches.length;
+                    
+                    if (score > bestMatchScore && score >= 2) {
+                        bestMatchScore = score;
+                        bestMatch = answer;
                     }
                 }
                 
-                // Check for keywords in the part
-                const partLower = part.toLowerCase();
-                const keywords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
-                const hasEnoughKeywords = keywords.filter(k => partLower.includes(k)).length >= 2;
-                if (hasEnoughKeywords) {
-                    // Extract the relevant part
-                    const sentences = part.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
-                    const relevantSentences = sentences.filter(s => 
-                        keywords.some(k => s.toLowerCase().includes(k))
-                    );
-                    if (relevantSentences.length > 0) {
-                        return relevantSentences.join('. ') + '.';
+                // Check for keywords in the part (only if no Q&A match)
+                if (!bestMatch) {
+                    const partLower = part.toLowerCase();
+                    const keywords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
+                    const hasEnoughKeywords = keywords.filter(k => partLower.includes(k)).length >= 2;
+                    if (hasEnoughKeywords) {
+                        // Extract the relevant part
+                        const sentences = part.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
+                        const relevantSentences = sentences.filter(s => 
+                            keywords.some(k => s.toLowerCase().includes(k))
+                        );
+                        if (relevantSentences.length > 0) {
+                            bestMatch = relevantSentences.join('. ') + '.';
+                            bestMatchScore = 1;
+                        }
                     }
                 }
             }
             
-            return null;
+            return bestMatch;
         }
         
         try {
