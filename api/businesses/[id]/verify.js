@@ -3,7 +3,7 @@
 
 const dns = require('dns').promises;
 const cookieSession = require('cookie-session');
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 require('dotenv').config();
 
 // Check for default session secret in production
@@ -39,6 +39,8 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    const storage = await getStorage();
+
     try {
         const businessId = req.params.id || req.query.id;
         const { method } = req.body;
@@ -56,7 +58,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
 
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
@@ -130,7 +132,7 @@ module.exports = async (req, res) => {
 
             if (isVerified) {
                 // Update verification status
-                storage.updateVerification(businessId, {
+                await storage.updateVerification(businessId, {
                     status: 'verified',
                     method,
                     verifiedAt: new Date().toISOString()

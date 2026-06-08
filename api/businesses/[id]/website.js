@@ -1,7 +1,7 @@
 // Vercel API Route: /api/businesses/[id]/website
 // Handles website training for a specific business
 
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 const { trainWebsite } = require('../../../lib/training');
 
 module.exports = async (req, res) => {
@@ -18,6 +18,8 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    const storage = await getStorage();
+
     try {
         const businessId = req.query.id;
         
@@ -26,7 +28,7 @@ module.exports = async (req, res) => {
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
         
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
@@ -36,7 +38,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'URL is required' });
         }
 
-        const newWebsite = storage.addWebsite(businessId, url);
+        const newWebsite = await storage.addWebsite(businessId, url);
 
             if (!newWebsite) {
                 return res.status(404).json({ success: false, error: 'Business not found' });
@@ -45,42 +47,64 @@ module.exports = async (req, res) => {
             // Try to run training (with timeout for serverless)
             try {
                 console.log('Starting website training for', url);
-                // Update status to training
-                const businessRef = storage.getBusiness(businessId);
-                const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-                if (websiteIndex !== -1) {
-                    businessRef.knowledgeSources.websites[websiteIndex].status = 'training';
-                }
-
+                
                 // Run actual training - increase timeout to 60 seconds for local testing!
                 const timeoutPromise = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Training timed out')), 60000)
                 );
                 console.log('Calling trainWebsite');
-                const trainingPromise = trainWebsite(businessId, url, businessRef.qdrantCollection);
+                const trainingPromise = trainWebsite(businessId, url, business.qdrantCollection);
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
                 console.log('Training complete:', result);
 
                 // Update status to completed
-                const businessRef2 = storage.getBusiness(businessId);
-                const websiteIndex2 = businessRef2.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-                if (websiteIndex2 !== -1) {
-                    businessRef2.knowledgeSources.websites[websiteIndex2].status = 'completed';
-                    businessRef2.knowledgeSources.websites[websiteIndex2].lastTrainedAt = new Date().toISOString();
-                    businessRef2.knowledgeSources.websites[websiteIndex2].chunksCount = result.chunksCount;
+                // For Neon storage, we need to update the knowledge source
+                if (process.env.DATABASE_URL) {
+                    const client = await storage.pool.connect();
+                    try {
+                        await client.query(
+                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2 WHERE id = $3',
+                            ['completed', new Date().toISOString(), newWebsite.id]
+                        );
+                    } finally {
+                        client.release();
+                    }
+                } else if (storage.save) {
+                    // For JSON storage
+                    const businessRef = await storage.getBusiness(businessId);
+                    const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
+                    if (websiteIndex !== -1) {
+                        businessRef.knowledgeSources.websites[websiteIndex].status = 'completed';
+                        businessRef.knowledgeSources.websites[websiteIndex].lastTrainedAt = new Date().toISOString();
+                        businessRef.knowledgeSources.websites[websiteIndex].chunksCount = result.chunksCount;
+                    }
+                    storage.save();
                 }
+
             } catch (error) {
                 console.error('Website training failed:', error);
+                
                 // Update status to failed
-                const businessRef = storage.getBusiness(businessId);
-                const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-                if (websiteIndex !== -1) {
-                    businessRef.knowledgeSources.websites[websiteIndex].status = 'failed';
-                    businessRef.knowledgeSources.websites[websiteIndex].error = error.message;
+                if (process.env.DATABASE_URL) {
+                    const client = await storage.pool.connect();
+                    try {
+                        await client.query(
+                            'UPDATE knowledge_sources SET status = $1, error = $2 WHERE id = $3',
+                            ['failed', error.message, newWebsite.id]
+                        );
+                    } finally {
+                        client.release();
+                    }
+                } else if (storage.save) {
+                    const businessRef = await storage.getBusiness(businessId);
+                    const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
+                    if (websiteIndex !== -1) {
+                        businessRef.knowledgeSources.websites[websiteIndex].status = 'failed';
+                        businessRef.knowledgeSources.websites[websiteIndex].error = error.message;
+                    }
+                    storage.save();
                 }
             }
-            // Only save ONCE at the very end!
-            storage.save();
 
         return res.status(201).json({ success: true, website: newWebsite });
 

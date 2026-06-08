@@ -1,7 +1,7 @@
 // Vercel API Route: /api/businesses/[id]/pdf
 // Handles PDF/DOCX uploads for a specific business
 
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -80,6 +80,8 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    const storage = await getStorage();
+
     // Check authentication
     if (!req.session || !req.session.userId) {
         console.error('[PDF] Unauthorized: no session userId');
@@ -89,7 +91,7 @@ module.exports = async (req, res) => {
     // Check if business exists
     const businessId = req.query.id;
     console.log('[PDF] businessId:', businessId);
-    const business = storage.getBusiness(businessId, req.session.userId);
+    const business = await storage.getBusiness(businessId, req.session.userId);
     if (!business) {
         console.error('[PDF] Business not found');
         return res.status(404).json({ success: false, error: 'Business not found' });
@@ -110,7 +112,7 @@ module.exports = async (req, res) => {
         console.log('[PDF] File uploaded:', req.file.originalname);
 
         try {
-            const newPdf = storage.addPdf(businessId, req.file.originalname, req.file.filename);
+            const newPdf = await storage.addPdf(businessId, req.file.originalname, req.file.filename);
             console.log('[PDF] New PDF added:', newPdf.id);
 
             if (!newPdf) {
@@ -120,43 +122,61 @@ module.exports = async (req, res) => {
             // Try to run training (with timeout for serverless)
             try {
                 console.log('[PDF] Starting training for', req.file.originalname);
-                // Update status to training
-                const businessRef = storage.getBusiness(businessId);
-                const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                if (pdfIndex !== -1) {
-                    businessRef.knowledgeSources.pdfs[pdfIndex].status = 'training';
-                }
-                storage.save(); // Save initial training status
-
+                
                 // Run actual training - increase timeout to 120 seconds for Render!
                 const timeoutPromise = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Training timed out')), 120000)
                 );
                 const filePath = path.join(uploadsDir, req.file.filename);
                 console.log('[PDF] Calling trainDocument on filePath:', filePath);
-                const trainingPromise = trainDocument(businessId, filePath, req.file.originalname, businessRef.qdrantCollection);
+                const trainingPromise = trainDocument(businessId, filePath, req.file.originalname, business.qdrantCollection);
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
                 console.log('[PDF] Training complete:', result);
 
                 // Update status to completed
-                const businessRef2 = storage.getBusiness(businessId);
-                const pdfIndex2 = businessRef2.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                if (pdfIndex2 !== -1) {
-                    businessRef2.knowledgeSources.pdfs[pdfIndex2].status = 'completed';
-                    businessRef2.knowledgeSources.pdfs[pdfIndex2].lastTrainedAt = new Date().toISOString();
-                    businessRef2.knowledgeSources.pdfs[pdfIndex2].chunksCount = result.chunksCount;
+                if (process.env.DATABASE_URL) {
+                    const client = await storage.pool.connect();
+                    try {
+                        await client.query(
+                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2 WHERE id = $3',
+                            ['completed', new Date().toISOString(), newPdf.id]
+                        );
+                    } finally {
+                        client.release();
+                    }
+                } else if (storage.save) {
+                    const businessRef = await storage.getBusiness(businessId);
+                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                    if (pdfIndex !== -1) {
+                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'completed';
+                        businessRef.knowledgeSources.pdfs[pdfIndex].lastTrainedAt = new Date().toISOString();
+                        businessRef.knowledgeSources.pdfs[pdfIndex].chunksCount = result.chunksCount;
+                    }
+                    storage.save();
                 }
-                storage.save();
+
             } catch (error) {
                 console.error('[PDF] Training failed:', error);
                 // Update status to failed
-                const businessRef = storage.getBusiness(businessId);
-                const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                if (pdfIndex !== -1) {
-                    businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
-                    businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
+                if (process.env.DATABASE_URL) {
+                    const client = await storage.pool.connect();
+                    try {
+                        await client.query(
+                            'UPDATE knowledge_sources SET status = $1, error = $2 WHERE id = $3',
+                            ['failed', error.message, newPdf.id]
+                        );
+                    } finally {
+                        client.release();
+                    }
+                } else if (storage.save) {
+                    const businessRef = await storage.getBusiness(businessId);
+                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
+                    if (pdfIndex !== -1) {
+                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
+                        businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
+                    }
+                    storage.save();
                 }
-                storage.save();
             }
 
             return res.status(201).json({ success: true, pdf: newPdf });

@@ -1,4 +1,4 @@
-const storage = require('../../lib/storage');
+const getStorage = require('../../lib/storage');
 const cookieSession = require('cookie-session');
 require('dotenv').config();
 
@@ -71,6 +71,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long' });
         }
         
+        const storage = await getStorage();
         const user = await storage.createUser(email, password, name);
         // Don't set session yet - user needs to login first
         res.status(201).json({ success: true, user });

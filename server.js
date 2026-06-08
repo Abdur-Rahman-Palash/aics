@@ -8,9 +8,11 @@ const { Server } = require('socket.io');
 const cookieSession = require('cookie-session');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const storage = require('./lib/storage');
+const getStorage = require('./lib/storage');
 const { doubleCsrf } = require('csrf-csrf');
 const nodemailer = require('nodemailer');
+
+let storage;
 
 // Email notification function
 async function sendLeadNotification(business, lead) {
@@ -797,15 +799,17 @@ app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-if (require.main === module) {
-  server = http.createServer(app);
-  io = new Server(server, {
-    cors: {
-      origin: "*", // Allow all origins for Socket.IO (or restrict to your domain)
-      methods: ["GET", "POST"],
-      credentials: true
-    }
-  });
+async function startServer() {
+    storage = await getStorage();
+    
+    server = http.createServer(app);
+    io = new Server(server, {
+        cors: {
+            origin: "*", // Allow all origins for Socket.IO (or restrict to your domain)
+            methods: ["GET", "POST"],
+            credentials: true
+        }
+    });
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {
@@ -846,6 +850,10 @@ if (require.main === module) {
   server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
+}
+
+if (require.main === module) {
+  startServer();
 }
 
 module.exports = app;

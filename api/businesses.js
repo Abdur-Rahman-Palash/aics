@@ -1,7 +1,7 @@
 // Vercel API Route: /api/businesses
 // Manages business accounts
 
-const storage = require('../lib/storage');
+const getStorage = require('../lib/storage');
 
 module.exports = async (req, res) => {
     // Set CORS headers
@@ -13,16 +13,21 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    const storage = await getStorage();
+
     try {
         if (req.method === 'GET') {
             // If authenticated, return user's businesses; otherwise return public demo businesses
             if (req.session && req.session.userId) {
-                const businesses = storage.getBusinessesForUser(req.session.userId);
+                const businesses = await storage.getBusinessesForUser(req.session.userId);
                 return res.status(200).json({ success: true, businesses });
             } else {
                 // Return all businesses for demo purposes when not authenticated
-                const businesses = storage.data.businesses;
-                return res.status(200).json({ success: true, businesses });
+                // Only works for JSON storage
+                if (storage.data && storage.data.businesses) {
+                    return res.status(200).json({ success: true, businesses: storage.data.businesses });
+                }
+                return res.status(200).json({ success: true, businesses: [] });
             }
         }
 
@@ -38,7 +43,7 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Name and domain are required' });
             }
 
-            const newBusiness = storage.createBusiness(name, domain, req.session.userId);
+            const newBusiness = await storage.createBusiness(name, domain, req.session.userId);
             return res.status(201).json({ success: true, business: newBusiness });
         }
 

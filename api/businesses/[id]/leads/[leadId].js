@@ -1,14 +1,16 @@
-const storage = require('../../../../lib/storage');
+const getStorage = require('../../../../lib/storage');
 
 module.exports = async (req, res) => {
     if (req.method !== 'PUT') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
+    const storage = await getStorage();
+
     try {
         const { id: businessId, leadId } = req.query;
         const { status } = req.body;
-        const updatedLead = storage.updateLeadStatus(businessId, leadId, status);
+        const updatedLead = await storage.updateLeadStatus(businessId, leadId, status);
         if (updatedLead) {
             res.status(200).json({ success: true, lead: updatedLead });
         } else {

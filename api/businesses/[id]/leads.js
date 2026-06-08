@@ -1,11 +1,12 @@
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 
 module.exports = async (req, res) => {
     const businessId = req.query.id;
+    const storage = await getStorage();
 
     if (req.method === 'POST') {
         try {
-            const newLead = storage.addLead(businessId, req.body);
+            const newLead = await storage.addLead(businessId, req.body);
             if (newLead) {
                 res.status(201).json({ success: true, lead: newLead });
             } else {
@@ -16,7 +17,7 @@ module.exports = async (req, res) => {
         }
     } else if (req.method === 'GET') {
         try {
-            const leads = storage.getLeadsForBusiness(businessId);
+            const leads = await storage.getLeadsForBusiness(businessId);
             res.status(200).json({ success: true, leads });
         } catch (error) {
             res.status(500).json({ success: false, error: 'Internal server error' });

@@ -1,7 +1,7 @@
 // Vercel API Route: /api/businesses/[id]/faqs
 // Manages FAQs for a specific business
 
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 
 module.exports = async (req, res) => {
     // Set CORS headers
@@ -12,6 +12,8 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
+
+    const storage = await getStorage();
 
     try {
         const businessId = req.query.id;
@@ -26,9 +28,9 @@ module.exports = async (req, res) => {
         // Get business and verify ownership if modifying
         let business;
         if (req.method !== 'GET') {
-            business = storage.getBusiness(businessId, req.session.userId);
+            business = await storage.getBusiness(businessId, req.session.userId);
         } else {
-            business = storage.getBusiness(businessId);
+            business = await storage.getBusiness(businessId);
         }
         
         if (!business) {
@@ -52,7 +54,7 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ success: false, error: 'English question and answer are required' });
             }
 
-            const newFAQ = storage.addFAQ(businessId, {
+            const newFAQ = await storage.addFAQ(businessId, {
                 questionEn,
                 questionBn,
                 answerEn,
@@ -66,7 +68,7 @@ module.exports = async (req, res) => {
         if (req.method === 'PUT') {
             // Update existing FAQ
             const { faqId, ...updates } = req.body;
-            const updatedFAQ = storage.updateFAQ(businessId, faqId, updates);
+            const updatedFAQ = await storage.updateFAQ(businessId, faqId, updates);
             
             if (!updatedFAQ) {
                 return res.status(404).json({ success: false, error: 'FAQ not found' });
@@ -78,7 +80,7 @@ module.exports = async (req, res) => {
         if (req.method === 'DELETE') {
             // Delete FAQ
             const { faqId } = req.body;
-            const deleted = storage.deleteFAQ(businessId, faqId);
+            const deleted = await storage.deleteFAQ(businessId, faqId);
             
             if (!deleted) {
                 return res.status(404).json({ success: false, error: 'FAQ not found' });

@@ -1,7 +1,7 @@
 // Vercel API Route: /api/businesses/[id]/widget
 // Manages widget settings for a specific business
 
-const storage = require('../../../lib/storage');
+const getStorage = require('../../../lib/storage');
 
 module.exports = async (req, res) => {
     // Set CORS headers
@@ -20,16 +20,18 @@ module.exports = async (req, res) => {
         }
     }
 
+    const storage = await getStorage();
+
     try {
         const businessId = req.query.id;
         let business;
         
         if (req.method === 'PUT') {
             // Check ownership for modification
-            business = storage.getBusiness(businessId, req.session.userId);
+            business = await storage.getBusiness(businessId, req.session.userId);
         } else {
             // Public access for GET
-            business = storage.getBusiness(businessId);
+            business = await storage.getBusiness(businessId);
         }
         
         if (!business) {
@@ -46,7 +48,7 @@ module.exports = async (req, res) => {
 
         if (req.method === 'PUT') {
             // Update widget settings
-            const updatedSettings = storage.updateWidgetSettings(businessId, req.body);
+            const updatedSettings = await storage.updateWidgetSettings(businessId, req.body);
             return res.status(200).json({
                 success: true,
                 settings: updatedSettings
