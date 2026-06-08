@@ -509,7 +509,7 @@
                 pdfs.forEach(pdf => {
                     html += '<div class="source-item">';
                     html += '<div class="source-info">';
-                    html += '<h5 style="margin-bottom:4px;">' + pdf.name + '</h5>';
+                    html += '<h5 style="margin-bottom:4px;">' + (pdf.originalName || pdf.name) + '</h5>';
                     html += '<p style="color:#666; font-size:12px;">Added: ' + new Date(pdf.createdAt).toLocaleDateString() + '</p>';
                     html += '</div>';
                     html += '<span class="source-status ' + (pdf.status || 'pending') + '">' + (pdf.status || 'Pending') + '</span>';

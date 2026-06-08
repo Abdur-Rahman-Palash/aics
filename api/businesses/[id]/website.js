@@ -63,8 +63,8 @@ module.exports = async (req, res) => {
                     const client = await storage.pool.connect();
                     try {
                         await client.query(
-                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2 WHERE id = $3',
-                            ['completed', new Date().toISOString(), newWebsite.id]
+                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2, chunks_count = $3 WHERE id = $4',
+                            ['completed', new Date().toISOString(), result.chunksCount, newWebsite.id]
                         );
                     } finally {
                         client.release();

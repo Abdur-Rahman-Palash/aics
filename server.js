@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 const getStorage = require('./lib/storage');
 const { doubleCsrf } = require('csrf-csrf');
 const nodemailer = require('nodemailer');
+const compression = require('compression');
 
 let storage;
 
@@ -93,6 +94,9 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 let server, io;
+
+// Compression middleware
+app.use(compression());
 
 // Check for default session secret in production
 const isProduction = process.env.NODE_ENV === 'production';
@@ -287,11 +291,11 @@ app.post('/api/auth/logout', (req, res) => {
     res.status(200).json({ success: true });
 });
 
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ success: false, error: 'Not logged in' });
     }
-    const user = storage.getUserById(req.session.userId);
+    const user = await storage.getUserById(req.session.userId);
     if (!user) {
         return res.status(401).json({ success: false, error: 'Not logged in' });
     }
@@ -303,7 +307,7 @@ app.post('/api/chat', (req, res) => chatHandler(req, res));
 app.post('/api/upload-faqs', (req, res) => uploadFaqsHandler(req, res));
 app.get('/api/get-faqs', (req, res) => getFaqsHandler(req, res));
 app.all('/api/businesses', (req, res) => businessesHandler(req, res));
-app.all('/api/businesses/:id', (req, res) => {
+app.all('/api/businesses/:id', async (req, res) => {
     console.log('[/api/businesses/:id] Hit the route!', req.method, req.params, req.body);
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -312,20 +316,22 @@ app.all('/api/businesses/:id', (req, res) => {
         const { id: businessId } = req.params;
         
         if (req.method === 'GET') {
-            const business = storage.getBusiness(businessId, req.session.userId);
-            if (!business) {
-                return res.status(404).json({ success: false, error: 'Business not found' });
-            }
-            return res.status(200).json({ success: true, business });
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        console.log("===== Business object from storage =====");
+        console.log(JSON.stringify(business, null, 2));
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        return res.status(200).json({ success: true, business });
         } else if (req.method === 'PUT') {
-            const business = storage.getBusiness(businessId, req.session.userId);
+            const business = await storage.getBusiness(businessId, req.session.userId);
             if (!business) {
                 return res.status(404).json({ success: false, error: 'Business not found' });
             }
-            const updatedBusiness = storage.updateBusiness(businessId, req.body);
+            const updatedBusiness = await storage.updateBusiness(businessId, req.body);
             return res.status(200).json({ success: true, business: updatedBusiness });
         } else if (req.method === 'DELETE') {
-            const deleted = storage.deleteBusiness(businessId, req.session.userId);
+            const deleted = await storage.deleteBusiness(businessId, req.session.userId);
             if (!deleted) {
                 return res.status(404).json({ success: false, error: 'Business not found' });
             }
@@ -366,8 +372,8 @@ app.all('/api/businesses/:id/verify', (req, res) => {
 app.post('/api/businesses/:id/leads', async (req, res) => {
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId);
-        const newLead = storage.addLead(businessId, req.body);
+        const business = await storage.getBusiness(businessId);
+        const newLead = await storage.addLead(businessId, req.body);
         if (newLead) {
                 // Emit real-time event for new lead
                 if (io) {
@@ -386,7 +392,7 @@ app.post('/api/businesses/:id/leads', async (req, res) => {
     }
 });
 
-app.get('/api/businesses/:id/leads', (req, res) => {
+app.get('/api/businesses/:id/leads', async (req, res) => {
     // Check auth
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -394,18 +400,18 @@ app.get('/api/businesses/:id/leads', (req, res) => {
     try {
         const businessId = req.params.id;
         // Verify ownership
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const leads = storage.getLeadsForBusiness(businessId);
+        const leads = await storage.getLeadsForBusiness(businessId);
         res.status(200).json({ success: true, leads });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
-app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
+app.put('/api/businesses/:id/leads/:leadId', async (req, res) => {
     // Check auth
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -414,11 +420,11 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
         const { id: businessId, leadId } = req.params;
         const { status, ...updates } = req.body;
         // Verify ownership
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const updatedLead = storage.updateLead(businessId, leadId, { status, ...updates });
+        const updatedLead = await storage.updateLead(businessId, leadId, { status, ...updates });
         if (updatedLead) {
                 // Emit real-time event for lead status update
                 if (io) {
@@ -434,35 +440,35 @@ app.put('/api/businesses/:id/leads/:leadId', (req, res) => {
 });
 
 // Conversations API endpoints
-app.get('/api/businesses/:id/conversations', (req, res) => {
+app.get('/api/businesses/:id/conversations', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const conversations = storage.getConversationsForBusiness(businessId);
+        const conversations = await storage.getConversationsForBusiness(businessId);
         res.status(200).json({ success: true, conversations });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
-app.put('/api/businesses/:id/conversations/:conversationId', (req, res) => {
+app.put('/api/businesses/:id/conversations/:conversationId', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, conversationId } = req.params;
         const updates = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const updatedConversation = storage.updateConversation(businessId, conversationId, updates);
+        const updatedConversation = await storage.updateConversation(businessId, conversationId, updates);
         if (updatedConversation) {
             res.status(200).json({ success: true, conversation: updatedConversation });
         } else {
@@ -473,18 +479,18 @@ app.put('/api/businesses/:id/conversations/:conversationId', (req, res) => {
     }
 });
 
-app.post('/api/businesses/:id/conversations/:conversationId/messages', (req, res) => {
+app.post('/api/businesses/:id/conversations/:conversationId/messages', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, conversationId } = req.params;
         const { content } = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const message = storage.addMessageToConversation(businessId, conversationId, {
+        const message = await storage.addMessageToConversation(businessId, conversationId, {
             role: 'human',
             content
         });
@@ -500,34 +506,34 @@ app.post('/api/businesses/:id/conversations/:conversationId/messages', (req, res
 });
 
 // Unanswered Questions API endpoints
-app.get('/api/businesses/:id/unanswered-questions', (req, res) => {
+app.get('/api/businesses/:id/unanswered-questions', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const questions = storage.getUnansweredQuestions(businessId);
+        const questions = await storage.getUnansweredQuestions(businessId);
         res.status(200).json({ success: true, questions });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
-app.put('/api/businesses/:id/unanswered-questions/:questionId', (req, res) => {
+app.put('/api/businesses/:id/unanswered-questions/:questionId', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, questionId } = req.params;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const question = storage.markQuestionAnswered(businessId, questionId);
+        const question = await storage.markQuestionAnswered(businessId, questionId);
         if (question) {
             res.status(200).json({ success: true, question });
         } else {
@@ -539,17 +545,17 @@ app.put('/api/businesses/:id/unanswered-questions/:questionId', (req, res) => {
 });
 
 // Webhooks API endpoints
-app.get('/api/businesses/:id/webhooks', (req, res) => {
+app.get('/api/businesses/:id/webhooks', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const webhooks = storage.getWebhooks(businessId);
+        const webhooks = await storage.getWebhooks(businessId);
         res.status(200).json({ success: true, webhooks });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
@@ -563,29 +569,29 @@ app.post('/api/businesses/:id/webhooks', async (req, res) => {
     try {
         const businessId = req.params.id;
         const webhookData = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const webhook = storage.addWebhook(businessId, webhookData);
+        const webhook = await storage.addWebhook(businessId, webhookData);
         res.status(201).json({ success: true, webhook });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
-app.put('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
+app.put('/api/businesses/:id/webhooks/:webhookId', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, webhookId } = req.params;
         const updates = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const webhook = storage.updateWebhook(businessId, webhookId, updates);
+        const webhook = await storage.updateWebhook(businessId, webhookId, updates);
         if (webhook) {
             res.status(200).json({ success: true, webhook });
         } else {
@@ -596,17 +602,17 @@ app.put('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
     }
 });
 
-app.delete('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
+app.delete('/api/businesses/:id/webhooks/:webhookId', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, webhookId } = req.params;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        const deleted = storage.deleteWebhook(businessId, webhookId);
+        const deleted = await storage.deleteWebhook(businessId, webhookId);
         if (deleted) {
             res.status(200).json({ success: true });
         } else {
@@ -618,7 +624,7 @@ app.delete('/api/businesses/:id/webhooks/:webhookId', (req, res) => {
 });
 
 // Delete a business
-app.delete('/api/businesses/:id', (req, res) => {
+app.delete('/api/businesses/:id', async (req, res) => {
     console.log('[DELETE] Business delete request:', {
         businessId: req.params.id,
         hasSession: !!req.session,
@@ -629,13 +635,13 @@ app.delete('/api/businesses/:id', (req, res) => {
     }
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             console.log('[DELETE] Business not found:', businessId);
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
         console.log('[DELETE] Deleting business:', businessId);
-        const deleted = storage.deleteBusiness(businessId, req.session.userId);
+        const deleted = await storage.deleteBusiness(businessId, req.session.userId);
         if (deleted) {
             console.log('[DELETE] Business deleted successfully:', businessId);
             res.status(200).json({ success: true, message: 'Business deleted successfully' });
@@ -650,13 +656,13 @@ app.delete('/api/businesses/:id', (req, res) => {
 });
 
 // Export CSV endpoint
-app.get('/api/businesses/:id/export/:type', (req, res) => {
+app.get('/api/businesses/:id/export/:type', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId, type } = req.params;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
@@ -689,20 +695,19 @@ app.get('/api/businesses/:id/export/:type', (req, res) => {
 });
 
 // Update business settings
-app.put('/api/businesses/:id/settings', (req, res) => {
+app.put('/api/businesses/:id/settings', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const { id: businessId } = req.params;
         const { notificationEmail } = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        business.notificationEmail = notificationEmail;
-        storage.save();
-        res.status(200).json({ success: true, business });
+        const updatedBusiness = await storage.updateNotificationEmail(businessId, notificationEmail);
+        res.status(200).json({ success: true, business: updatedBusiness });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
@@ -711,13 +716,13 @@ app.put('/api/businesses/:id/settings', (req, res) => {
 
 
 // Google Sheets API endpoints
-app.get('/api/businesses/:id/google-sheets', (req, res) => {
+app.get('/api/businesses/:id/google-sheets', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const businessId = req.params.id;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
@@ -732,25 +737,24 @@ app.get('/api/businesses/:id/google-sheets', (req, res) => {
     }
 });
 
-app.put('/api/businesses/:id/google-sheets', (req, res) => {
+app.put('/api/businesses/:id/google-sheets', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     try {
         const businessId = req.params.id;
         const { enabled, spreadsheetId, serviceAccountKey } = req.body;
-        const business = storage.getBusiness(businessId, req.session.userId);
+        const business = await storage.getBusiness(businessId, req.session.userId);
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
-        business.googleSheets = {
-            ...business.googleSheets,
-            enabled: enabled ?? business.googleSheets.enabled,
-            spreadsheetId: spreadsheetId ?? business.googleSheets.spreadsheetId,
-            serviceAccountKey: serviceAccountKey ?? business.googleSheets.serviceAccountKey
-        };
-        storage.save();
-        res.status(200).json({ success: true, googleSheets: { enabled: business.googleSheets.enabled, spreadsheetId: business.googleSheets.spreadsheetId } });
+        const updates = {};
+        if (enabled !== undefined) updates.enabled = enabled;
+        if (spreadsheetId !== undefined) updates.spreadsheetId = spreadsheetId;
+        if (serviceAccountKey !== undefined) updates.serviceAccountKey = serviceAccountKey;
+        
+        const googleSheets = await storage.updateGoogleSheets(businessId, updates);
+        res.status(200).json({ success: true, googleSheets: { enabled: googleSheets.enabled, spreadsheetId: googleSheets.spreadsheetId } });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
@@ -794,10 +798,15 @@ app.use('/api', (req, res) => {
     res.status(404).json({ success: false, error: 'API endpoint not found', path: req.path, method: req.method });
 });
 
-// Serve static files (css, js, etc.)
-app.use('/css', express.static(path.join(__dirname, 'public/css')));
-app.use('/js', express.static(path.join(__dirname, 'public/js')));
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files (css, js, etc.) with caching
+const staticOptions = {
+  maxAge: isProduction ? '1d' : 0, // 1 day cache in production
+  etag: true,
+  lastModified: true
+};
+app.use('/css', express.static(path.join(__dirname, 'public/css'), staticOptions));
+app.use('/js', express.static(path.join(__dirname, 'public/js'), staticOptions));
+app.use(express.static(path.join(__dirname, 'public'), staticOptions));
 
 async function startServer() {
     storage = await getStorage();
@@ -811,16 +820,16 @@ async function startServer() {
         }
     });
 
+  // Initialize services once
+  const QdrantManager = require('./lib/qdrant');
+  const GeminiAI = require('./lib/gemini');
+  const qdrant = new QdrantManager();
+  const gemini = new GeminiAI();
+
   // Socket.IO connection handling
   io.on('connection', (socket) => {
     socket.on('send message', async (userMessage) => {
       try {
-        // Initialize services
-        const QdrantManager = require('./lib/qdrant');
-        const GeminiAI = require('./lib/gemini');
-        const qdrant = new QdrantManager();
-        const gemini = new GeminiAI();
-
         // Generate embedding for user message
         const queryEmbedding = await gemini.generateEmbedding(userMessage);
 
