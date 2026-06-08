@@ -830,28 +830,44 @@ async function startServer() {
   io.on('connection', (socket) => {
     socket.on('send message', async (userMessage) => {
       try {
+        console.log('[Socket.IO] Received message:', userMessage);
+        
         // Generate embedding for user message
+        console.log('[Socket.IO] Generating embedding...');
         const queryEmbedding = await gemini.generateEmbedding(userMessage);
+        console.log('[Socket.IO] Embedding generated');
 
         // Search Qdrant for similar FAQs
+        console.log('[Socket.IO] Searching similar items...');
         const similarFAQs = await qdrant.searchSimilar(queryEmbedding);
+        console.log('[Socket.IO] Similar items found:', similarFAQs);
 
         // Build context from similar FAQs
         let context = 'No FAQ context available.';
         if (similarFAQs.length > 0) {
-          context = similarFAQs.map(faq => 
-            `Q: ${faq.question}\nA: ${faq.answer}`
-          ).join('\n\n');
+          context = similarFAQs.map(item => {
+            if (item.type === 'faq' && item.question && item.answer) {
+              return `Q: ${item.question}\nA: ${item.answer}`;
+            } else if (item.content) {
+              return `[${item.type || 'content'}] ${item.content}`;
+            }
+            return '';
+          }).filter(Boolean).join('\n\n');
         }
+        console.log('[Socket.IO] Context:', context);
 
         // Generate AI response
+        console.log('[Socket.IO] Generating AI response...');
         const aiResponse = await gemini.generateResponse(userMessage, context);
+        console.log('[Socket.IO] AI Response:', aiResponse);
 
         // Emit AI response back to client
         socket.emit('ai response', aiResponse);
 
       } catch (error) {
-        socket.emit('ai response', 'Sorry, something went wrong. Please try again.');
+        console.error('[Socket.IO] Error:', error);
+        console.error('[Socket.IO] Error stack:', error.stack);
+        socket.emit('ai response', 'Sorry, something went wrong. Please try again. Error: ' + error.message);
       }
     });
   });

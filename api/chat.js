@@ -4,7 +4,7 @@
 const QdrantManager = require('../lib/qdrant');
 const GeminiAI = require('../lib/gemini');
 const LangChainIntegration = require('../lib/langchain'); // New LangChain integration
-const storage = require('../lib/storage');
+const getStorage = require('../lib/storage');
 const config = require('../lib/config');
 
 // Simple function to normalize whitespace
@@ -66,20 +66,23 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
+        // Initialize storage
+        const storage = await getStorage();
+
         // Get business from storage if ID is provided
         let business = null;
         if (businessId) {
-            business = storage.getBusiness(businessId);
+            business = await storage.getBusiness(businessId);
         }
 
         // Get or create conversation
         let conversation = null;
         if (businessId) {
             if (conversationId) {
-                conversation = storage.getConversation(businessId, conversationId);
+                conversation = await storage.getConversation(businessId, conversationId);
             }
             if (!conversation) {
-                conversation = storage.createConversation(businessId, visitor);
+                conversation = await storage.createConversation(businessId, visitor);
             }
         }
 
@@ -266,7 +269,7 @@ module.exports = async (req, res) => {
                 hitFaqId = topFAQ.faqId;
             }
             if (businessId) {
-                storage.recordAnalytics(businessId, hitFaqId, !needsHumanHelp, needsHumanHelp);
+                await storage.recordAnalytics(businessId, hitFaqId, !needsHumanHelp, needsHumanHelp);
             }
         } catch (error) {
             // Error recording analytics
@@ -274,16 +277,16 @@ module.exports = async (req, res) => {
 
         // Store unanswered question if needed
         if (businessId && needsHumanHelp && !directMatch) {
-            storage.addUnansweredQuestion(businessId, message);
+            await storage.addUnansweredQuestion(businessId, message);
         }
 
         // Add messages to conversation
         if (conversation && businessId) {
-            storage.addMessageToConversation(businessId, conversation.id, {
+            await storage.addMessageToConversation(businessId, conversation.id, {
                 role: 'user',
                 content: message
             });
-            storage.addMessageToConversation(businessId, conversation.id, {
+            await storage.addMessageToConversation(businessId, conversation.id, {
                 role: 'ai',
                 content: aiResponse,
                 confidence: confidenceScore
@@ -291,7 +294,7 @@ module.exports = async (req, res) => {
             
             // Update conversation status
             if (needsHumanHelp) {
-                storage.updateConversation(businessId, conversation.id, {
+                await storage.updateConversation(businessId, conversation.id, {
                     status: 'pending'
                 });
             }

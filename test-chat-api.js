@@ -1,7 +1,7 @@
 const http = require('http');
 
 const postData = JSON.stringify({
-    message: "Hello, how are you?"
+    message: "hello"
 });
 
 const options = {
@@ -22,12 +22,12 @@ const req = http.request(options, (res) => {
     });
     
     res.on('end', () => {
-        // Response handling
+        console.log('Response:', data);
     });
 });
 
 req.on('error', (e) => {
-    // Error handling
+    console.error('Error:', e);
 });
 
 req.write(postData);
