@@ -175,7 +175,11 @@ module.exports = async (req, res) => {
 
     // Only mark as needs human help if both similarity and classification say it's unrelated
     const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
-    let needsHumanHelp = !hasRelevantSimilarity && !isQuestionRelated;
+    let needsHumanHelp = false; // Default to false to be safe!
+    // Only set to true if BOTH similarity is low AND classification says unrelated
+    if (!hasRelevantSimilarity && !isQuestionRelated) {
+      needsHumanHelp = true;
+    }
     console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
         
         // Generate AI response or use fallback
