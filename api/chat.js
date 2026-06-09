@@ -147,16 +147,29 @@ module.exports = async (req, res) => {
         }
 
         let context = 'No relevant context available.';
-        if (contextParts.length > 0) {
-            context = contextParts.join('\n\n---\n\n');
-        }
+    if (contextParts.length > 0) {
+      context = contextParts.join('\n\n---\n\n');
+    }
 
-        // Check similarity threshold - try to use ANY context we find, even low confidence!
-        const SIMILARITY_THRESHOLD = 0.05; // Super low to get any possible matches!
-        const CONFIDENCE_THRESHOLD = 0.05;
-        const humanTransferMessage = "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?";
-        const hasRelevantContext = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
-        let needsHumanHelp = false; // Start with false, only set to true if no response makes sense
+    // Step 1: Check similarity threshold
+    const SIMILARITY_THRESHOLD = 0.05;
+    const hasRelevantSimilarity = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+
+    // Step 2: Use Gemini to classify relevance (two-layer validation)
+    let isQuestionRelated = false;
+    if (contextParts.length > 0 && config.gemini.apiKey) {
+      try {
+        isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
+      } catch (error) {
+        console.error('[CHAT] Error classifying relevance:', error);
+        // If classification fails, fall back to similarity only
+        isQuestionRelated = hasRelevantSimilarity;
+      }
+    }
+
+    // If either step indicates it's unrelated, show lead form
+    const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
+    let needsHumanHelp = !isQuestionRelated;
         
         // Generate AI response or use fallback
         let aiResponse;
@@ -209,7 +222,20 @@ module.exports = async (req, res) => {
         }
         
         try {
-            if (directMatch) {
+            if (needsHumanHelp && !isQuestionRelated) {
+                // Unrelated question - generate helpful response with suggestions
+                if (config.gemini.apiKey) {
+                    try {
+                        aiResponse = await gemini.generateUnrelatedResponse(message);
+                        console.log('[CHAT] Unrelated response generated:', aiResponse);
+                    } catch (error) {
+                        console.warn('[CHAT] Error generating unrelated response:', error);
+                        aiResponse = humanTransferMessage;
+                    }
+                } else {
+                    aiResponse = humanTransferMessage;
+                }
+            } else if (directMatch) {
                 aiResponse = directMatch.answer;
                 confidenceScore = 1.0;
                 needsHumanHelp = false;
