@@ -1,9 +1,10 @@
+
 // Vercel API Route: /api/chat
 // Handles chat messages and returns AI responses
 
 const QdrantManager = require('../lib/qdrant');
 const GeminiAI = require('../lib/gemini');
-const LangChainIntegration = require('../lib/langchain'); // New LangChain integration
+const LangChainIntegration = require('../lib/langchain'); 
 const getStorage = require('../lib/storage');
 const config = require('../lib/config');
 
@@ -147,91 +148,49 @@ module.exports = async (req, res) => {
         }
 
         let context = 'No relevant context available.';
-    if (contextParts.length > 0) {
-      context = contextParts.join('\n\n---\n\n');
-    }
-
-    // Step 1: Check similarity threshold
-    const SIMILARITY_THRESHOLD = 0.05;
-    const hasRelevantSimilarity = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
-    console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
-    console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
-
-    // Step 2: Use Gemini to classify relevance (two-layer validation)
-    let isQuestionRelated = false;
-    if (contextParts.length > 0 && config.gemini.apiKey) {
-      try {
-        isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
-      } catch (error) {
-        console.error('[CHAT] Error classifying relevance:', error);
-        // If classification fails, fall back to similarity only
-        isQuestionRelated = hasRelevantSimilarity;
-      }
-    } else if (contextParts.length === 0) {
-      console.log('[CHAT] No context parts found, using hasRelevantSimilarity:', hasRelevantSimilarity);
-      isQuestionRelated = hasRelevantSimilarity;
-    }
-    console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
-
-    // Only mark as needs human help if both similarity and classification say it's unrelated
-    const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
-    let needsHumanHelp = false; // Default to false to be safe!
-    // Only set to true if BOTH similarity is low AND classification says unrelated
-    if (!hasRelevantSimilarity && !isQuestionRelated) {
-      needsHumanHelp = true;
-    }
-    console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
-        
-        // Generate AI response or use fallback
-        let aiResponse;
-        // 🔑 Keyword matching fallback - works even without API!
-        function findAnswerFromContext(msg, ctxParts) {
-            const normalizedMsg = msg.toLowerCase();
-            let bestMatch = null;
-            let bestMatchScore = 0;
-            
-            // Look for questions in our context chunks (since your PDF is FAQ-style)
-            for (let part of ctxParts) {
-                // Check if this part contains a Q&A pair (more precise matching)
-                const qMatches = [...part.matchAll(/Q:\s*(.+?)\s*A:\s*(.+?)(?=\s*Q:|$)/gis)];
-                for (const qMatch of qMatches) {
-                    const question = qMatch[1].toLowerCase().trim();
-                    const answer = qMatch[2].trim();
-                    
-                    // Check if user's question is similar to this FAQ question
-                    const msgWords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
-                    const qWords = question.split(/\s+/).filter(w => w.length > 2);
-                    const matches = msgWords.filter(w => qWords.includes(w));
-                    const score = matches.length;
-                    
-                    if (score > bestMatchScore && score >= 2) {
-                        bestMatchScore = score;
-                        bestMatch = answer;
-                    }
-                }
-                
-                // Check for keywords in the part (only if no Q&A match)
-                if (!bestMatch) {
-                    const partLower = part.toLowerCase();
-                    const keywords = normalizedMsg.split(/\s+/).filter(w => w.length > 2);
-                    const hasEnoughKeywords = keywords.filter(k => partLower.includes(k)).length >= 2;
-                    if (hasEnoughKeywords) {
-                        // Extract the relevant part
-                        const sentences = part.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
-                        const relevantSentences = sentences.filter(s => 
-                            keywords.some(k => s.toLowerCase().includes(k))
-                        );
-                        if (relevantSentences.length > 0) {
-                            bestMatch = relevantSentences.join('. ') + '.';
-                            bestMatchScore = 1;
-                        }
-                    }
-                }
-            }
-            
-            return bestMatch;
+        if (contextParts.length > 0) {
+            context = contextParts.join('\n\n---\n\n');
         }
-        
+
+        // Step 1: Check similarity threshold
+        const SIMILARITY_THRESHOLD = 0.1; // Slightly higher threshold
+        const hasRelevantSimilarity = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+        console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
+        console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
+
+        // Step 2: Use Gemini to classify relevance (two-layer validation)
+        let isQuestionRelated = false;
+        if (contextParts.length > 0 && config.gemini.apiKey) {
+            try {
+                isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
+            } catch (error) {
+                console.error('[CHAT] Error classifying relevance:', error);
+                // If classification fails (rate limit, etc.), trust the similarity score!
+                isQuestionRelated = hasRelevantSimilarity;
+            }
+        } else if (contextParts.length === 0) {
+            console.log('[CHAT] No context parts found, defaulting to isQuestionRelated = true');
+            isQuestionRelated = true;
+        }
+        // If similarity score is good, mark as related even if classification says no!
+        if (hasRelevantSimilarity && !isQuestionRelated) {
+            console.log('[CHAT] Similarity score is good, overriding classification to related!');
+            isQuestionRelated = true;
+        }
+        console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
+
+        // Only mark as needs human help if both similarity and classification say it's unrelated
+        const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
+        let needsHumanHelp = false; // Default to false to be safe!
+        // Only set to true if both similarity is low AND classification says unrelated
+        if (!hasRelevantSimilarity && !isQuestionRelated) {
+            needsHumanHelp = true;
+        }
+        console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
+
+        // Generate AI response
+        let aiResponse;
+
         try {
             if (needsHumanHelp && !isQuestionRelated) {
                 // Unrelated question - generate helpful response with suggestions
@@ -247,20 +206,23 @@ module.exports = async (req, res) => {
                     aiResponse = humanTransferMessage;
                 }
             } else if (directMatch) {
-                aiResponse = directMatch.answer;
+                // If we have a direct FAQ match, still use Gemini to make it friendly!
+                if (config.gemini.apiKey) {
+                    try {
+                        const contextWithFAQ = `FAQ - Q: ${directMatch.question}\nA: ${directMatch.answer}`;
+                        aiResponse = await gemini.generateResponse(message, contextWithFAQ);
+                    } catch (error) {
+                        console.warn('[CHAT] Gemini failed for direct match, using raw answer:', error);
+                        aiResponse = directMatch.answer;
+                    }
+                } else {
+                    aiResponse = directMatch.answer;
+                }
                 confidenceScore = 1.0;
                 needsHumanHelp = false;
-            } else if (contextParts.length > 0) { // If we have ANY context, try to use it!
-                // First try our keyword fallback
-                const keywordAnswer = findAnswerFromContext(message, contextParts);
-                if (keywordAnswer) {
-                    console.log('[CHAT] Found answer via keyword matching!');
-                    aiResponse = keywordAnswer;
-                    needsHumanHelp = false;
-                    confidenceScore = 0.8;
-                } 
-                // If keyword didn't find, try AI (if API is available)
-                else if (config.gemini.apiKey) {
+            } else if (contextParts.length > 0) { // If we have ANY context, use Gemini!
+                // Always use Gemini to generate a friendly response
+                if (config.gemini.apiKey) {
                     // Get conversation history for LangChain memory
                     let conversationHistory = [];
                     if (conversation && conversation.messages) {
@@ -281,40 +243,40 @@ module.exports = async (req, res) => {
                             aiResponse = await gemini.generateResponse(message, context);
                             console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
                         } catch (geminiError) {
-                            console.warn('[CHAT] Gemini API failed, using last resort: keyword fallback', geminiError);
-                            // Last resort - just return the top context chunk
-                            aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
-                            needsHumanHelp = true;
+                            console.warn('[CHAT] Gemini API failed, using fallback:', geminiError);
+                            // Fallback - still make it friendly!
+                            aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
+                            needsHumanHelp = false;
                         }
                     }
-                    
+
                     // Check if AI response mentions human/escalate, set needsHumanHelp if so
                     const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information/i.test(aiResponse);
                     if (hasHumanKeywords) {
                         needsHumanHelp = true;
                     }
                 } else {
-                    // No API key, just return the top context
-                    aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
-                    needsHumanHelp = true;
+                    // No API key, still make it friendly
+                    aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
+                    needsHumanHelp = false;
                 }
-            } else { // If no context at all, show lead form
-                aiResponse = humanTransferMessage;
-                needsHumanHelp = true;
+            } else { // If no context at all, still be friendly!
+                aiResponse = "I'd be happy to help you with that! Let me guide you:\n\n" + 
+                    (message.toLowerCase().includes('invoice') ? 
+                        "Look for a 'CREATE' button on the home page to start creating your invoice!" : 
+                        "Please explore the website's main menu to find what you're looking for!");
+                needsHumanHelp = false;
             }
         } catch (error) {
             console.error('[CHAT] Error generating response:', error);
             console.error('[CHAT] Error stack:', error.stack);
-            // Final fallback: try keyword matching or return context
-            const keywordAnswer = findAnswerFromContext(message, contextParts);
-            if (keywordAnswer) {
-                aiResponse = keywordAnswer;
+            // Final fallback: still friendly!
+            if (contextParts.length > 0) {
+                aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
                 needsHumanHelp = false;
-            } else if (contextParts.length > 0) {
-                aiResponse = "Based on your document, here's the relevant information: " + contextParts[0].substring(0, 500);
-                needsHumanHelp = true;
             } else {
-                aiResponse = "I'm sorry, I couldn't generate a response right now. Please try again later. Error: " + error.message;
+                aiResponse = "Sorry, I couldn't generate a response right now. Please try again later!";
+                needsHumanHelp = false;
             }
         }
 
@@ -348,7 +310,7 @@ module.exports = async (req, res) => {
                 content: aiResponse,
                 confidence: confidenceScore
             });
-            
+
             // Update conversation status
             if (needsHumanHelp) {
                 await storage.updateConversation(businessId, conversation.id, {
@@ -369,11 +331,11 @@ module.exports = async (req, res) => {
     } catch (error) {
         console.error('[CHAT] FATAL ERROR:', error);
         console.error('[CHAT] FATAL ERROR STACK:', error.stack);
-        // Instead of returning error, return a response that triggers lead form!
+        // Instead of returning error, return a friendly response!
         return res.status(200).json({
             success: true,
-            response: "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
-            needsHumanHelp: true,
+            response: "I'm sorry, something went wrong! Please try again in a moment.",
+            needsHumanHelp: false,
             confidence: 0,
             conversationId: conversation ? conversation.id : null,
             context: []
