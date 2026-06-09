@@ -3,7 +3,7 @@
 // Handles chat messages and returns AI responses
 
 const QdrantManager = require('../lib/qdrant');
-const GeminiAI = require('../lib/gemini');
+const HuggingFaceAI = require('../lib/huggingface');
 const LangChainIntegration = require('../lib/langchain'); 
 const getStorage = require('../lib/storage');
 const config = require('../lib/config');
@@ -18,7 +18,7 @@ let langchain;
 async function initializeServices() {
     if (!storage) storage = await getStorage();
     if (!qdrant) qdrant = new QdrantManager();
-    if (!gemini) gemini = new GeminiAI();
+    if (!gemini) gemini = new HuggingFaceAI();
     if (!langchain) langchain = new LangChainIntegration();
 }
 
@@ -148,6 +148,9 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    // Declare conversation at top to avoid ReferenceError!
+    let conversation = null;
+
     try {
         const { message, businessId, conversationId, visitor } = req.body;
 
@@ -162,7 +165,6 @@ module.exports = async (req, res) => {
         }
 
         // Get or create conversation
-        let conversation = null;
         if (businessId) {
             if (conversationId) {
                 conversation = await storage.getConversation(businessId, conversationId);
@@ -181,8 +183,8 @@ module.exports = async (req, res) => {
         let confidenceScore = 0;
 
         try {
-            // Only try if gemini api key is available (we're using local vector storage now!)
-            if (config.gemini.apiKey) {
+            // Only try if Hugging Face API key is available (we're using local vector storage now!)
+            if (config.huggingface.apiKey) {
                 // Determine which collection to use
                 let collectionName = config.qdrant.collectionName; // Default
                 if (business) {
@@ -206,6 +208,9 @@ module.exports = async (req, res) => {
                         contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
                     }
                 }
+
+                // Only keep the top 5 context parts to keep prompts focused
+                contextParts = contextParts.slice(0, 5);
 
                 // Calculate confidence score based on top similarity
                 if (similarItems.length > 0) {
@@ -232,7 +237,7 @@ module.exports = async (req, res) => {
 
         // Step 2: Use Gemini to classify relevance (two-layer validation)
         let isQuestionRelated = false;
-        if (contextParts.length > 0 && config.gemini.apiKey) {
+        if (contextParts.length > 0 && config.huggingface.apiKey) {
             try {
                 isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
             } catch (error) {
@@ -266,7 +271,7 @@ module.exports = async (req, res) => {
         try {
             if (needsHumanHelp && !isQuestionRelated) {
                 // Unrelated question - generate helpful response with suggestions
-                if (config.gemini.apiKey) {
+                if (config.huggingface.apiKey) {
                     try {
                         aiResponse = await gemini.generateUnrelatedResponse(message);
                         console.log('[CHAT] Unrelated response generated:', aiResponse);
@@ -279,7 +284,7 @@ module.exports = async (req, res) => {
                 }
             } else if (directMatch) {
                 // If we have a direct FAQ match, still use Gemini to make it friendly!
-                if (config.gemini.apiKey) {
+                if (config.huggingface.apiKey) {
                     try {
                         const contextWithFAQ = `FAQ - Q: ${directMatch.question}\nA: ${directMatch.answer}`;
                         aiResponse = await gemini.generateResponse(message, contextWithFAQ);
@@ -294,7 +299,7 @@ module.exports = async (req, res) => {
                 needsHumanHelp = false;
             } else if (contextParts.length > 0) { // If we have ANY context, use Gemini!
                 // Always use Gemini to generate a friendly response
-                if (config.gemini.apiKey) {
+                if (config.huggingface.apiKey) {
                     // Get conversation history for LangChain memory
                     let conversationHistory = [];
                     if (conversation && conversation.messages) {
@@ -358,9 +363,13 @@ module.exports = async (req, res) => {
             // Error recording analytics
         }
 
-        // Store unanswered question if needed
+        // Store unanswered question if needed (but don't crash on duplicates!)
         if (businessId && needsHumanHelp && !directMatch) {
-            await storage.addUnansweredQuestion(businessId, message);
+            try {
+                await storage.addUnansweredQuestion(businessId, message);
+            } catch (dupeErr) {
+                console.warn('[CHAT] Duplicate unanswered question, skipping');
+            }
         }
 
         // Add messages to conversation
@@ -389,7 +398,8 @@ module.exports = async (req, res) => {
             needsHumanHelp,
             confidence: confidenceScore,
             conversationId: conversation ? conversation.id : null,
-            context: similarItems
+            context: similarItems,
+            contextParts
         });
 
     } catch (error) {

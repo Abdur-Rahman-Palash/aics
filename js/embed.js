@@ -14,6 +14,14 @@
         const scriptSrc = scriptTag ? scriptTag.src : null;
         const apiOrigin = scriptSrc ? new URL(scriptSrc).origin : window.location.origin;
 
+        if (!businessId) {
+            const warning = document.createElement('div');
+            warning.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index:10000; max-width: 300px; padding: 16px; background: #ffe5e5; color: #a00; border: 1px solid #f5c2c2; border-radius: 12px; font-family: sans-serif; font-size: 14px;';
+            warning.textContent = 'AICS embed requires a valid data-business-id attribute on the script tag.';
+            document.body.appendChild(warning);
+            return;
+        }
+
         // Inject Styles
         const css = `
             .aics-float-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); font-size: 24px; z-index: 10000; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

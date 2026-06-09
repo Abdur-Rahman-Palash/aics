@@ -17,6 +17,7 @@ let storage;
 
 // Email notification function
 async function sendLeadNotification(business, lead) {
+    let transcript = '';
     try {
         if (!business.notificationEmail) {
             console.log('No notification email set for business:', business.name);
@@ -35,7 +36,6 @@ async function sendLeadNotification(business, lead) {
         });
 
         // Get conversation transcript if available
-        let transcript = '';
         if (lead.conversationId && business.conversations) {
             const conversation = business.conversations.find(c => c.id === lead.conversationId);
             if (conversation && conversation.messages) {
@@ -44,16 +44,12 @@ async function sendLeadNotification(business, lead) {
                 }).join('\n\n');
             }
         }
-    } catch (error) {
-        console.error('Error in sendLeadNotification:', error);
-        // Don't let email errors break the lead submission!
-    }
 
-    const mailOptions = {
-        from: process.env.SMTP_FROM || 'noreply@aics.app',
-        to: business.notificationEmail,
-        subject: `New Lead from ${business.name}`,
-        text: `
+        const mailOptions = {
+            from: process.env.SMTP_FROM || 'noreply@aics.app',
+            to: business.notificationEmail,
+            subject: `New Lead from ${business.name}`,
+            text: `
 Hello!
 
 You have a new lead from your website!
@@ -72,8 +68,15 @@ ${transcript ? 'Conversation Transcript:\n' + transcript : ''}
 
 Best regards,
 AICS Team
-        `
-    };
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Notification email sent:', info.messageId);
+    } catch (error) {
+        console.error('Error in sendLeadNotification:', error);
+        // Don't let email errors break the lead submission!
+    }
 
     try {
         const info = await transporter.sendMail(mailOptions);
@@ -92,7 +95,7 @@ const businessWidgetHandler = require('./api/businesses/[id]/widget');
 const businessWebsiteHandler = require('./api/businesses/[id]/website');
 const businessPdfHandler = require('./api/businesses/[id]/pdf');
 const QdrantManager = require('./lib/qdrant');
-const GeminiAI = require('./lib/gemini');
+const HuggingFaceAI = require('./lib/huggingface');
 
 const app = express();
 // Trust proxy (for Render HTTPS)
@@ -831,9 +834,9 @@ async function startServer() {
 
   // Initialize services once
   const QdrantManager = require('./lib/qdrant');
-  const GeminiAI = require('./lib/gemini');
+  const HuggingFaceAI = require('./lib/huggingface');
   const qdrant = new QdrantManager();
-  const gemini = new GeminiAI();
+  const gemini = new HuggingFaceAI();
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {

@@ -2,7 +2,7 @@
 // Uploads and embeds FAQs into Qdrant
 
 const QdrantManager = require('../lib/qdrant');
-const GeminiAI = require('../lib/gemini');
+const HuggingFaceAI = require('../lib/huggingface');
 
 module.exports = async (req, res) => {
 
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
 
         // Initialize services
         const qdrant = new QdrantManager();
-        const gemini = new GeminiAI();
+        const gemini = new HuggingFaceAI();
 
         // Generate embeddings for all FAQs
         const texts = faqs.map(faq => `Q: ${faq.question}\nA: ${faq.answer}`);

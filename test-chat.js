@@ -2,13 +2,13 @@
 require('dotenv').config();
 const getStorage = require('./lib/storage');
 const QdrantManager = require('./lib/qdrant');
-const GeminiAI = require('./lib/gemini');
+const HuggingFaceAI = require('./lib/huggingface');
 
 async function test() {
   try {
     const storage = await getStorage();
     const qdrant = new QdrantManager();
-    const gemini = new GeminiAI();
+    const gemini = new HuggingFaceAI();
 
     // Let's get all businesses
     const businesses = await storage.getBusinessesForUser('test-user-id'); // We'll need a real user ID, but let's see if there are any

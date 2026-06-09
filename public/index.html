@@ -22,16 +22,10 @@
                     script.setAttribute('data-business-id', business.id);
                     document.body.appendChild(script);
                 } else {
-                    // Fallback to default if no businesses
-                    const script = document.createElement('script');
-                    script.src = '/js/chat-widget.js';
-                    document.body.appendChild(script);
+                    document.body.innerHTML = '<div style="font-family: sans-serif; padding: 40px; text-align: center;"><h1>No business configured</h1><p>Please sign in and create a business first, or configure a default business for this site.</p></div>';
                 }
             } catch (error) {
-                // Fallback to default
-                const script = document.createElement('script');
-                script.src = '/js/chat-widget.js';
-                document.body.appendChild(script);
+                document.body.innerHTML = '<div style="font-family: sans-serif; padding: 40px; text-align: center;"><h1>Unable to load widget</h1><p>There was a problem loading the business configuration. Please try again later or sign in to manage your business settings.</p></div>';
             }
         }
 

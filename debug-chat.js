@@ -2,7 +2,7 @@
 require('dotenv').config();
 const getStorage = require('./lib/storage');
 const QdrantManager = require('./lib/qdrant');
-const GeminiAI = require('./lib/gemini');
+const HuggingFaceAI = require('./lib/huggingface');
 
 async function main() {
     console.log('=== Starting Debug ===');
@@ -10,7 +10,7 @@ async function main() {
     // Step 1: Get storage
     const storage = await getStorage();
     const qdrant = new QdrantManager();
-    const gemini = new GeminiAI();
+    const gemini = new HuggingFaceAI();
 
     // Step 2: Get all users and businesses
     const testUser = await storage.getUser('test@example.com');

@@ -340,6 +340,11 @@ class AICSChatWidget {
 
 
     showLeadForm() {
+        if (!this.businessId) {
+            this.addMessage('Sorry, this chat widget is not configured with a valid business ID, so lead requests cannot be sent.', 'ai');
+            return;
+        }
+
         this.showingLeadForm = true;
         this.inputField.disabled = true;
         this.sendBtn.disabled = true;
@@ -371,6 +376,11 @@ class AICSChatWidget {
         const email = document.getElementById('aics-lead-email').value;
         const phone = document.getElementById('aics-lead-phone').value;
         const message = document.getElementById('aics-lead-message').value;
+
+        if (!this.businessId) {
+            this.addMessage('Sorry, this chat widget is not configured with a valid business ID, so lead requests cannot be sent.', 'ai');
+            return;
+        }
 
         console.log('submitLeadForm called with message:', message);
 
@@ -406,7 +416,8 @@ class AICSChatWidget {
                 this.inputField.disabled = false;
                 this.sendBtn.disabled = false;
             } else {
-                this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
+                const errorMessage = data.error || 'Sorry, there was an error sending your request. Please try again.';
+                this.addMessage(errorMessage, 'ai');
             }
         } catch (error) {
             console.error('submitLeadForm error:', error);
