@@ -62,12 +62,20 @@ function findMatchingFAQFromStorage(message, business) {
 
 // Simple keyword-based response generator for fallback
 function generateFriendlyFallbackResponse(message, contextParts) {
+    // Handle basic questions first
+    const messageLower = message.toLowerCase();
+    if (messageLower.includes('who are you')) {
+        return "I'm your AI customer support assistant! I'm here to help you with any questions about this website and its services!";
+    }
+    if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('hey')) {
+        return "Hello! How can I help you today?";
+    }
+    
     if (contextParts.length === 0) {
         return "I'd be happy to help you with that! Let me guide you: \n\nPlease explore the website's main menu to find what you're looking for!";
     }
 
     // Try to find a relevant chunk based on keywords in the user's message
-    const messageLower = message.toLowerCase();
     let bestChunk = null;
     let bestScore = 0;
 
