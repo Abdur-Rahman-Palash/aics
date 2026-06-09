@@ -454,6 +454,10 @@
                     const shortAnswer = answer.length > 100 ? answer.substring(0, 100) + '...' : answer;
                     html += '<p>' + shortAnswer + '</p>';
                     html += '</div>';
+                    html += '<div class="faq-item-actions" style="display:flex; gap:8px;">';
+                    html += '<button class="btn btn-small btn-secondary" onclick="editFaq(\'' + business.id + '\', \'' + faq.id + '\')">✏️ Edit</button>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deleteFaq(\'' + business.id + '\', \'' + faq.id + '\')">🗑️ Delete</button>';
+                    html += '</div>';
                     html += '</div>';
                 });
             } else {
@@ -483,7 +487,10 @@
                     html += '<h5 style="margin-bottom:4px;">' + website.url + '</h5>';
                     html += '<p style="color:#666; font-size:12px;">Added: ' + new Date(website.createdAt).toLocaleDateString() + '</p>';
                     html += '</div>';
+                    html += '<div style="display:flex; align-items:center; gap:8px;">';
                     html += '<span class="source-status ' + (website.status || 'pending') + '">' + (website.status || 'Pending') + '</span>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deleteWebsite(\'' + business.id + '\', \'' + website.id + '\')">🗑️</button>';
+                    html += '</div>';
                     html += '</div>';
                 });
             } else {
@@ -495,11 +502,11 @@
             
             // Documents Content
             html += '<div class="knowledge-content" id="knowledge-' + business.id + '-pdf">';
-            html += '<h3 style="margin-bottom:16px;">Documents Training (PDF, DOCX, TXT, CSV, Excel)</h3>';
+            html += '<h3 style="margin-bottom:16px;">Documents Training (PDF, DOCX, TXT, CSV, Excel, XML, JSON, Markdown, RTF)</h3>';
             html += '<div id="pdf-upload-area-' + business.id + '" class="file-upload-area" onclick="document.getElementById(\'pdf-input-' + business.id + '\').click()">';
             html += '<span class="file-upload-icon">📄</span>';
-            html += '<p class="file-upload-text">Click or drag and drop to upload PDFs, DOCX, TXT, CSV, or Excel files</p>';
-            html += '<input type="file" id="pdf-input-' + business.id + '" accept=".pdf,.docx,.txt,.csv,.xlsx,.xls" multiple style="display:none;" onchange="uploadPdfs(event, \'' + business.id + '\')">';
+            html += '<p class="file-upload-text">Click or drag and drop to upload PDFs, DOCX, TXT, CSV, Excel, XML, JSON, Markdown, or RTF files</p>';
+            html += '<input type="file" id="pdf-input-' + business.id + '" accept=".pdf,.docx,.txt,.csv,.xlsx,.xls,.xml,.json,.md,.rtf" multiple style="display:none;" onchange="uploadPdfs(event, \'' + business.id + '\')">';
             html += '</div>';
             html += '<div style="margin-top:24px;">';
             html += '<h4 style="margin-bottom:12px; color:#666;">Uploaded Files</h4>';
@@ -512,7 +519,10 @@
                     html += '<h5 style="margin-bottom:4px;">' + (pdf.originalName || pdf.name) + '</h5>';
                     html += '<p style="color:#666; font-size:12px;">Added: ' + new Date(pdf.createdAt).toLocaleDateString() + '</p>';
                     html += '</div>';
+                    html += '<div style="display:flex; align-items:center; gap:8px;">';
                     html += '<span class="source-status ' + (pdf.status || 'pending') + '">' + (pdf.status || 'Pending') + '</span>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deletePdf(\'' + business.id + '\', \'' + pdf.id + '\')">🗑️</button>';
+                    html += '</div>';
                     html += '</div>';
                 });
             } else {
@@ -991,6 +1001,118 @@
             const targetContent = document.getElementById('knowledge-' + businessId + '-' + tabName);
             if (targetContent) {
                 targetContent.classList.add('active');
+            }
+        }
+
+        async function deleteFaq(businessId, faqId) {
+            if (!confirm('Are you sure you want to delete this FAQ?')) return;
+            
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/faqs', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ faqId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('FAQ deleted successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error deleting FAQ: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting FAQ', 'error');
+            }
+        }
+
+        function editFaq(businessId, faqId) {
+            // Find the FAQ in the current businesses array
+            const business = businesses.find(b => b.id === businessId);
+            const faq = business?.faqs?.find(f => f.id === faqId);
+            if (!faq) return;
+            
+            const newQuestionEn = prompt('Edit English question:', faq.questionEn || '');
+            if (newQuestionEn === null) return;
+            
+            const newAnswerEn = prompt('Edit English answer:', faq.answerEn || '');
+            if (newAnswerEn === null) return;
+            
+            const newQuestionBn = prompt('Edit Bangla question (optional):', faq.questionBn || '');
+            if (newQuestionBn === null) return;
+            
+            const newAnswerBn = prompt('Edit Bangla answer (optional):', faq.answerBn || '');
+            if (newAnswerBn === null) return;
+            
+            updateFaq(businessId, faqId, {
+                questionEn: newQuestionEn,
+                answerEn: newAnswerEn,
+                questionBn: newQuestionBn,
+                answerBn: newAnswerBn
+            });
+        }
+
+        async function updateFaq(businessId, faqId, updates) {
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/faqs', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ faqId, ...updates })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('FAQ updated successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error updating FAQ: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating FAQ', 'error');
+            }
+        }
+
+        async function deleteWebsite(businessId, websiteId) {
+            if (!confirm('Are you sure you want to delete this website from training?')) return;
+            
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/website', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ websiteId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Website deleted successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error deleting website: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting website', 'error');
+            }
+        }
+
+        async function deletePdf(businessId, pdfId) {
+            if (!confirm('Are you sure you want to delete this document from training?')) return;
+            
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/pdf', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pdfId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Document deleted successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error deleting document: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting document', 'error');
             }
         }
 

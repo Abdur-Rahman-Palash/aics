@@ -7,6 +7,20 @@ const LangChainIntegration = require('../lib/langchain'); // New LangChain integ
 const getStorage = require('../lib/storage');
 const config = require('../lib/config');
 
+// Initialize services once when the module loads
+let storage;
+let qdrant;
+let gemini;
+let langchain;
+
+// Initialize services async on first request
+async function initializeServices() {
+    if (!storage) storage = await getStorage();
+    if (!qdrant) qdrant = new QdrantManager();
+    if (!gemini) gemini = new GeminiAI();
+    if (!langchain) langchain = new LangChainIntegration();
+}
+
 // Simple function to normalize whitespace
 function normalizeWhitespace(text) {
     return text.replace(/\s+/g, ' ').trim();
@@ -46,6 +60,8 @@ function findMatchingFAQFromStorage(message, business) {
 }
 
 module.exports = async (req, res) => {
+    // Initialize services (if not already initialized)
+    await initializeServices();
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -66,9 +82,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        // Initialize storage
-        const storage = await getStorage();
-
         // Get business from storage if ID is provided
         let business = null;
         if (businessId) {
@@ -88,11 +101,6 @@ module.exports = async (req, res) => {
 
         // First, try to find a matching FAQ from storage (db.json) directly
         const directMatch = findMatchingFAQFromStorage(message, business);
-        
-        // Initialize services
-        const qdrant = new QdrantManager();
-        const gemini = new GeminiAI();
-        const langchain = new LangChainIntegration(); // New LangChain instance
 
         // Build context - start with empty
         let contextParts = [];
@@ -244,7 +252,7 @@ module.exports = async (req, res) => {
                     }
                     
                     // Check if AI response mentions human/escalate, set needsHumanHelp if so
-                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know/i.test(aiResponse);
+                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information/i.test(aiResponse);
                     if (hasHumanKeywords) {
                         needsHumanHelp = true;
                     }
@@ -322,6 +330,8 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
+        console.error('[CHAT] FATAL ERROR:', error);
+        console.error('[CHAT] FATAL ERROR STACK:', error.stack);
         return res.status(500).json({
             success: false,
             error: 'Something went wrong. Please try again later.'

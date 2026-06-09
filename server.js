@@ -17,31 +17,36 @@ let storage;
 
 // Email notification function
 async function sendLeadNotification(business, lead) {
-    if (!business.notificationEmail) {
-        console.log('No notification email set for business:', business.name);
-        return;
-    }
-
-    // Create a transporter using environment variables
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+    try {
+        if (!business.notificationEmail) {
+            console.log('No notification email set for business:', business.name);
+            return;
         }
-    });
 
-    // Get conversation transcript if available
-    let transcript = '';
-    if (lead.conversationId) {
-        const conversation = business.conversations.find(c => c.id === lead.conversationId);
-        if (conversation && conversation.messages) {
-            transcript = conversation.messages.map(msg => {
-                return `${msg.role.toUpperCase()}: ${msg.content}`;
-            }).join('\n\n');
+        // Create a transporter using environment variables
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+            port: parseInt(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+
+        // Get conversation transcript if available
+        let transcript = '';
+        if (lead.conversationId && business.conversations) {
+            const conversation = business.conversations.find(c => c.id === lead.conversationId);
+            if (conversation && conversation.messages) {
+                transcript = conversation.messages.map(msg => {
+                    return `${msg.role.toUpperCase()}: ${msg.content}`;
+                }).join('\n\n');
+            }
         }
+    } catch (error) {
+        console.error('Error in sendLeadNotification:', error);
+        // Don't let email errors break the lead submission!
     }
 
     const mailOptions = {

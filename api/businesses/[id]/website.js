@@ -32,15 +32,11 @@ module.exports = async (req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
-    }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const storage = await getStorage();
@@ -59,6 +55,25 @@ module.exports = async (req, res) => {
             console.error('[Website] Business not found');
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
+
+        if (req.method === 'DELETE') {
+            const { websiteId } = req.body;
+            if (!websiteId) {
+                return res.status(400).json({ success: false, error: 'websiteId is required' });
+            }
+            
+            const deleted = await storage.deleteWebsite(businessId, websiteId);
+            if (!deleted) {
+                return res.status(404).json({ success: false, error: 'Website not found' });
+            }
+            
+            return res.status(200).json({ success: true });
+        }
+
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
         const { url } = req.body;
 
         if (!url) {

@@ -45,12 +45,12 @@ const storageConfig = multer.diskStorage({
 
 // File filter to accept PDF, DOCX, TXT, CSV, Excel files
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['.pdf', '.docx', '.txt', '.csv', '.xlsx', '.xls'];
+    const allowedTypes = ['.pdf', '.docx', '.txt', '.csv', '.xlsx', '.xls', '.xml', '.json', '.md', '.rtf'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedTypes.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('Only PDF, DOCX, TXT, CSV, Excel (.xls/.xlsx) files are allowed!'));
+        cb(new Error('Only PDF, DOCX, TXT, CSV, Excel, XML, JSON, Markdown, RTF files are allowed!'));
     }
 };
 
@@ -69,23 +69,21 @@ module.exports = async (req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
     const storage = await getStorage();
 
-    // Check authentication
-    if (!req.session || !req.session.userId) {
-        console.error('[PDF] Unauthorized: no session userId');
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    // Check authentication for non-GET requests
+    if (req.method !== 'OPTIONS') {
+        if (!req.session || !req.session.userId) {
+            console.error('[PDF] Unauthorized: no session userId');
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
     }
 
     // Check if business exists
@@ -97,6 +95,29 @@ module.exports = async (req, res) => {
         return res.status(404).json({ success: false, error: 'Business not found' });
     }
     console.log('[PDF] Business found:', business.name);
+
+    if (req.method === 'DELETE') {
+        try {
+            const { pdfId } = req.body;
+            if (!pdfId) {
+                return res.status(400).json({ success: false, error: 'pdfId is required' });
+            }
+            
+            const deleted = await storage.deletePdf(businessId, pdfId);
+            if (!deleted) {
+                return res.status(404).json({ success: false, error: 'PDF not found' });
+            }
+            
+            return res.status(200).json({ success: true });
+        } catch (error) {
+            console.error('[PDF] Delete error:', error);
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
     // Use multer to handle the upload
     upload.single('file')(req, res, async (err) => {
