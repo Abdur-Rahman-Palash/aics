@@ -293,7 +293,9 @@ class AICSChatWidget {
                     setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
                 }
             } else {
-                this.addMessage('Sorry, something went wrong. Please try again.', 'ai');
+                // If something went wrong, show lead form instead of error message
+                this.addMessage("I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?", 'ai');
+                setTimeout(() => this.showLeadForm(), 500);
             }
         } catch (error) {
             this.hideTypingIndicator();

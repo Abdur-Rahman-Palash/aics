@@ -332,9 +332,14 @@ module.exports = async (req, res) => {
     } catch (error) {
         console.error('[CHAT] FATAL ERROR:', error);
         console.error('[CHAT] FATAL ERROR STACK:', error.stack);
-        return res.status(500).json({
-            success: false,
-            error: 'Something went wrong. Please try again later.'
+        // Instead of returning error, return a response that triggers lead form!
+        return res.status(200).json({
+            success: true,
+            response: "I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?",
+            needsHumanHelp: true,
+            confidence: 0,
+            conversationId: conversation ? conversation.id : null,
+            context: []
         });
     }
 };
