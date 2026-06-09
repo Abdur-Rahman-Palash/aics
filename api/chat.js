@@ -60,6 +60,70 @@ function findMatchingFAQFromStorage(message, business) {
     return null;
 }
 
+// Simple keyword-based response generator for fallback
+function generateFriendlyFallbackResponse(message, contextParts) {
+    if (contextParts.length === 0) {
+        return "I'd be happy to help you with that! Let me guide you: \n\nPlease explore the website's main menu to find what you're looking for!";
+    }
+
+    // Try to find a relevant chunk based on keywords in the user's message
+    const messageLower = message.toLowerCase();
+    let bestChunk = null;
+    let bestScore = 0;
+
+    for (const part of contextParts) {
+        const partLower = part.toLowerCase();
+        let score = 0;
+        // Count keywords in the chunk
+        if (messageLower.includes('create') && partLower.includes('create')) score += 2;
+        if (messageLower.includes('invoice') && partLower.includes('invoice')) score += 2;
+        if (messageLower.includes('payment') && partLower.includes('payment')) score += 2;
+        if (messageLower.includes('product') && partLower.includes('product')) score += 2;
+        if (messageLower.includes('store') && partLower.includes('store')) score += 2;
+        if (messageLower.includes('dashboard') && partLower.includes('dashboard')) score += 2;
+        if (messageLower.includes('click') && partLower.includes('click')) score += 1;
+        if (messageLower.includes('button') && partLower.includes('button')) score += 1;
+        if (messageLower.includes('go') && partLower.includes('go')) score += 1;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestChunk = part;
+        }
+    }
+
+    if (bestChunk && bestScore > 0) {
+        // Clean up the chunk to make it user-friendly
+        let cleanChunk = bestChunk.replace(/\[website\] Source:.*?\s*/, '');
+        cleanChunk = cleanChunk.replace(/\[.*?\]/g, ''); // Remove any [type] tags
+        cleanChunk = cleanChunk.replace(/https?:\/\/[^\s]+/g, ''); // Remove URLs
+        cleanChunk = cleanChunk.replace(/`/g, ''); // Remove backticks
+        cleanChunk = cleanChunk.replace(/\s+/g, ' ').trim();
+
+        // Extract key phrases or steps
+        // For invoice questions, extract steps like "Go to Dashboard, Click Invoice module"
+        if (messageLower.includes('invoice') && messageLower.includes('create')) {
+            const steps = [];
+            if (cleanChunk.toLowerCase().includes('dashboard')) steps.push('Go to Dashboard');
+            if (cleanChunk.toLowerCase().includes('invoice')) steps.push('Click on Invoice module');
+            if (cleanChunk.toLowerCase().includes('create')) steps.push('Look for a CREATE button');
+            
+            if (steps.length > 0) {
+                return "Here's how to create an invoice:\n\n" + steps.join('\n');
+            }
+        }
+
+        // Extract relevant sentences
+        const sentences = cleanChunk.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
+        if (sentences.length > 0) {
+            let relevantSentences = sentences.slice(0, 4); // Take top 4 relevant sentences
+            return "Here's what I found to help you:\n\n" + relevantSentences.join('. ') + '.';
+        }
+    }
+
+    // If no relevant chunk, just return a friendly message
+    return "Here's what I found to help you:\n\n" + contextParts[0].substring(0, 300);
+}
+
 module.exports = async (req, res) => {
     // Initialize services (if not already initialized)
     await initializeServices();
@@ -243,9 +307,9 @@ module.exports = async (req, res) => {
                             aiResponse = await gemini.generateResponse(message, context);
                             console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
                         } catch (geminiError) {
-                            console.warn('[CHAT] Gemini API failed, using fallback:', geminiError);
-                            // Fallback - still make it friendly!
-                            aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
+                            console.warn('[CHAT] Gemini API failed, using friendly fallback:', geminiError);
+                            // Fallback - use our friendly keyword-based generator!
+                            aiResponse = generateFriendlyFallbackResponse(message, contextParts);
                             needsHumanHelp = false;
                         }
                     }
@@ -270,14 +334,9 @@ module.exports = async (req, res) => {
         } catch (error) {
             console.error('[CHAT] Error generating response:', error);
             console.error('[CHAT] Error stack:', error.stack);
-            // Final fallback: still friendly!
-            if (contextParts.length > 0) {
-                aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
-                needsHumanHelp = false;
-            } else {
-                aiResponse = "Sorry, I couldn't generate a response right now. Please try again later!";
-                needsHumanHelp = false;
-            }
+            // Final fallback: use our friendly generator!
+            aiResponse = generateFriendlyFallbackResponse(message, contextParts);
+            needsHumanHelp = false;
         }
 
         // Record analytics if business ID is provided (try/catch to not crash)
