@@ -62,13 +62,13 @@ function findMatchingFAQFromStorage(message, business) {
 
 // Simple keyword-based response generator for fallback
 function generateFriendlyFallbackResponse(message, contextParts) {
-    // Handle basic questions first
+    // Handle basic questions first (English and Bengali)
     const messageLower = message.toLowerCase();
-    if (messageLower.includes('who are you')) {
-        return "I'm your AI customer support assistant! I'm here to help you with any questions about this website and its services!";
+    if (messageLower.includes('who are you') || messageLower.includes('tumi ke') || messageLower.includes('tomake') || messageLower.includes('tumi')) {
+        return "আমি আপনার AI কাস্টমার সাপোর্ট সহকারী! আমি এই ওয়েবসাইট এবং এর সেবা সম্পর্কে আপনার যেকোনো প্রশ্নে সহায়তা করতে এখানে আছি!";
     }
-    if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('hey')) {
-        return "Hello! How can I help you today?";
+    if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('hey') || messageLower.includes('assalamu alaikum')) {
+        return "Assalamu Alaikum! আজকে আমি কিভাবে আপনাকে সাহায্য করতে পারি?";
     }
     
     if (contextParts.length === 0) {
