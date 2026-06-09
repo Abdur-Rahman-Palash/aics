@@ -89,10 +89,15 @@ module.exports = async (req, res) => {
             // Try to run training (with timeout for serverless)
             try {
                 console.log('Starting website training for', url);
+                console.log('Environment check:', {
+                    hasHfKey: !!process.env.HUGGINGFACE_API_KEY,
+                    hasQdrant: !!process.env.QDRANT_URL,
+                    nodeEnv: process.env.NODE_ENV
+                });
                 
                 // Run actual training - increase timeout to 60 seconds for local testing!
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Training timed out')), 60000)
+                    setTimeout(() => reject(new Error('Training timed out after 60 seconds')), 60000)
                 );
                 console.log('Calling trainWebsite');
                 const trainingPromise = trainWebsite(businessId, url, business.qdrantCollection);
@@ -106,7 +111,13 @@ module.exports = async (req, res) => {
                 });
 
             } catch (error) {
-                console.error('Website training failed:', error);
+                console.error('Website training failed:', {
+                    error: error.message,
+                    stack: error.stack,
+                    businessId,
+                    url,
+                    hasHfKey: !!process.env.HUGGINGFACE_API_KEY
+                });
                 
                 // Update status to failed via storage helper
                 await storage.updateKnowledgeSourceStatus(businessId, newWebsite.id, 'failed', {

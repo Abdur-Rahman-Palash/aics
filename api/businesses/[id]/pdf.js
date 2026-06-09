@@ -143,10 +143,15 @@ module.exports = async (req, res) => {
             // Try to run training (with timeout for serverless)
             try {
                 console.log('[PDF] Starting training for', req.file.originalname);
+                console.log('[PDF] Environment check:', {
+                    hasHfKey: !!process.env.HUGGINGFACE_API_KEY,
+                    hasQdrant: !!process.env.QDRANT_URL,
+                    nodeEnv: process.env.NODE_ENV
+                });
                 
                 // Run actual training - increase timeout to 120 seconds for Render!
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Training timed out')), 120000)
+                    setTimeout(() => reject(new Error('Training timed out after 120 seconds')), 120000)
                 );
                 const filePath = path.join(uploadsDir, req.file.filename);
                 console.log('[PDF] Calling trainDocument on filePath:', filePath);
@@ -161,7 +166,13 @@ module.exports = async (req, res) => {
                 });
 
             } catch (error) {
-                console.error('[PDF] Training failed:', error);
+                console.error('[PDF] Training failed:', {
+                    error: error.message,
+                    stack: error.stack,
+                    businessId,
+                    fileName: req.file.originalname,
+                    hasHfKey: !!process.env.HUGGINGFACE_API_KEY
+                });
                 // Update status to failed via storage helper
                 await storage.updateKnowledgeSourceStatus(businessId, newPdf.id, 'failed', {
                     error: error.message

@@ -14,9 +14,15 @@ services:
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: QDRANT_URL
         sync: false
       - key: QDRANT_API_KEY
+        sync: false
+      - key: DATABASE_URL
         sync: false
       - key: DATA_DIR
         value: /var/data
