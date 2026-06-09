@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": "4e53af4f4eb6cb241416f43a8de85436",
+      "email": "test@example.com",
+      "password": "$2b$10$d6MGfzfu7cn4B1MlEQuXWucbLZi.vQiKKLEOqoj/j0ZQOkrC/AH.i",
+      "name": "Test User",
+      "createdAt": "2026-06-09T09:36:19.753Z"
+    },
+    {
+      "id": "27a06ac4af1b2675a4da872ce772a2b1",
+      "email": "needman173@gmail.com",
+      "password": "$2b$10$IqeBYP.t19IGDvPmNxOqh.njFPQEy/e2krNV2cBP42mNZsMGbgYFS",
+      "name": "Needman",
+      "createdAt": "2026-06-09T09:39:43.333Z"
+    }
+  ],
+  "businesses": []
+}

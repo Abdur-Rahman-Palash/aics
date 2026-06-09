@@ -157,8 +157,8 @@ app.use((req, res, next) => {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow framing on same origin
     // XSS protection
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    // CSP - Content Security Policy - Allow cross-origin connections for embedded widget
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss: ws:; font-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'");
+    // CSP - Content Security Policy - More lenient for local testing
+    res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data:; connect-src * wss: ws:; font-src *; frame-src *; object-src 'none'; base-uri 'self'; form-action 'self'");
     // Referrer Policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Permissions Policy
@@ -272,6 +272,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
 app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
+        console.log('[SERVER] Login request body:', req.body);
         const { email, password } = req.body;
         
         // Validate inputs
@@ -283,9 +284,11 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         }
         
         const user = await storage.loginUser(email, password);
+        console.log('[SERVER] Logged in user:', user);
         req.session.userId = user.id;
         res.status(200).json({ success: true, user });
     } catch (error) {
+        console.error('[SERVER] Login error:', error.message, error.stack);
         res.status(401).json({ success: false, error: error.message });
     }
 });
@@ -769,6 +772,7 @@ app.put('/api/businesses/:id/google-sheets', async (req, res) => {
 
 // Serve static files
 app.get('/', (req, res) => {
+    console.log('[SERVER] Request to /');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -833,46 +837,44 @@ async function startServer() {
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {
-    socket.on('send message', async (userMessage) => {
+    socket.on('send message', async (data) => {
       try {
-        console.log('[Socket.IO] Received message:', userMessage);
-        
-        // Generate embedding for user message
-        console.log('[Socket.IO] Generating embedding...');
-        const queryEmbedding = await gemini.generateEmbedding(userMessage);
-        console.log('[Socket.IO] Embedding generated');
+        console.log('[Socket.IO] Received message:', data);
+        const userMessage = typeof data === 'string' ? data : data.message;
+        const businessId = typeof data === 'object' ? data.businessId : null;
+        const conversationId = typeof data === 'object' ? data.conversationId : null;
+        const visitor = typeof data === 'object' ? data.visitor : {};
 
-        // Search Qdrant for similar FAQs
-        console.log('[Socket.IO] Searching similar items...');
-        const similarFAQs = await qdrant.searchSimilar(queryEmbedding);
-        console.log('[Socket.IO] Similar items found:', similarFAQs);
-
-        // Build context from similar FAQs
-        let context = 'No FAQ context available.';
-        if (similarFAQs.length > 0) {
-          context = similarFAQs.map(item => {
-            if (item.type === 'faq' && item.question && item.answer) {
-              return `Q: ${item.question}\nA: ${item.answer}`;
-            } else if (item.content) {
-              return `[${item.type || 'content'}] ${item.content}`;
-            }
-            return '';
-          }).filter(Boolean).join('\n\n');
-        }
-        console.log('[Socket.IO] Context:', context);
-
-        // Generate AI response
-        console.log('[Socket.IO] Generating AI response...');
-        const aiResponse = await gemini.generateResponse(userMessage, context);
-        console.log('[Socket.IO] AI Response:', aiResponse);
-
-        // Emit AI response back to client
-        socket.emit('ai response', aiResponse);
+        // Use the same chat handler as REST API
+        const req = {
+          body: {
+            message: userMessage,
+            businessId,
+            conversationId,
+            visitor
+          }
+        };
+        const res = {
+          status: (code) => {
+            return {
+              json: (payload) => {
+                console.log('[Socket.IO] Chat payload:', payload);
+                socket.emit('ai response', payload);
+              }
+            };
+          }
+        };
+        await chatHandler(req, res);
 
       } catch (error) {
         console.error('[Socket.IO] Error:', error);
         console.error('[Socket.IO] Error stack:', error.stack);
-        socket.emit('ai response', 'Sorry, something went wrong. Please try again. Error: ' + error.message);
+        socket.emit('ai response', {
+          success: true,
+          response: 'Sorry, something went wrong. Please try again. Error: ' + error.message,
+          needsHumanHelp: true,
+          confidence: 0
+        });
       }
     });
   });

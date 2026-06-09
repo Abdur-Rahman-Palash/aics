@@ -154,6 +154,8 @@ module.exports = async (req, res) => {
     // Step 1: Check similarity threshold
     const SIMILARITY_THRESHOLD = 0.05;
     const hasRelevantSimilarity = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+    console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
+    console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
 
     // Step 2: Use Gemini to classify relevance (two-layer validation)
     let isQuestionRelated = false;
@@ -165,11 +167,16 @@ module.exports = async (req, res) => {
         // If classification fails, fall back to similarity only
         isQuestionRelated = hasRelevantSimilarity;
       }
+    } else if (contextParts.length === 0) {
+      console.log('[CHAT] No context parts found, using hasRelevantSimilarity:', hasRelevantSimilarity);
+      isQuestionRelated = hasRelevantSimilarity;
     }
+    console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
 
-    // If either step indicates it's unrelated, show lead form
+    // Only mark as needs human help if both similarity and classification say it's unrelated
     const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
-    let needsHumanHelp = !isQuestionRelated;
+    let needsHumanHelp = !hasRelevantSimilarity && !isQuestionRelated;
+    console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
         
         // Generate AI response or use fallback
         let aiResponse;
