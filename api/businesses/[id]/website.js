@@ -99,53 +99,19 @@ module.exports = async (req, res) => {
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
                 console.log('Training complete:', result);
 
-                // Update status to completed
-                // For Neon storage, we need to update the knowledge source
-                if (process.env.DATABASE_URL) {
-                    const client = await storage.pool.connect();
-                    try {
-                        await client.query(
-                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2, chunks_count = $3 WHERE id = $4',
-                            ['completed', new Date().toISOString(), result.chunksCount, newWebsite.id]
-                        );
-                    } finally {
-                        client.release();
-                    }
-                } else if (storage.save) {
-                    // For JSON storage
-                    const businessRef = await storage.getBusiness(businessId);
-                    const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-                    if (websiteIndex !== -1) {
-                        businessRef.knowledgeSources.websites[websiteIndex].status = 'completed';
-                        businessRef.knowledgeSources.websites[websiteIndex].lastTrainedAt = new Date().toISOString();
-                        businessRef.knowledgeSources.websites[websiteIndex].chunksCount = result.chunksCount;
-                    }
-                    storage.save();
-                }
+                // Update status to completed via storage helper
+                await storage.updateKnowledgeSourceStatus(businessId, newWebsite.id, 'completed', {
+                    lastTrainedAt: new Date().toISOString(),
+                    chunksCount: result.chunksCount
+                });
 
             } catch (error) {
                 console.error('Website training failed:', error);
                 
-                // Update status to failed
-                if (process.env.DATABASE_URL) {
-                    const client = await storage.pool.connect();
-                    try {
-                        await client.query(
-                            'UPDATE knowledge_sources SET status = $1, error = $2 WHERE id = $3',
-                            ['failed', error.message, newWebsite.id]
-                        );
-                    } finally {
-                        client.release();
-                    }
-                } else if (storage.save) {
-                    const businessRef = await storage.getBusiness(businessId);
-                    const websiteIndex = businessRef.knowledgeSources.websites.findIndex(w => w.id === newWebsite.id);
-                    if (websiteIndex !== -1) {
-                        businessRef.knowledgeSources.websites[websiteIndex].status = 'failed';
-                        businessRef.knowledgeSources.websites[websiteIndex].error = error.message;
-                    }
-                    storage.save();
-                }
+                // Update status to failed via storage helper
+                await storage.updateKnowledgeSourceStatus(businessId, newWebsite.id, 'failed', {
+                    error: error.message
+                });
             }
 
         return res.status(201).json({ success: true, website: newWebsite });

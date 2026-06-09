@@ -154,50 +154,18 @@ module.exports = async (req, res) => {
                 const result = await Promise.race([trainingPromise, timeoutPromise]);
                 console.log('[PDF] Training complete:', result);
 
-                // Update status to completed
-                if (process.env.DATABASE_URL) {
-                    const client = await storage.pool.connect();
-                    try {
-                        await client.query(
-                            'UPDATE knowledge_sources SET status = $1, last_trained_at = $2, chunks_count = $3 WHERE id = $4',
-                            ['completed', new Date().toISOString(), result.chunksCount, newPdf.id]
-                        );
-                    } finally {
-                        client.release();
-                    }
-                } else if (storage.save) {
-                    const businessRef = await storage.getBusiness(businessId);
-                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                    if (pdfIndex !== -1) {
-                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'completed';
-                        businessRef.knowledgeSources.pdfs[pdfIndex].lastTrainedAt = new Date().toISOString();
-                        businessRef.knowledgeSources.pdfs[pdfIndex].chunksCount = result.chunksCount;
-                    }
-                    storage.save();
-                }
+                // Update status to completed via storage helper
+                await storage.updateKnowledgeSourceStatus(businessId, newPdf.id, 'completed', {
+                    lastTrainedAt: new Date().toISOString(),
+                    chunksCount: result.chunksCount
+                });
 
             } catch (error) {
                 console.error('[PDF] Training failed:', error);
-                // Update status to failed
-                if (process.env.DATABASE_URL) {
-                    const client = await storage.pool.connect();
-                    try {
-                        await client.query(
-                            'UPDATE knowledge_sources SET status = $1, error = $2 WHERE id = $3',
-                            ['failed', error.message, newPdf.id]
-                        );
-                    } finally {
-                        client.release();
-                    }
-                } else if (storage.save) {
-                    const businessRef = await storage.getBusiness(businessId);
-                    const pdfIndex = businessRef.knowledgeSources.pdfs.findIndex(p => p.id === newPdf.id);
-                    if (pdfIndex !== -1) {
-                        businessRef.knowledgeSources.pdfs[pdfIndex].status = 'failed';
-                        businessRef.knowledgeSources.pdfs[pdfIndex].error = error.message;
-                    }
-                    storage.save();
-                }
+                // Update status to failed via storage helper
+                await storage.updateKnowledgeSourceStatus(businessId, newPdf.id, 'failed', {
+                    error: error.message
+                });
             }
 
             return res.status(201).json({ success: true, pdf: newPdf });
