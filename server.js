@@ -871,7 +871,7 @@ async function startServer() {
         console.error('[Socket.IO] Error stack:', error.stack);
         socket.emit('ai response', {
           success: true,
-          response: 'Sorry, something went wrong. Please try again. Error: ' + error.message,
+          response: "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.",
           needsHumanHelp: true,
           confidence: 0
         });

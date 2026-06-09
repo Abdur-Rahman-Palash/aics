@@ -72,7 +72,7 @@ function generateFriendlyFallbackResponse(message, contextParts) {
     }
     
     if (contextParts.length === 0) {
-        return "I'd be happy to help you with that! Let me guide you: \n\nPlease explore the website's main menu to find what you're looking for!";
+        return "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
     }
 
     // Try to find a relevant chunk based on keywords in the user's message
@@ -332,19 +332,16 @@ module.exports = async (req, res) => {
                     aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
                     needsHumanHelp = false;
                 }
-            } else { // If no context at all, still be friendly!
-                aiResponse = "I'd be happy to help you with that! Let me guide you:\n\n" + 
-                    (message.toLowerCase().includes('invoice') ? 
-                        "Look for a 'CREATE' button on the home page to start creating your invoice!" : 
-                        "Please explore the website's main menu to find what you're looking for!");
-                needsHumanHelp = false;
+            } else { // If no context at all, use the standard message!
+                aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
+                needsHumanHelp = true;
             }
         } catch (error) {
             console.error('[CHAT] Error generating response:', error);
             console.error('[CHAT] Error stack:', error.stack);
-            // Final fallback: use our friendly generator!
-            aiResponse = generateFriendlyFallbackResponse(message, contextParts);
-            needsHumanHelp = false;
+            // Final fallback: use our standard message!
+            aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
+            needsHumanHelp = true;
         }
 
         // Record analytics if business ID is provided (try/catch to not crash)
@@ -401,8 +398,8 @@ module.exports = async (req, res) => {
         // Instead of returning error, return a friendly response!
         return res.status(200).json({
             success: true,
-            response: "I'm sorry, something went wrong! Please try again in a moment.",
-            needsHumanHelp: false,
+            response: "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.",
+            needsHumanHelp: true,
             confidence: 0,
             conversationId: conversation ? conversation.id : null,
             context: []
