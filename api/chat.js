@@ -1,4 +1,3 @@
-
 // Vercel API Route: /api/chat
 // Handles chat messages and returns AI responses
 
@@ -60,6 +59,12 @@ function findMatchingFAQFromStorage(message, business) {
     return null;
 }
 
+// Check if message is a greeting (English or Bengali)
+function isGreetingMessage(message) {
+    const greetingPatterns = /^(hi|hello|hey|yo|sup|greetings|good\s*(morning|afternoon|evening|night)|assalamu\s*alaikum|walaikum\s*assalam|salam|হ্যালো|হেলো|হাই|হে|নমস্কার|আসসালামু\s*আলাইকুম|ওয়ালাইকুম\s*আসসালাম|কেমন\s*আছ|কি\s*খবর)\b/i;
+    return greetingPatterns.test(message.trim());
+}
+
 // Simple keyword-based response generator for fallback
 function generateFriendlyFallbackResponse(message, contextParts) {
     // Handle basic questions first (English and Bengali)
@@ -67,7 +72,7 @@ function generateFriendlyFallbackResponse(message, contextParts) {
     if (messageLower.includes('who are you') || messageLower.includes('tumi ke') || messageLower.includes('tomake') || messageLower.includes('tumi')) {
         return "আমি আপনার AI কাস্টমার সাপোর্ট সহকারী! আমি এই ওয়েবসাইট এবং এর সেবা সম্পর্কে আপনার যেকোনো প্রশ্নে সহায়তা করতে এখানে আছি!";
     }
-    if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('hey') || messageLower.includes('assalamu alaikum')) {
+    if (isGreetingMessage(message)) {
         return "Assalamu Alaikum! আজকে আমি কিভাবে আপনাকে সাহায্য করতে পারি?";
     }
     
@@ -229,48 +234,61 @@ module.exports = async (req, res) => {
             context = contextParts.join('\n\n---\n\n');
         }
 
-        // Step 1: Check similarity threshold
-        const SIMILARITY_THRESHOLD = 0.1; // Slightly higher threshold
-        const hasRelevantSimilarity = similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+        // ─── Step 1: Greeting check — always respond friendly, skip all other checks ───
+        const greeting = isGreetingMessage(message);
+        console.log('[CHAT] isGreeting:', greeting);
+
+        // ─── Step 2: Check similarity threshold ───
+        const SIMILARITY_THRESHOLD = 0.07; // Lowered from 0.1 to suit MiniLM-L6-v2 score range
+        const hasRelevantSimilarity = greeting || similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
         console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
         console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
 
-        // Step 2: Use Gemini to classify relevance (two-layer validation)
+        // ─── Step 3: Use AI to classify relevance (two-layer validation) ───
         let isQuestionRelated = false;
-        if (contextParts.length > 0 && config.huggingface.apiKey) {
+
+        // Greetings are always related — skip classification
+        if (greeting) {
+            isQuestionRelated = true;
+        } else if (contextParts.length > 0 && config.huggingface.apiKey) {
             try {
                 isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
             } catch (error) {
                 console.error('[CHAT] Error classifying relevance:', error);
-                // If classification fails (rate limit, etc.), trust the similarity score!
+                // If classification fails (rate limit, etc.), trust the similarity score
                 isQuestionRelated = hasRelevantSimilarity;
             }
         } else if (contextParts.length === 0) {
             console.log('[CHAT] No context parts found, defaulting to isQuestionRelated = true');
             isQuestionRelated = true;
         }
-        // If similarity score is good, mark as related even if classification says no!
+
+        // If similarity score is good, mark as related even if classification says no
         if (hasRelevantSimilarity && !isQuestionRelated) {
             console.log('[CHAT] Similarity score is good, overriding classification to related!');
             isQuestionRelated = true;
         }
         console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
 
-        // Only mark as needs human help if both similarity and classification say it's unrelated
+        // ─── Step 4: Decide if human help is needed ───
+        // Only true if BOTH similarity is low AND classification says unrelated AND not a greeting
         const humanTransferMessage = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
-        let needsHumanHelp = false; // Default to false to be safe!
-        // Only set to true if both similarity is low AND classification says unrelated
-        if (!hasRelevantSimilarity && !isQuestionRelated) {
+        let needsHumanHelp = false;
+        if (!greeting && !hasRelevantSimilarity && !isQuestionRelated) {
             needsHumanHelp = true;
         }
         console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
 
-        // Generate AI response
+        // ─── Step 5: Generate AI response ───
         let aiResponse;
 
         try {
-            if (needsHumanHelp && !isQuestionRelated) {
-                // Unrelated question - generate helpful response with suggestions
+            if (greeting) {
+                // Greeting — respond directly without going through AI classification
+                aiResponse = "Assalamu Alaikum! আজকে আমি কিভাবে আপনাকে সাহায্য করতে পারি?";
+
+            } else if (needsHumanHelp && !isQuestionRelated) {
+                // Unrelated question — generate helpful response with suggestions
                 if (config.huggingface.apiKey) {
                     try {
                         aiResponse = await gemini.generateUnrelatedResponse(message);
@@ -282,8 +300,9 @@ module.exports = async (req, res) => {
                 } else {
                     aiResponse = humanTransferMessage;
                 }
+
             } else if (directMatch) {
-                // If we have a direct FAQ match, still use Gemini to make it friendly!
+                // Direct FAQ match — use AI to make it friendly
                 if (config.huggingface.apiKey) {
                     try {
                         const contextWithFAQ = `FAQ - Q: ${directMatch.question}\nA: ${directMatch.answer}`;
@@ -297,10 +316,10 @@ module.exports = async (req, res) => {
                 }
                 confidenceScore = 1.0;
                 needsHumanHelp = false;
-            } else if (contextParts.length > 0) { // If we have ANY context, use Gemini!
-                // Always use Gemini to generate a friendly response
+
+            } else if (contextParts.length > 0) {
+                // Context found — use LangChain → fallback to Gemini → fallback to keyword
                 if (config.huggingface.apiKey) {
-                    // Get conversation history for LangChain memory
                     let conversationHistory = [];
                     if (conversation && conversation.messages) {
                         conversationHistory = conversation.messages;
@@ -321,35 +340,35 @@ module.exports = async (req, res) => {
                             console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
                         } catch (geminiError) {
                             console.warn('[CHAT] Gemini API failed, using friendly fallback:', geminiError);
-                            // Fallback - use our friendly keyword-based generator!
                             aiResponse = generateFriendlyFallbackResponse(message, contextParts);
                             needsHumanHelp = false;
                         }
                     }
 
-                    // Check if AI response mentions human/escalate, set needsHumanHelp if so
+                    // Check if AI response mentions escalation
                     const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information/i.test(aiResponse);
                     if (hasHumanKeywords) {
                         needsHumanHelp = true;
                     }
                 } else {
-                    // No API key, still make it friendly
                     aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
                     needsHumanHelp = false;
                 }
-            } else { // If no context at all, use the standard message!
+
+            } else {
+                // No context at all
                 aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
                 needsHumanHelp = true;
             }
+
         } catch (error) {
             console.error('[CHAT] Error generating response:', error);
             console.error('[CHAT] Error stack:', error.stack);
-            // Final fallback: use our standard message!
             aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
             needsHumanHelp = true;
         }
 
-        // Record analytics if business ID is provided (try/catch to not crash)
+        // ─── Step 6: Record analytics ───
         try {
             let hitFaqId = null;
             const topFAQ = similarItems.find(item => item.type === 'faq' && item.score > 0.7);
@@ -360,10 +379,10 @@ module.exports = async (req, res) => {
                 await storage.recordAnalytics(businessId, hitFaqId, !needsHumanHelp, needsHumanHelp);
             }
         } catch (error) {
-            // Error recording analytics
+            // Error recording analytics — non-fatal
         }
 
-        // Store unanswered question if needed (but don't crash on duplicates!)
+        // ─── Step 7: Store unanswered question if needed ───
         if (businessId && needsHumanHelp && !directMatch) {
             try {
                 await storage.addUnansweredQuestion(businessId, message);
@@ -372,7 +391,7 @@ module.exports = async (req, res) => {
             }
         }
 
-        // Add messages to conversation
+        // ─── Step 8: Save messages to conversation ───
         if (conversation && businessId) {
             await storage.addMessageToConversation(businessId, conversation.id, {
                 role: 'user',
@@ -384,7 +403,6 @@ module.exports = async (req, res) => {
                 confidence: confidenceScore
             });
 
-            // Update conversation status
             if (needsHumanHelp) {
                 await storage.updateConversation(businessId, conversation.id, {
                     status: 'pending'
@@ -405,7 +423,6 @@ module.exports = async (req, res) => {
     } catch (error) {
         console.error('[CHAT] FATAL ERROR:', error);
         console.error('[CHAT] FATAL ERROR STACK:', error.stack);
-        // Instead of returning error, return a friendly response!
         return res.status(200).json({
             success: true,
             response: "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.",
