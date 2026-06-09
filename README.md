@@ -105,10 +105,12 @@ Set these values in Render:
 PORT=3000
 NODE_ENV=production
 SESSION_SECRET=your-long-random-secret
-GEMINI_API_KEY=your-google-gemini-api-key
-QDRANT_URL=https://your-qdrant-cluster-url
-QDRANT_API_KEY=your-qdrant-api-key
-SMTP_HOST=your-smtp-host
+GEMINI_API_KEY=your-google-gemini-api-key (optional)
+HUGGINGFACE_API_KEY=your-huggingface-api-key (optional - used for embeddings)
+GROQ_API_KEY=your-groq-api-key (optional - used for LLM responses)
+QDRANT_URL=https://your-qdrant-cluster-url (optional)
+QDRANT_API_KEY=your-qdrant-api-key (optional)
+SMTP_HOST=your-smtp-host (optional)
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=your-smtp-username
@@ -130,6 +132,8 @@ Save and deploy your service on Render.
 3. Install dependencies:
    ```bash
    npm install
+   # If you plan to use the Hugging Face or Groq integrations:
+   npm install @huggingface/inference groq-sdk
    ```
 4. Copy `.env.example` to `.env` and update values
 5. Start the app:
@@ -156,6 +160,8 @@ Copy `.env.example` to `.env` and configure the following values:
 - `SMTP_USER`
 - `SMTP_PASS`
 - `SMTP_FROM`
+ - `HUGGINGFACE_API_KEY` (optional — used for embeddings)
+ - `GROQ_API_KEY` (optional — used for LLM responses)
 
 ---
 
