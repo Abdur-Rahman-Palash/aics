@@ -252,7 +252,7 @@ module.exports = async (req, res) => {
         console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
 
         // Only mark as needs human help if both similarity and classification say it's unrelated
-        const humanTransferMessage = "Sorry, I couldn't find information related to our services.\n\nPlease leave your details and our team will contact you.";
+        const humanTransferMessage = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
         let needsHumanHelp = false; // Default to false to be safe!
         // Only set to true if both similarity is low AND classification says unrelated
         if (!hasRelevantSimilarity && !isQuestionRelated) {
