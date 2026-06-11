@@ -1,12 +1,13 @@
-// Chat Widget JavaScript
+// Chat Widget JavaScript (Works both locally and as embed)
 let cachedCsrfToken = null;
+let apiOrigin = null; // This will hold the API origin (e.g., https://your-render-domain.com)
 
 async function getCsrfToken() {
   if (cachedCsrfToken) {
     return cachedCsrfToken;
   }
   try {
-    const response = await fetch('/api/csrf-token', { credentials: 'include' });
+    const response = await fetch(`${apiOrigin}/api/csrf-token`, { credentials: 'include' });
     const data = await response.json();
     if (data.success && data.csrfToken) {
       cachedCsrfToken = data.csrfToken;
@@ -21,6 +22,11 @@ async function getCsrfToken() {
 class AICSChatWidget {
     constructor(options = {}) {
         this.businessId = options.businessId || null;
+        // Get API origin from script src
+        const scriptTags = document.querySelectorAll('script[data-business-id]');
+        const scriptTag = scriptTags[scriptTags.length - 1];
+        apiOrigin = scriptTag ? new URL(scriptTag.src).origin : window.location.origin;
+        
         this.widgetSettings = {
         title: 'AI Support',
         primaryColor: '#667eea',
@@ -59,7 +65,7 @@ class AICSChatWidget {
 
     async loadConversationHistory() {
         try {
-            const response = await fetch(`/api/businesses/${this.businessId}/conversations/${this.conversationId}`);
+            const response = await fetch(`${apiOrigin}/api/businesses/${this.businessId}/conversations/${this.conversationId}`);
             const data = await response.json();
 
             if (data.success && data.conversation) {
@@ -89,7 +95,7 @@ class AICSChatWidget {
 
     async loadWidgetSettings() {
         try {
-            const response = await fetch(`/api/businesses/${this.businessId}/widget`);
+            const response = await fetch(`${apiOrigin}/api/businesses/${this.businessId}/widget`);
             const data = await response.json();
             
             if (data.success && data.settings) {
@@ -102,7 +108,7 @@ class AICSChatWidget {
 
     async loadTriggers() {
         try {
-            const response = await fetch(`/api/businesses/${this.businessId}/triggers`);
+            const response = await fetch(`${apiOrigin}/api/businesses/${this.businessId}/triggers`);
             const data = await response.json();
             if (data.success && data.triggers) {
                 this.triggers = data.triggers;
@@ -372,7 +378,7 @@ class AICSChatWidget {
             if (csrfToken) {
                 headers['X-CSRF-Token'] = csrfToken;
             }
-            const response = await fetch('/api/chat', {
+            const response = await fetch(`${apiOrigin}/api/chat`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ 
@@ -442,7 +448,7 @@ class AICSChatWidget {
             if (csrfToken) {
                 headers['X-CSRF-Token'] = csrfToken;
             }
-            const response = await fetch('/api/chat', {
+            const response = await fetch(`${apiOrigin}/api/chat`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
@@ -519,11 +525,6 @@ class AICSChatWidget {
 
 
     showLeadForm() {
-        if (!this.businessId) {
-            this.addMessage('Sorry, this chat widget is not configured with a valid business ID, so lead requests cannot be sent.', 'ai');
-            return;
-        }
-
         this.showingLeadForm = true;
         this.inputField.disabled = true;
         this.sendBtn.disabled = true;
@@ -556,11 +557,6 @@ class AICSChatWidget {
         const phone = this.chatContainer.querySelector('#aics-lead-phone').value;
         const message = this.chatContainer.querySelector('#aics-lead-message').value;
 
-        if (!this.businessId) {
-            this.addMessage('Sorry, this chat widget is not configured with a valid business ID, so lead requests cannot be sent.', 'ai');
-            return;
-        }
-
         console.log('submitLeadForm called with message:', message);
 
         // Store visitor data for future messages
@@ -569,10 +565,8 @@ class AICSChatWidget {
         try {
             const csrfToken = await getCsrfToken();
             const headers = { 'Content-Type': 'application/json' };
-            if (csrfToken) {
-                headers['X-CSRF-Token'] = csrfToken;
-            }
-            const response = await fetch(`/api/businesses/${this.businessId}/leads`, {
+            if (csrfToken) { headers['X-CSRF-Token'] = csrfToken; }
+            const response = await fetch(`${apiOrigin}/api/businesses/${this.businessId}/leads`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ name, email, phone, message, conversationId: this.conversationId }),
@@ -595,8 +589,7 @@ class AICSChatWidget {
                 this.inputField.disabled = false;
                 this.sendBtn.disabled = false;
             } else {
-                const errorMessage = data.error || 'Sorry, there was an error sending your request. Please try again.';
-                this.addMessage(errorMessage, 'ai');
+                this.addMessage('Sorry, there was an error sending your request. Please try again.', 'ai');
             }
         } catch (error) {
             console.error('submitLeadForm error:', error);
