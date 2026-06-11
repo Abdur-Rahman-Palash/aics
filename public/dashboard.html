@@ -358,7 +358,7 @@
             businesses.forEach(b => {
                 const embedCodeDiv = document.getElementById('embed-code-' + b.id);
                 if (embedCodeDiv) {
-                    embedCodeDiv.textContent = '<script src="' + window.location.origin + '/js/embed.js?v=' + Date.now() + '" data-business-id="' + b.id + '"><\/script>';
+                    embedCodeDiv.textContent = '<script src="' + window.location.origin + '/js/chat-widget.js?v=' + Date.now() + '" data-business-id="' + b.id + '"><\/script>';
                 }
                 initDragAndDrop(b.id);
             });
