@@ -822,6 +822,17 @@ app.use('/api', (req, res) => {
     res.status(404).json({ success: false, error: 'API endpoint not found', path: req.path, method: req.method });
 });
 
+// Special handler for embed.js - no cache
+app.get('/js/embed.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'js', 'embed.js'), {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+});
+
 // Serve static files (css, js, etc.) with caching
 const staticOptions = {
   maxAge: isProduction ? '1d' : 0, // 1 day cache in production
