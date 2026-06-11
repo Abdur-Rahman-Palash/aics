@@ -822,9 +822,19 @@ app.use('/api', (req, res) => {
     res.status(404).json({ success: false, error: 'API endpoint not found', path: req.path, method: req.method });
 });
 
-// Special handler for embed.js - no cache
+// Special handler for embed.js and chat-widget.js - no cache
 app.get('/js/embed.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'js', 'embed.js'), {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+});
+
+app.get('/js/chat-widget.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'js', 'chat-widget.js'), {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
       'Pragma': 'no-cache',
