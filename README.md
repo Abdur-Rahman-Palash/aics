@@ -56,17 +56,24 @@ AICS helps you:
 
 ## 🧩 Key Features
 
-- **AI Chatbot**: Trained on your content with context-aware responses
+- **AI Chatbot**: Trained on your content with context-aware responses in multiple languages (English, Bengali, Hindi, Urdu, Arabic, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Russian, Turkish, Indonesian)
+- **File Attachments**: Let users send images, PDFs, and documents
 - **Easy Training**: Scrape your website, upload PDFs, or add FAQs manually
 - **Lead Capture**: Show a form when the bot can’t resolve a request
 - **Lead Scoring**: Hot/Warm/Cold lead classification
 - **Notifications**: Email alerts for new leads and escalations
 - **Human Inbox**: Review, filter, and continue conversations from the dashboard
-- **Analytics**: Track conversations, resolutions, escalations, leads, and knowledge gaps
-- **Webhooks**: Send events to Zapier, Make, n8n, or custom endpoints
+- **Conversation Tags & Assignment**: Organize and assign conversations to team members
+- **Conversation Notes**: Add internal notes to conversations for agent collaboration
+- **Canned Responses**: Save and reuse common responses
+- **Proactive Chat Triggers**: Automatically open chat based on time on page or scroll depth
+- **Knowledge Base**: Full-featured KB with categories, articles, and search
+- **Analytics**: Track conversations, resolutions, escalations, leads, response times, and daily usage
+- **Webhooks**: Send events (new_lead, new_message) to Zapier, Make, n8n, or custom endpoints
 - **Customization**: Change widget colors, title, avatar, and branding
-- **Mobile Friendly**: Responsive design for phones and tablets
+- **Mobile Friendly**: Responsive design for phones and tablets with React Native SDK guide
 - **Security**: User authentication, CSRF protection, and rate limiting
+- **Database**: Local JSON storage or Neon PostgreSQL
 
 ---
 
@@ -75,9 +82,9 @@ AICS helps you:
 AICS is built with modern, reliable tools:
 
 - Backend: Node.js + Express
-- AI: Google Gemini + LangChain
+- AI: Google Gemini, Hugging Face, Groq, LangChain
 - Vector Search: Qdrant
-- Database: LowDB JSON storage (easy to swap to PostgreSQL/MongoDB)
+- Database: Local JSON storage or Neon PostgreSQL
 - Frontend: Vanilla JavaScript + CSS
 - Deployment: Render.com (render.yaml included)
 
@@ -191,17 +198,25 @@ Customize the widget:
 - Human Inbox
 - Lead Scoring (Hot/Warm/Cold)
 - Email notifications for new leads
-- Webhooks for Zapier, Make, n8n
-- Advanced analytics dashboard
+- Webhooks for Zapier, Make, n8n (new_lead, new_message events)
+- Advanced analytics dashboard (response times, daily usage, resolution rates)
 - Knowledge gap detection
 - CSV export for leads and conversations
 - Responsive dashboard
 - Lead form relevance check
 - Improved signup flow
+- File attachments (images, PDFs, docs)
+- Conversation history persistence via localStorage
+- Canned Responses
+- Conversation Tags & Assignment
+- Proactive Chat Triggers
+- Multi-language support (15+ languages)
+- Agent Collaboration Notes
+- Neon PostgreSQL integration
+- React Native SDK guide
 
 ### Upcoming
 - SMS notifications
-- Multi-language support
 - SSO integration
 - More database options out of the box
 
@@ -230,3 +245,41 @@ Open an issue on GitHub or reach out if you need assistance.
 ---
 
 Made with ❤️ for builders and businesses everywhere.
+
+---
+
+**Project Analysis & Recent Changes (2026-06-11)**
+
+- **Summary:** Implemented safer upload handling, an embed-file upload UI for external sites, and a website-file automated answer path that uses embeddings + vector search + LLM when website sources exist. Non-website files fall back to the lead/human workflow.
+- **Key files changed:** `server.js`, `api/chat.js`, `js/embed.js`, `public/js/embed.js`, `scripts/test-upload.js`.
+- **Server changes:** Increased body parser limits and added a 413-friendly JSON response for payloads that are too large.
+- **Upload handling:** `api/chat.js` now detects website-related uploads via filename, decoded text (HTML/URLs), and `storage.getKnowledgeSourcesForBusiness`. If website-related and `HUGGINGFACE_API_KEY` is configured, it:
+   - Generates an embedding for the uploaded content.
+   - Runs `qdrant.searchSimilar` to find related knowledge (FAQs, pages).
+   - Builds a compact context and asks `langchain.generateResponse` (falls back to `gemini.generateResponse`).
+   - If no context is found, the flow asks the user for more details and escalates to the human lead flow.
+- **Embed widget:** `public/js/embed.js` and `js/embed.js` were updated to show an upload icon, hidden file input, preview, and upload flow so the widget works on external sites.
+- **Test helper:** `scripts/test-upload.js` posts a base64-encoded sample file to `/api/chat` for quick integration testing.
+
+**How to test locally**
+
+- Start the app:
+   ```bash
+   npm run dev
+   ```
+- Run the included test upload (sends `uploads/test-invoice-training.txt`):
+   ```bash
+   node scripts/test-upload.js
+   ```
+- For website-content testing, upload a small HTML/text file containing a URL or HTML markup (or test with a business that has `website` knowledge sources) to trigger the automated embedding + vector search path.
+
+**Recommended next steps**
+
+- Ensure `HUGGINGFACE_API_KEY` (or equivalent embeddings provider) is set in your environment to enable embeddings.
+- Verify `QDRANT_URL` / `QDRANT_API_KEY` and that the collection contains indexed website content for the business you test.
+- When deploying, serve the embed script with a version query param (e.g., `/js/embed.js?v=1`) to avoid cached copies on client sites.
+- Consider multipart or streaming upload support for files larger than the current JSON limit (50MB in dev config).
+
+If you want, I can also:
+- Run more automated uploads and inspect server logs for embedding and qdrant responses.
+- Add a small README subsection with example responses and debugging tips for common failures (HF key missing, qdrant empty results).

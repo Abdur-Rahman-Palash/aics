@@ -6,6 +6,7 @@ const HuggingFaceAI = require('../lib/huggingface');
 const LangChainIntegration = require('../lib/langchain'); 
 const getStorage = require('../lib/storage');
 const config = require('../lib/config');
+const { sendWebhookEvent } = require('../lib/webhooks');
 
 // Initialize services once when the module loads
 let storage;
@@ -157,10 +158,11 @@ module.exports = async (req, res) => {
     let conversation = null;
 
     try {
-        const { message, businessId, conversationId, visitor } = req.body;
+        const startTime = Date.now();
+        let { message, file, businessId, conversationId, visitor } = req.body;
 
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+        if (!message && !file) {
+            return res.status(400).json({ error: 'Message or file is required' });
         }
 
         // Get business from storage if ID is provided
@@ -180,192 +182,202 @@ module.exports = async (req, res) => {
         }
 
         // First, try to find a matching FAQ from storage (db.json) directly
-        const directMatch = findMatchingFAQFromStorage(message, business);
+        const directMatch = message ? findMatchingFAQFromStorage(message, business) : null;
 
         // Build context - start with empty
         let contextParts = [];
         let similarItems = [];
         let confidenceScore = 0;
-
-        try {
-            // Only try if Hugging Face API key is available (we're using local vector storage now!)
-            if (config.huggingface.apiKey) {
-                // Determine which collection to use
-                let collectionName = config.qdrant.collectionName; // Default
-                if (business) {
-                    collectionName = business.qdrantCollection;
-                }
-                console.log('[CHAT] Using collection:', collectionName);
-
-                // Generate embedding for user message
-                const queryEmbedding = await gemini.generateEmbedding(message);
-                console.log('[CHAT] Generated query embedding');
-
-                // Search Local Vector Storage for similar content (FAQs + chunks)
-                similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
-                console.log('[CHAT] Found similar items:', JSON.stringify(similarItems, null, 2));
-
-                // Process similar items
-                for (const item of similarItems) {
-                    if (item.type === 'faq' && item.question && item.answer) {
-                        contextParts.push(`FAQ - Q: ${item.question}\nA: ${item.answer}`);
-                    } else if (item.content) {
-                        contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
-                    }
-                }
-
-                // Only keep the top 5 context parts to keep prompts focused
-                contextParts = contextParts.slice(0, 5);
-
-                // Calculate confidence score based on top similarity
-                if (similarItems.length > 0) {
-                    confidenceScore = similarItems[0].score || 0;
-                }
-                console.log('[CHAT] Confidence score:', confidenceScore);
-                console.log('[CHAT] Context parts:', contextParts);
-            }
-        } catch (error) {
-            console.error('[CHAT] Error in vector search:', error);
-            // Continue without them - we'll use fallback responses
-        }
-
-        let context = 'No relevant context available.';
-        if (contextParts.length > 0) {
-            context = contextParts.join('\n\n---\n\n');
-        }
-
-        // ─── Step 1: Greeting check — always respond friendly, skip all other checks ───
-        const greeting = isGreetingMessage(message);
-        console.log('[CHAT] isGreeting:', greeting);
-
-        // ─── Step 2: Check similarity threshold ───
-        const SIMILARITY_THRESHOLD = 0.07; // Lowered from 0.1 to suit MiniLM-L6-v2 score range
-        const hasRelevantSimilarity = greeting || similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
-        console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
-        console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
-
-        // ─── Step 3: Use AI to classify relevance (two-layer validation) ───
-        let isQuestionRelated = false;
-
-        // Greetings are always related — skip classification
-        if (greeting) {
-            isQuestionRelated = true;
-        } else if (contextParts.length > 0 && config.huggingface.apiKey) {
-            try {
-                isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
-            } catch (error) {
-                console.error('[CHAT] Error classifying relevance:', error);
-                // If classification fails (rate limit, etc.), trust the similarity score
-                isQuestionRelated = hasRelevantSimilarity;
-            }
-        } else if (contextParts.length === 0) {
-            console.log('[CHAT] No context parts found, defaulting to isQuestionRelated = true');
-            isQuestionRelated = true;
-        }
-
-        // If similarity score is good, mark as related even if classification says no
-        if (hasRelevantSimilarity && !isQuestionRelated) {
-            console.log('[CHAT] Similarity score is good, overriding classification to related!');
-            isQuestionRelated = true;
-        }
-        console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
-
-        // ─── Step 4: Decide if human help is needed ───
-        // Only true if BOTH similarity is low AND classification says unrelated AND not a greeting
-        const humanTransferMessage = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
+        let aiResponse = null;
         let needsHumanHelp = false;
-        if (!greeting && !hasRelevantSimilarity && !isQuestionRelated) {
+
+        // Handle file upload
+        if (file) {
+            console.log('[CHAT] Received file upload:', file.name);
+            // For file uploads, provide a smooth, friendly answer and mark for human review
+            aiResponse = `Thanks for sharing "${file.name}"! I’ve received your website file and our team will review it. If you want, please add a few details about what you need so I can help more smoothly.`;
             needsHumanHelp = true;
-        }
-        console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
-
-        // ─── Step 5: Generate AI response ───
-        let aiResponse;
-
-        try {
-            if (greeting) {
-                // Greeting — respond directly without going through AI classification
-                aiResponse = "Assalamu Alaikum! আজকে আমি কিভাবে আপনাকে সাহায্য করতে পারি?";
-
-            } else if (needsHumanHelp && !isQuestionRelated) {
-                // Unrelated question — generate helpful response with suggestions
+            message = `[File uploaded: ${file.name}]`; // Use this for storage
+        } else {
+            // Proceed with normal text message handling
+            try {
+                // Only try if Hugging Face API key is available (we're using local vector storage now!)
                 if (config.huggingface.apiKey) {
-                    try {
-                        aiResponse = await gemini.generateUnrelatedResponse(message);
-                        console.log('[CHAT] Unrelated response generated:', aiResponse);
-                    } catch (error) {
-                        console.warn('[CHAT] Error generating unrelated response:', error);
-                        aiResponse = humanTransferMessage;
+                    // Determine which collection to use
+                    let collectionName = config.qdrant.collectionName; // Default
+                    if (business) {
+                        collectionName = business.qdrantCollection;
                     }
-                } else {
-                    aiResponse = humanTransferMessage;
-                }
+                    console.log('[CHAT] Using collection:', collectionName);
 
-            } else if (directMatch) {
-                // Direct FAQ match — use AI to make it friendly
-                if (config.huggingface.apiKey) {
-                    try {
-                        const contextWithFAQ = `FAQ - Q: ${directMatch.question}\nA: ${directMatch.answer}`;
-                        aiResponse = await gemini.generateResponse(message, contextWithFAQ);
-                    } catch (error) {
-                        console.warn('[CHAT] Gemini failed for direct match, using raw answer:', error);
-                        aiResponse = directMatch.answer;
-                    }
-                } else {
-                    aiResponse = directMatch.answer;
-                }
-                confidenceScore = 1.0;
-                needsHumanHelp = false;
+                    // Generate embedding for user message
+                    const queryEmbedding = await gemini.generateEmbedding(message);
+                    console.log('[CHAT] Generated query embedding');
 
-            } else if (contextParts.length > 0) {
-                // Context found — use LangChain → fallback to Gemini → fallback to keyword
-                if (config.huggingface.apiKey) {
-                    let conversationHistory = [];
-                    if (conversation && conversation.messages) {
-                        conversationHistory = conversation.messages;
-                    }
+                    // Search Local Vector Storage for similar content (FAQs + chunks)
+                    similarItems = await qdrant.searchSimilar(queryEmbedding, 10, collectionName);
+                    console.log('[CHAT] Found similar items:', JSON.stringify(similarItems, null, 2));
 
-                    try {
-                        console.log('[CHAT] Calling langchain.generateResponse');
-                        aiResponse = await langchain.generateResponse(
-                            message,
-                            context,
-                            conversationHistory
-                        );
-                        console.log('[CHAT] langchain.generateResponse returned:', aiResponse);
-                    } catch (langchainError) {
-                        console.warn('[CHAT] Langchain failed, falling back to direct gemini.js', langchainError);
-                        try {
-                            aiResponse = await gemini.generateResponse(message, context);
-                            console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
-                        } catch (geminiError) {
-                            console.warn('[CHAT] Gemini API failed, using friendly fallback:', geminiError);
-                            aiResponse = generateFriendlyFallbackResponse(message, contextParts);
-                            needsHumanHelp = false;
+                    // Process similar items
+                    for (const item of similarItems) {
+                        if (item.type === 'faq' && item.question && item.answer) {
+                            contextParts.push(`FAQ - Q: ${item.question}\nA: ${item.answer}`);
+                        } else if (item.content) {
+                            contextParts.push(`[${item.type}] Source: ${item.source || 'Unknown'}\n${item.content}`);
                         }
                     }
 
-                    // Check if AI response mentions escalation
-                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information/i.test(aiResponse);
-                    if (hasHumanKeywords) {
-                        needsHumanHelp = true;
+                    // Only keep the top 5 context parts to keep prompts focused
+                    contextParts = contextParts.slice(0, 5);
+
+                    // Calculate confidence score based on top similarity
+                    if (similarItems.length > 0) {
+                        confidenceScore = similarItems[0].score || 0;
                     }
-                } else {
-                    aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
+                    console.log('[CHAT] Confidence score:', confidenceScore);
+                    console.log('[CHAT] Context parts:', contextParts);
+                }
+            } catch (error) {
+                console.error('[CHAT] Error in vector search:', error);
+                // Continue without them - we'll use fallback responses
+            }
+
+            let context = 'No relevant context available.';
+            if (contextParts.length > 0) {
+                context = contextParts.join('\n\n---\n\n');
+            }
+
+            // ─── Step 1: Greeting check — always respond friendly, skip all other checks ───
+            const greeting = isGreetingMessage(message);
+            console.log('[CHAT] isGreeting:', greeting);
+
+            // ─── Step 2: Check similarity threshold ───
+            const SIMILARITY_THRESHOLD = 0.07; // Lowered from 0.1 to suit MiniLM-L6-v2 score range
+            const hasRelevantSimilarity = greeting || similarItems.some(item => item.score >= SIMILARITY_THRESHOLD);
+            console.log('[CHAT] hasRelevantSimilarity:', hasRelevantSimilarity);
+            console.log('[CHAT] All similarity scores:', similarItems.map(item => item.score));
+
+            // ─── Step 3: Use AI to classify relevance (two-layer validation) ───
+            let isQuestionRelated = false;
+
+            // Greetings are always related — skip classification
+            if (greeting) {
+                isQuestionRelated = true;
+            } else if (contextParts.length > 0 && config.huggingface.apiKey) {
+                try {
+                    isQuestionRelated = await gemini.classifyQuestionRelevance(message, contextParts);
+                } catch (error) {
+                    console.error('[CHAT] Error classifying relevance:', error);
+                    // If classification fails (rate limit, etc.), trust the similarity score
+                    isQuestionRelated = hasRelevantSimilarity;
+                }
+            } else if (contextParts.length === 0) {
+                console.log('[CHAT] No context parts found, defaulting to isQuestionRelated = true');
+                isQuestionRelated = true;
+            }
+
+            // If similarity score is good, mark as related even if classification says no
+            if (hasRelevantSimilarity && !isQuestionRelated) {
+                console.log('[CHAT] Similarity score is good, overriding classification to related!');
+                isQuestionRelated = true;
+            }
+            console.log('[CHAT] isQuestionRelated:', isQuestionRelated);
+
+            // ─── Step 4: Decide if human help is needed ───
+            // Only true if BOTH similarity is low AND classification says unrelated AND not a greeting
+            const humanTransferMessage = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
+            let needsHumanHelp = false;
+            if (!greeting && !hasRelevantSimilarity && !isQuestionRelated) {
+                needsHumanHelp = true;
+            }
+            console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
+
+            // ─── Step 5: Generate AI response ───
+            try {
+                if (greeting) {
+                    // Greeting — respond directly without going through AI classification
+                    aiResponse = "Assalamu Alaikum! আজকে আমি কিভাবে আপনাকে সাহায্য করতে পারি?";
+
+                } else if (needsHumanHelp && !isQuestionRelated) {
+                    // Unrelated question — generate helpful response with suggestions
+                    if (config.huggingface.apiKey) {
+                        try {
+                            aiResponse = await gemini.generateUnrelatedResponse(message);
+                            console.log('[CHAT] Unrelated response generated:', aiResponse);
+                        } catch (error) {
+                            console.warn('[CHAT] Error generating unrelated response:', error);
+                            aiResponse = humanTransferMessage;
+                        }
+                    } else {
+                        aiResponse = humanTransferMessage;
+                    }
+
+                } else if (directMatch) {
+                    // Direct FAQ match — use AI to make it friendly
+                    if (config.huggingface.apiKey) {
+                        try {
+                            const contextWithFAQ = `FAQ - Q: ${directMatch.question}\nA: ${directMatch.answer}`;
+                            aiResponse = await gemini.generateResponse(message, contextWithFAQ);
+                        } catch (error) {
+                            console.warn('[CHAT] Gemini failed for direct match, using raw answer:', error);
+                            aiResponse = directMatch.answer;
+                        }
+                    } else {
+                        aiResponse = directMatch.answer;
+                    }
+                    confidenceScore = 1.0;
                     needsHumanHelp = false;
+
+                } else if (contextParts.length > 0) {
+                    // Context found — use LangChain → fallback to Gemini → fallback to keyword
+                    if (config.huggingface.apiKey) {
+                        let conversationHistory = [];
+                        if (conversation && conversation.messages) {
+                            conversationHistory = conversation.messages;
+                        }
+
+                        try {
+                            console.log('[CHAT] Calling langchain.generateResponse');
+                            aiResponse = await langchain.generateResponse(
+                                message,
+                                context,
+                                conversationHistory
+                            );
+                            console.log('[CHAT] langchain.generateResponse returned:', aiResponse);
+                        } catch (langchainError) {
+                            console.warn('[CHAT] Langchain failed, falling back to direct gemini.js', langchainError);
+                            try {
+                                aiResponse = await gemini.generateResponse(message, context);
+                                console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
+                            } catch (geminiError) {
+                                console.warn('[CHAT] Gemini API failed, using friendly fallback:', geminiError);
+                                aiResponse = generateFriendlyFallbackResponse(message, contextParts);
+                                needsHumanHelp = false;
+                            }
+                        }
+
+                        // Check if AI response mentions escalation
+                        const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form/i.test(aiResponse);
+                        if (hasHumanKeywords) {
+                            needsHumanHelp = true;
+                        }
+                    } else {
+                        aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
+                        needsHumanHelp = false;
+                    }
+
+                } else {
+                    // No context at all
+                    aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
+                    needsHumanHelp = true;
                 }
 
-            } else {
-                // No context at all
+            } catch (error) {
+                console.error('[CHAT] Error generating response:', error);
+                console.error('[CHAT] Error stack:', error.stack);
                 aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
                 needsHumanHelp = true;
             }
-
-        } catch (error) {
-            console.error('[CHAT] Error generating response:', error);
-            console.error('[CHAT] Error stack:', error.stack);
-            aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
-            needsHumanHelp = true;
         }
 
         // ─── Step 6: Record analytics ───
@@ -375,8 +387,20 @@ module.exports = async (req, res) => {
             if (topFAQ) {
                 hitFaqId = topFAQ.faqId;
             }
+            const responseTime = Date.now() - startTime;
             if (businessId) {
-                await storage.recordAnalytics(businessId, hitFaqId, !needsHumanHelp, needsHumanHelp);
+                await storage.recordAnalytics(businessId, {
+                    totalMessages: true,
+                    aiResolved: !needsHumanHelp,
+                    humanEscalated: needsHumanHelp,
+                    faqId: hitFaqId,
+                    responseTime: responseTime,
+                    message: {
+                        content: message,
+                        role: 'user',
+                        aiResponse: aiResponse
+                    }
+                });
             }
         } catch (error) {
             // Error recording analytics — non-fatal
@@ -393,10 +417,11 @@ module.exports = async (req, res) => {
 
         // ─── Step 8: Save messages to conversation ───
         if (conversation && businessId) {
-            await storage.addMessageToConversation(businessId, conversation.id, {
-                role: 'user',
-                content: message
-            });
+            const userMessageData = { role: 'user', content: message };
+            if (file) {
+                userMessageData.file = file; // Store the file data
+            }
+            await storage.addMessageToConversation(businessId, conversation.id, userMessageData);
             await storage.addMessageToConversation(businessId, conversation.id, {
                 role: 'ai',
                 content: aiResponse,
@@ -408,6 +433,15 @@ module.exports = async (req, res) => {
                     status: 'pending'
                 });
             }
+
+            // Send webhook event for new message
+            await sendWebhookEvent(businessId, 'new_message', {
+                conversationId: conversation.id,
+                userMessage: userMessageData,
+                aiResponse: aiResponse,
+                needsHumanHelp,
+                confidence: confidenceScore
+            });
         }
 
         return res.status(200).json({

@@ -303,6 +303,33 @@ html {
     transform: scale(0.95);
 }
 
+.aics-file-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    flex-shrink: 0;
+}
+
+.aics-file-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.aics-file-btn:active {
+    transform: scale(0.95);
+}
+
 .aics-send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;

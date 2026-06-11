@@ -95,6 +95,8 @@
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
             <div class="aics-chat-input">
+                <button class="aics-file-btn" id="aics-file-btn" style="background: #667eea; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; border: none; cursor: pointer; font-size: 18px;">📎</button>
+                <input type="file" id="aics-file-input" style="display: none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.xml,.json,.md,.rtf">
                 <input type="text" id="aics-input" placeholder="Type your message...">
                 <button class="aics-send-btn" id="aics-send">➤</button>
             </div>
@@ -108,6 +110,8 @@
         const messagesContainer = document.getElementById('aics-messages');
         const inputField = document.getElementById('aics-input');
         const sendBtn = document.getElementById('aics-send');
+        const fileBtn = document.getElementById('aics-file-btn');
+        const fileInput = document.getElementById('aics-file-input');
         const closeBtn = chatContainer.querySelector('.aics-close-btn');
         const chatHeader = chatContainer.querySelector('.aics-chat-header');
         
@@ -119,6 +123,8 @@
         floatBtn.addEventListener('click', toggleChat);
         closeBtn.addEventListener('click', toggleChat);
         sendBtn.addEventListener('click', sendMessage);
+        fileBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileUpload);
         inputField.addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMessage(); });
         
         // Drag functionality
@@ -203,13 +209,6 @@
         function stopDrag() {
             isDragging = false;
         }
-        function addMessage(text, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `aics-message ${type}`;
-            messageDiv.textContent = text;
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
             typingDiv.id = 'aics-typing';
@@ -275,6 +274,79 @@
                 addMessage('Sorry, check internet connection.', 'ai');
             }
             sendBtn.disabled = false;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) {
+                addMessage('Sorry, file size must be less than 10MB.', 'ai');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const fileData = {
+                    name: file.name,
+                    type: file.type,
+                    data: e.target.result,
+                    size: file.size
+                };
+                addMessage(fileData, 'user');
+                await uploadFile(fileData);
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = '';
+        }
+
+        async function uploadFile(fileData) {
+            const apiUrl = `${apiOrigin}/api/chat`;
+            showTypingIndicator();
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        file: fileData,
+                        businessId: businessId,
+                        conversationId: conversationId,
+                        visitor: visitor
+                    })
+                });
+                const data = await response.json();
+                hideTypingIndicator();
+                if (data.success) {
+                    if (data.conversationId) {
+                        conversationId = data.conversationId;
+                    }
+                    addMessage(data.response, 'ai');
+                } else {
+                    addMessage('Sorry, there was an error uploading your file.', 'ai');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('Sorry, there was an error uploading your file.', 'ai');
+            }
+        }
+
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `aics-message ${type}`;
+            if (typeof content === 'string') {
+                messageDiv.textContent = content;
+            } else if (content && content.name && content.type && content.data) {
+                const isImage = content.type.startsWith('image/');
+                if (isImage) {
+                    messageDiv.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;"><img src="${content.data}" alt="${content.name}" style="max-width:250px;max-height:300px;border-radius:8px;"><div>${content.name}</div></div>`;
+                } else {
+                    messageDiv.innerHTML = `<div style="display:flex;align-items:center;gap:8px; padding:12px; background:#f0f0f0; border-radius:10px;"><span>📄</span><span>${content.name}</span></div>`;
+                }
+            } else {
+                messageDiv.textContent = 'Unsupported message format.';
+            }
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         // Lead form functions

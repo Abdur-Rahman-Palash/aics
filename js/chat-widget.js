@@ -22,26 +22,69 @@ class AICSChatWidget {
     constructor(options = {}) {
         this.businessId = options.businessId || null;
         this.widgetSettings = {
-            title: 'AI Support',
-            primaryColor: '#667eea',
-            avatar: '🤖'
-        };
-        this.showingLeadForm = false;
-        this.conversationId = null;
-        this.visitor = {};
-        this.justSubmittedLeadForm = false;
-        this.lastLeadFormMessage = '';
-        this.init();
+        title: 'AI Support',
+        primaryColor: '#667eea',
+        avatar: '🤖'
+    };
+    this.showingLeadForm = false;
+    this.conversationId = null;
+    this.visitor = {};
+    this.justSubmittedLeadForm = false;
+    this.lastLeadFormMessage = '';
+    this.triggers = [];
+    this.triggerFired = {};
+    this.init();
+    }
+
+    getStorageKey() {
+        return `aics_conversation_${this.businessId}`;
     }
 
     async init() {
-        // Load widget settings if business ID is provided
+        // Load widget settings and triggers if business ID is provided
         if (this.businessId) {
-            await this.loadWidgetSettings();
+            await Promise.all([this.loadWidgetSettings(), this.loadTriggers()]);
+            // Try to load existing conversation from localStorage
+            const savedConversationId = localStorage.getItem(this.getStorageKey());
+            if (savedConversationId) {
+                this.conversationId = savedConversationId;
+                await this.loadConversationHistory();
+            }
         }
         
         this.createWidget();
         this.attachEventListeners();
+        this.setupTriggers();
+    }
+
+    async loadConversationHistory() {
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/conversations/${this.conversationId}`);
+            const data = await response.json();
+
+            if (data.success && data.conversation) {
+                // Clear default welcome message
+                this.messagesContainer.innerHTML = '';
+                // Render all messages from history
+                if (data.conversation.messages && data.conversation.messages.length > 0) {
+                    data.conversation.messages.forEach(msg => {
+                        if (msg.file) {
+                            // If there's a file, pass the whole file object
+                            this.addMessage(msg.file, msg.role);
+                        } else {
+                            // Otherwise, just pass the text
+                            this.addMessage(msg.content, msg.role);
+                        }
+                    });
+                }
+                // Load visitor data if available
+                if (data.conversation.visitor) {
+                    this.visitor = data.conversation.visitor;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading conversation history:', error);
+        }
     }
 
     async loadWidgetSettings() {
@@ -55,6 +98,57 @@ class AICSChatWidget {
         } catch (error) {
             // Error log removed
         }
+    }
+
+    async loadTriggers() {
+        try {
+            const response = await fetch(`/api/businesses/${this.businessId}/triggers`);
+            const data = await response.json();
+            if (data.success && data.triggers) {
+                this.triggers = data.triggers;
+            }
+        } catch (error) {
+            console.error('Error loading triggers:', error);
+        }
+    }
+
+    setupTriggers() {
+        // Track time on page
+        this.startTime = Date.now();
+        this.timeInterval = setInterval(() => this.checkTimeTriggers(), 1000);
+        // Track scroll depth
+        window.addEventListener('scroll', () => this.checkScrollTriggers());
+    }
+
+    checkTimeTriggers() {
+        const elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+        this.triggers.filter(t => t.enabled && t.type === 'time_on_page' && !this.triggerFired[t.id]).forEach(t => {
+            if (elapsedSeconds >= (t.conditions?.seconds || 0)) {
+                this.fireTrigger(t);
+            }
+        });
+    }
+
+    checkScrollTriggers() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.body.scrollHeight - window.innerHeight;
+        const scrollPercent = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+        this.triggers.filter(t => t.enabled && t.type === 'scroll_depth' && !this.triggerFired[t.id]).forEach(t => {
+            if (scrollPercent >= (t.conditions?.depth || 0)) {
+                this.fireTrigger(t);
+            }
+        });
+    }
+
+    fireTrigger(trigger) {
+        this.triggerFired[trigger.id] = true;
+        this.addMessage(trigger.message, 'ai');
+        this.openChat();
+    }
+
+    openChat() {
+        this.chatWindow.style.display = 'flex';
+        this.floatBtn.style.display = 'none';
     }
 
     createWidget() {
@@ -89,18 +183,22 @@ class AICSChatWidget {
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
             <div class="aics-chat-input">
+                <button id="aics-file-btn" class="aics-file-btn" style="background: ${this.widgetSettings.primaryColor}; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; border: none; cursor: pointer; font-size: 18px;">📎</button>
+                <input type="file" id="aics-file-input" style="display: none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.xml,.json,.md,.rtf">
                 <input type="text" id="aics-input" placeholder="Type your message...">
                 <button id="aics-send-btn" class="aics-send-btn" style="background: ${this.widgetSettings.primaryColor}">➤</button>
             </div>
         `;
         document.body.appendChild(this.chatContainer);
 
-        // Store references to elements
-        this.messagesContainer = document.getElementById('aics-messages');
-        this.inputField = document.getElementById('aics-input');
-        this.sendBtn = document.getElementById('aics-send-btn');
+        // Store references to elements (scoped to this.chatContainer to avoid conflicts)
+        this.messagesContainer = this.chatContainer.querySelector('#aics-messages');
+        this.inputField = this.chatContainer.querySelector('#aics-input');
+        this.sendBtn = this.chatContainer.querySelector('#aics-send-btn');
         this.closeBtn = this.chatContainer.querySelector('.aics-close-btn');
         this.chatHeader = this.chatContainer.querySelector('.aics-chat-header');
+        this.fileBtn = this.chatContainer.querySelector('#aics-file-btn');
+        this.fileInput = this.chatContainer.querySelector('#aics-file-input');
         
         // Drag state
         this.isDragging = false;
@@ -111,6 +209,10 @@ class AICSChatWidget {
         // Open/close
         this.floatBtn.addEventListener('click', () => this.toggleChat());
         this.closeBtn.addEventListener('click', () => this.toggleChat());
+
+        // File upload
+        this.fileBtn.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
 
         // Send message
         this.sendBtn.addEventListener('click', () => this.sendMessage());
@@ -282,11 +384,14 @@ class AICSChatWidget {
             this.hideTypingIndicator();
             
             if (data.success) {
-                // Store conversation ID for future messages
-                if (data.conversationId) { this.conversationId = data.conversationId; }
+                // Store conversation ID for future messages and save to localStorage
+                if (data.conversationId) {
+                    this.conversationId = data.conversationId;
+                    localStorage.setItem(this.getStorageKey(), this.conversationId);
+                }
                 this.addMessage(data.response, 'ai');
                 // Check either the flag or look for keywords in the response
-                const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
+                const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form/i.test(data.response);
                 if (data.needsHumanHelp || hasHumanKeywords) {
                     setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
                 }
@@ -301,11 +406,87 @@ class AICSChatWidget {
         this.sendBtn.disabled = false;
     }
 
-    addMessage(text, type) {
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const fileData = {
+                name: file.name,
+                type: file.type,
+                data: e.target.result,
+                size: file.size
+            };
+            this.addMessage(fileData, 'user');
+            this.uploadFile(fileData);
+        };
+        reader.readAsDataURL(file);
+        this.fileInput.value = ''; // Clear input
+    }
+
+    async uploadFile(fileData) {
+        try {
+            const csrfToken = await getCsrfToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['X-CSRF-Token'] = csrfToken;
+            }
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    file: fileData,
+                    businessId: this.businessId,
+                    conversationId: this.conversationId,
+                    visitor: this.visitor
+                }),
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (data.conversationId) {
+                    this.conversationId = data.conversationId;
+                    localStorage.setItem(this.getStorageKey(), this.conversationId);
+                }
+                this.addMessage(data.response, 'ai');
+            }
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            this.addMessage('Sorry, there was an error uploading your file.', 'ai');
+        }
+    }
+
+    addMessage(content, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `aics-message ${type}`;
-        // Replace newlines with <br> to preserve formatting
-        messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+        
+        if (typeof content === 'string') {
+            // Text message
+            messageDiv.innerHTML = content.replace(/\n/g, '<br>');
+        } else if (content && content.name && content.type && content.data) {
+            // File message
+            const isImage = content.type.startsWith('image/');
+            messageDiv.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    ${isImage ? 
+                        `<img src="${content.data}" alt="${content.name}" style="max-width:250px;max-height:300px;border-radius:8px;">` : 
+                        `<a href="${content.data}" download="${content.name}" style="display:flex;align-items:center;gap:8px;padding:10px;background:#f0f0f0;border-radius:8px;text-decoration:none;color:#333;">
+                            <span>📄</span>
+                            <span>${content.name}</span>
+                        </a>`
+                    }
+                    ${typeof content.text === 'string' ? `<div style="color:inherit;">${content.text.replace(/\n/g, '<br>')}</div>` : ''}
+                </div>
+            `;
+        }
+        
         this.messagesContainer.appendChild(messageDiv);
         this.scrollToBottom();
     }
@@ -324,7 +505,7 @@ class AICSChatWidget {
     }
 
     hideTypingIndicator() {
-        const typing = document.getElementById('aics-typing');
+        const typing = this.chatContainer.querySelector('#aics-typing');
         if (typing) { typing.remove(); }
     }
 
@@ -355,16 +536,16 @@ class AICSChatWidget {
         this.scrollToBottom();
 
         // Attach form submit listener
-        const form = document.getElementById('aics-lead-form');
+        const form = this.chatContainer.querySelector('#aics-lead-form');
         form.addEventListener('submit', (e) => this.submitLeadForm(e));
     }
 
     async submitLeadForm(e) {
         e.preventDefault();
-        const name = document.getElementById('aics-lead-name').value;
-        const email = document.getElementById('aics-lead-email').value;
-        const phone = document.getElementById('aics-lead-phone').value;
-        const message = document.getElementById('aics-lead-message').value;
+        const name = this.chatContainer.querySelector('#aics-lead-name').value;
+        const email = this.chatContainer.querySelector('#aics-lead-email').value;
+        const phone = this.chatContainer.querySelector('#aics-lead-phone').value;
+        const message = this.chatContainer.querySelector('#aics-lead-message').value;
 
         console.log('submitLeadForm called with message:', message);
 

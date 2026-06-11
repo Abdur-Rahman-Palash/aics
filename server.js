@@ -171,7 +171,8 @@ app.use((req, res, next) => {
 
 // Middleware
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieSession({
     name: 'aics-session',
     keys: [process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'],
@@ -181,6 +182,17 @@ app.use(cookieSession({
     sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-site (though we're same-site), 'lax' for local
     path: '/'
 }));
+
+// Helpful error handler for oversized JSON payloads
+app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.too.large') {
+        return res.status(413).json({
+            success: false,
+            error: 'Request payload too large. Please reduce file size or upload fewer items.'
+        });
+    }
+    next(err);
+});
 
 // Add CSRF token endpoint with error handling
 app.get('/api/csrf-token', (req, res) => {

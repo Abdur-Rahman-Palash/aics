@@ -405,6 +405,8 @@
             html += '<div class="sidebar-group-title">Train</div>';
             html += '<button class="sidebar-item active" onclick="switchTab(\'' + business.id + '\', \'knowledge\')">📚 Knowledge Sources</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'unanswered\')">❓ Unanswered Questions</button>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'canned-responses\')">📝 Canned Responses</button>';
+    html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'triggers\')">⚡ Proactive Triggers</button>';
             html += '</div>';
             // Manage group
             html += '<div class="sidebar-group">';
@@ -558,10 +560,13 @@
                     html += '<h4 style="margin:0 0 6px 0;color:#111;font-size:18px;">' + (conv.visitor?.name || 'Anonymous') + '</h4>';
                     html += '<p style="margin:0;color:#666;font-size:14px;">' + (conv.visitor?.email || '') + (conv.visitor?.phone ? ' • ' + conv.visitor?.phone : '') + '</p>';
                     html += '</div>';
-                    html += '<div style="display:flex;gap:10px;align-items:center;">';
+                    html += '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">';
                     html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + statusColors[conv.status] + '20;color:' + statusColors[conv.status] + ';">' + statusText[conv.status] + '</span>';
                     if (conv.score !== undefined) {
                         html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:' + convScoreColor + '20;color:' + convScoreColor + ';">Score: ' + conv.score + '</span>';
+                    }
+                    if (conv.assignee) {
+                        html += '<span style="padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:#8b5cf620;color:#8b5cf6;">👤 ' + conv.assignee + '</span>';
                     }
                     html += '</div>';
                     html += '</div>';
@@ -569,9 +574,43 @@
                     if (conv.messages && conv.messages.length >0) {
                         conv.messages.slice(-3).forEach(msg => {
                             const roleColor = msg.role === 'user' ? '#3b82f6' : msg.role === 'human' ? '#10b981' : '#667eea';
-                            html += '<div style="margin-bottom:10px;"><strong style="color:' + roleColor + ';font-weight:700;">' + msg.role + ':</strong> ' + msg.content + '</div>';
+                            html += '<div style="margin-bottom:10px;"><strong style="color:' + roleColor + ';font-weight:700;">' + msg.role + ':</strong> ';
+                            if (msg.file) {
+                                const isImage = msg.file.type && msg.file.type.startsWith('image/');
+                                html += '<div style="margin-top:4px;">';
+                                if (isImage && msg.file.data) {
+                                    html += '<img src="' + msg.file.data + '" alt="' + msg.file.name + '" style="max-width:200px;max-height:150px;border-radius:8px;">';
+                                } else {
+                                    html += '<a href="' + (msg.file.data || '#') + '" download="' + msg.file.name + '" style="display:flex;align-items:center;gap:8px;padding:8px;background:#e0e7ff;border-radius:8px;text-decoration:none;color:#3730a3;">';
+                                    html += '<span>📄</span><span>' + msg.file.name + '</span></a>';
+                                }
+                                html += '</div>';
+                            }
+                            if (msg.content) {
+                                html += msg.content;
+                            }
+                            html += '</div>';
                         });
                     }
+                    html += '</div>';
+                    // Tags section
+                    html += '<div style="margin-bottom:16px;">';
+                    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">';
+                    (conv.tags || []).forEach(tag => {
+                        html += '<span style="padding:4px 10px;border-radius:12px;font-size:12px;background:#e0e7ff;color:#3730a3;display:flex;gap:4px;align-items:center;"><span>' + tag + '</span><button onclick="removeConversationTag(\'' + business.id + '\', \'' + conv.id + '\', \'' + tag.replace(/'/g, "\\'") + '\')" style="background:transparent;border:none;cursor:pointer;font-weight:700;">×</button></span>';
+                    });
+                    html += '</div>';
+                    html += '<div style="display:flex;gap:8px;">';
+                    html += '<input type="text" id="tag-input-' + business.id + '-' + conv.id + '" placeholder="Add tag..." style="flex:1;padding:8px 12px;border:1px solid #e0e0e0;border-radius:8px;">';
+                    html += '<button class="btn btn-primary btn-small" onclick="addConversationTag(\'' + business.id + '\', \'' + conv.id + '\')">Add</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    // Assignee section
+                    html += '<div style="margin-bottom:16px;">';
+                    html += '<div style="display:flex;gap:8px;">';
+                    html += '<input type="text" id="assignee-input-' + business.id + '-' + conv.id + '" placeholder="Assign to..." value="' + (conv.assignee || '') + '" style="flex:1;padding:8px 12px;border:1px solid #e0e0e0;border-radius:8px;">';
+                    html += '<button class="btn btn-primary btn-small" onclick="assignConversation(\'' + business.id + '\', \'' + conv.id + '\')">Assign</button>';
+                    html += '</div>';
                     html += '</div>';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
                     html += '<select onchange="updateConversationStatus(\'' + business.id + '\', \'' + conv.id + '\', this.value)" style="padding:10px 16px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-weight:600;">';
@@ -661,6 +700,93 @@
             html += '</div>';
             html += '</div>';
 
+            html += '<div class="tab-content" id="tab-' + business.id + '-canned-responses">';
+            html += '<h3>Canned Responses</h3>';
+            html += '<form id="canned-response-form-' + business.id + '" onsubmit="addCannedResponse(event, \'' + business.id + '\')" style="margin-bottom:24px;">';
+            html += '<div class="form-group">';
+            html += '<label>Short Title (for quick reference)</label>';
+            html += '<input type="text" id="canned-title-' + business.id + '" placeholder="e.g., Thank you for your message" required>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>English Response</label>';
+            html += '<textarea id="canned-en-' + business.id + '" placeholder="Type the English response here..." required style="min-height:100px;"></textarea>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Bangla Response (optional)</label>';
+            html += '<textarea id="canned-bn-' + business.id + '" placeholder="Type the Bangla response here..." style="min-height:100px;"></textarea>';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Add Canned Response</button>';
+            html += '</form>';
+            html += '<div id="canned-responses-list-' + business.id + '">';
+            const cannedResponses = business.cannedResponses || [];
+            if (cannedResponses.length > 0) {
+                cannedResponses.forEach(cr => {
+                    html += '<div class="faq-item" style="border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div class="faq-item-text">';
+                    html += '<h5>' + cr.title + '</h5>';
+                    if (cr.contentEn) html += '<p style="margin:8px 0;color:#333;"><strong>EN:</strong> ' + cr.contentEn.substring(0, 150) + (cr.contentEn.length > 150 ? '...' : '') + '</p>';
+                    if (cr.contentBn) html += '<p style="margin:8px 0;color:#333;"><strong>BN:</strong> ' + cr.contentBn.substring(0, 150) + (cr.contentBn.length > 150 ? '...' : '') + '</p>';
+                    html += '</div>';
+                    html += '<div class="faq-item-actions" style="display:flex;gap:8px;">';
+                    html += '<button class="btn btn-small btn-secondary" onclick="editCannedResponse(\'' + business.id + '\', \'' + cr.id + '\')">✏️ Edit</button>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deleteCannedResponse(\'' + business.id + '\', \'' + cr.id + '\')">🗑️ Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">No canned responses yet. Add some to save time!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="tab-content" id="tab-' + business.id + '-triggers">';
+            html += '<h3>Proactive Triggers</h3>';
+            html += '<form id="trigger-form-' + business.id + '" onsubmit="addTrigger(event, \'' + business.id + '\')" style="margin-bottom:24px;">';
+            html += '<div class="form-group">';
+            html += '<label>Trigger Name</label>';
+            html += '<input type="text" id="trigger-name-' + business.id + '" placeholder="e.g., Welcome after 30s" required>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Trigger Type</label>';
+            html += '<select id="trigger-type-' + business.id + '" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;">';
+            html += '<option value="time_on_page">Time on Page (seconds)</option>';
+            html += '<option value="scroll_depth">Scroll Depth (%)</option>';
+            html += '</select>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Trigger Value</label>';
+            html += '<input type="number" id="trigger-value-' + business.id + '" placeholder="e.g., 30 for 30 seconds" required>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Proactive Message</label>';
+            html += '<textarea id="trigger-message-' + business.id + '" placeholder="Hey there! Need any help with our product?" required style="min-height:100px;"></textarea>';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Add Trigger</button>';
+            html += '</form>';
+            html += '<div id="triggers-list-' + business.id + '">';
+            const triggers = business.triggers || [];
+            if (triggers.length > 0) {
+                triggers.forEach(t => {
+                    const valueStr = t.type === 'time_on_page' ? t.conditions?.seconds + ' seconds' : t.conditions?.depth + '%';
+                    html += '<div class="faq-item" style="border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+                    html += '<h5 style="margin:0;">' + t.name + '</h5>';
+                    html += '<button class="btn btn-small" style="background:' + (t.enabled ? '#10b981' : '#6b7280') + ';color:white;" onclick="toggleTrigger(\'' + business.id + '\', \'' + t.id + '\', ' + !t.enabled + ')">' + (t.enabled ? 'Enabled' : 'Disabled') + '</button>';
+                    html += '</div>';
+                    html += '<p style="margin:4px 0;color:#666;"><strong>Type:</strong> ' + t.type + ' (' + valueStr + ')</p>';
+                    html += '<p style="margin:4px 0;color:#333;"><strong>Message:</strong> ' + t.message + '</p>';
+                    html += '<div class="faq-item-actions" style="display:flex;gap:8px;margin-top:12px;">';
+                    html += '<button class="btn btn-small btn-secondary" onclick="editTrigger(\'' + business.id + '\', \'' + t.id + '\')">✏️ Edit</button>';
+                    html += '<button class="btn btn-small btn-danger" onclick="deleteTrigger(\'' + business.id + '\', \'' + t.id + '\')">🗑️ Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">No triggers yet! Add one to start proactive chatting!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
             html += '<div class="tab-content" id="tab-' + business.id + '-analytics">';
             html += '<h3>Analytics</h3>';
             html += '<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); margin-top:16px;">';
@@ -689,17 +815,61 @@
             html += '<h3>Top FAQ Hits</h3>';
             html += '<div class="stat-value" style="font-size:28px;">' + totalHits + '</div>';
             html += '</div>';
+            // Calculate derived metrics
+            let resolutionRate = 0;
+            let averageResponseTime = 0;
             if (business.analytics?.totalMessages > 0) {
-                const resolutionRate = Math.round(((business.analytics.aiResolved || 0) / business.analytics.totalMessages) * 100);
+                resolutionRate = Math.round(((business.analytics.aiResolved || 0) / business.analytics.totalMessages) * 100);
+                if (business.analytics.responseTimes && business.analytics.responseTimes.length > 0) {
+                    averageResponseTime = Math.round(business.analytics.responseTimes.reduce((a, b) => a + b, 0) / business.analytics.responseTimes.length);
+                }
+                const hoursSaved = Math.round((business.analytics.aiResolved || 0) * 0.1);
                 html += '<div class="stat-card">';
                 html += '<h3>Resolution Rate</h3>';
                 html += '<div class="stat-value" style="font-size:28px;">' + resolutionRate + '%</div>';
                 html += '</div>';
-                const hoursSaved = Math.round((business.analytics.aiResolved || 0) * 0.1);
                 html += '<div class="stat-card">';
                 html += '<h3>Est. Hours Saved</h3>';
                 html += '<div class="stat-value" style="font-size:28px;">' + hoursSaved + 'h</div>';
                 html += '</div>';
+            }
+            html += '<div class="stat-card">';
+            html += '<h3>Avg Response Time</h3>';
+            html += '<div class="stat-value" style="font-size:28px;">' + averageResponseTime + 'ms</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // Daily Usage
+            html += '<div style="margin-top:32px;">';
+            html += '<h3>Daily Usage (Last 7 Days)</h3>';
+            const dailyUsage = business.analytics?.dailyUsage || [];
+            if (dailyUsage.length > 0) {
+                html += '<div style="overflow-x:auto;">';
+                html += '<table style="width:100%;border-collapse:collapse;">';
+                html += '<thead>';
+                html += '<tr style="background:#f3f4f6;">';
+                html += '<th style="padding:12px;text-align:left;border:1px solid #e5e7eb;">Date</th>';
+                html += '<th style="padding:12px;text-align:left;border:1px solid #e5e7eb;">Messages</th>';
+                html += '<th style="padding:12px;text-align:left;border:1px solid #e5e7eb;">AI Resolved</th>';
+                html += '<th style="padding:12px;text-align:left;border:1px solid #e5e7eb;">Escalated</th>';
+                html += '<th style="padding:12px;text-align:left;border:1px solid #e5e7eb;">Leads</th>';
+                html += '</tr>';
+                html += '</thead>';
+                html += '<tbody>';
+                dailyUsage.slice(-7).forEach(day => {
+                    html += '<tr>';
+                    html += '<td style="padding:12px;border:1px solid #e5e7eb;">' + day.date + '</td>';
+                    html += '<td style="padding:12px;border:1px solid #e5e7eb;">' + day.messages + '</td>';
+                    html += '<td style="padding:12px;border:1px solid #e5e7eb;">' + day.aiResolved + '</td>';
+                    html += '<td style="padding:12px;border:1px solid #e5e7eb;">' + day.humanEscalated + '</td>';
+                    html += '<td style="padding:12px;border:1px solid #e5e7eb;">' + day.leadsCaptured + '</td>';
+                    html += '</tr>';
+                });
+                html += '</tbody>';
+                html += '</table>';
+                html += '</div>';
+            } else {
+                html += '<p style="color:#666;text-align:center;padding:48px;">No daily usage data yet!</p>';
             }
             html += '</div>';
             
@@ -1299,6 +1469,394 @@
             }
         } catch (error) {
             showMessage('Error marking question', 'error');
+        }
+    }
+
+    async function addCannedResponse(event, businessId) {
+        event.preventDefault();
+        const title = document.getElementById('canned-title-' + businessId).value.trim();
+        const contentEn = document.getElementById('canned-en-' + businessId).value.trim();
+        const contentBn = document.getElementById('canned-bn-' + businessId).value.trim();
+
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/canned-responses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, contentEn, contentBn })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Canned response added!', 'success');
+                document.getElementById('canned-title-' + businessId).value = '';
+                document.getElementById('canned-en-' + businessId).value = '';
+                document.getElementById('canned-bn-' + businessId).value = '';
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding canned response', 'error');
+        }
+    }
+
+    function editCannedResponse(businessId, responseId) {
+        const business = businesses.find(b => b.id === businessId);
+        const cr = business?.cannedResponses?.find(c => c.id === responseId);
+        if (!cr) return;
+
+        const newTitle = prompt('Edit title:', cr.title);
+        if (newTitle === null) return;
+
+        const newContentEn = prompt('Edit English response:', cr.contentEn || '');
+        if (newContentEn === null) return;
+
+        const newContentBn = prompt('Edit Bangla response:', cr.contentBn || '');
+        if (newContentBn === null) return;
+
+        updateCannedResponse(businessId, responseId, {
+            title: newTitle,
+            contentEn: newContentEn,
+            contentBn: newContentBn
+        });
+    }
+
+    async function updateCannedResponse(businessId, responseId, updates) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/canned-responses/' + responseId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Canned response updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating canned response', 'error');
+        }
+    }
+
+    async function deleteCannedResponse(businessId, responseId) {
+        if (!confirm('Are you sure you want to delete this canned response?')) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/canned-responses/' + responseId, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Canned response deleted!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting canned response', 'error');
+        }
+    }
+
+    async function addConversationTag(businessId, conversationId) {
+        const input = document.getElementById('tag-input-' + businessId + '-' + conversationId);
+        const tag = input.value.trim();
+        if (!tag) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/conversations/' + conversationId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tag })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Tag added!', 'success');
+                input.value = '';
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding tag', 'error');
+        }
+    }
+
+    async function removeConversationTag(businessId, conversationId, tag) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/conversations/' + conversationId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tag, remove: true })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Tag removed!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error removing tag', 'error');
+        }
+    }
+
+    async function assignConversation(businessId, conversationId) {
+        const input = document.getElementById('assignee-input-' + businessId + '-' + conversationId);
+        const assignee = input.value.trim();
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/conversations/' + conversationId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignee: assignee || null })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Conversation assigned!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error assigning conversation', 'error');
+        }
+    }
+
+    async function addTrigger(event, businessId) {
+        event.preventDefault();
+        const name = document.getElementById('trigger-name-' + businessId).value.trim();
+        const type = document.getElementById('trigger-type-' + businessId).value;
+        const value = parseInt(document.getElementById('trigger-value-' + businessId).value.trim(), 10);
+        const message = document.getElementById('trigger-message-' + businessId).value.trim();
+
+        const conditions = type === 'time_on_page' ? { seconds: value } : { depth: value };
+
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/triggers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, type, conditions, message })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Trigger added!', 'success');
+                document.getElementById('trigger-name-' + businessId).value = '';
+                document.getElementById('trigger-value-' + businessId).value = '';
+                document.getElementById('trigger-message-' + businessId).value = '';
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding trigger', 'error');
+        }
+    }
+
+    function editTrigger(businessId, triggerId) {
+        const business = businesses.find(b => b.id === businessId);
+        const trigger = business?.triggers?.find(t => t.id === triggerId);
+        if (!trigger) return;
+
+        const newName = prompt('Edit trigger name:', trigger.name);
+        if (newName === null) return;
+        const newValue = prompt('Edit trigger value:', trigger.type === 'time_on_page' ? trigger.conditions?.seconds : trigger.conditions?.depth);
+        if (newValue === null) return;
+        const newMessage = prompt('Edit message:', trigger.message);
+        if (newMessage === null) return;
+
+        const newConditions = trigger.type === 'time_on_page' ? { seconds: parseInt(newValue, 10) } : { depth: parseInt(newValue, 10) };
+        updateTrigger(businessId, triggerId, { name: newName, conditions: newConditions, message: newMessage });
+    }
+
+    async function updateTrigger(businessId, triggerId, updates) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/triggers/' + triggerId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Trigger updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating trigger', 'error');
+        }
+    }
+
+    async function toggleTrigger(businessId, triggerId, enabled) {
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/triggers/' + triggerId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Trigger ' + (enabled ? 'enabled!' : 'disabled!'), 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error toggling trigger', 'error');
+        }
+    }
+
+    async function deleteTrigger(businessId, triggerId) {
+        if (!confirm('Are you sure you want to delete this trigger?')) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/triggers/' + triggerId, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Trigger deleted!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting trigger', 'error');
+        }
+    }
+
+    // Knowledge Base Functions
+    async function addKBCategory(event, businessId) {
+        event.preventDefault();
+        try {
+            const name = document.getElementById('category-name-' + businessId).value.trim();
+            const description = document.getElementById('category-desc-' + businessId).value.trim();
+            const sortOrder = parseInt(document.getElementById('category-sort-' + businessId).value) || 0;
+
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description, sortOrder })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Category added!', 'success');
+                document.getElementById('category-form-' + businessId).reset();
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding category', 'error');
+        }
+    }
+
+    async function editKBCategory(businessId, categoryId) {
+        const newName = prompt('Enter new category name:');
+        if (!newName) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/categories/' + categoryId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Category updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating category', 'error');
+        }
+    }
+
+    async function deleteKBCategory(businessId, categoryId) {
+        if (!confirm('Are you sure you want to delete this category?')) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/categories/' + categoryId, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Category deleted!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting category', 'error');
+        }
+    }
+
+    async function addKBArticle(event, businessId) {
+        event.preventDefault();
+        try {
+            const categoryId = document.getElementById('article-category-' + businessId).value || null;
+            const title = document.getElementById('article-title-' + businessId).value.trim();
+            const summary = document.getElementById('article-summary-' + businessId).value.trim();
+            const content = document.getElementById('article-content-' + businessId).value.trim();
+
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/articles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryId, title, summary, content })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Article added!', 'success');
+                document.getElementById('article-form-' + businessId).reset();
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error adding article', 'error');
+        }
+    }
+
+    async function editKBArticle(businessId, articleId) {
+        const newTitle = prompt('Enter new article title:');
+        if (!newTitle) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/articles/' + articleId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Article updated!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error updating article', 'error');
+        }
+    }
+
+    async function deleteKBArticle(businessId, articleId) {
+        if (!confirm('Are you sure you want to delete this article?')) return;
+        try {
+            const response = await fetchWithCsrf('/api/businesses/' + businessId + '/kb/articles/' + articleId, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Article deleted!', 'success');
+                loadBusinesses();
+            } else {
+                showMessage('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting article', 'error');
         }
     }
 

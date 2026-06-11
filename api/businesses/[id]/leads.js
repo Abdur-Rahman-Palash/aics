@@ -1,4 +1,5 @@
 const getStorage = require('../../../lib/storage');
+const { sendWebhookEvent } = require('../../../lib/webhooks');
 
 module.exports = async (req, res) => {
     const businessId = req.query.id;
@@ -8,6 +9,10 @@ module.exports = async (req, res) => {
         try {
             const newLead = await storage.addLead(businessId, req.body);
             if (newLead) {
+                // Also record analytics for lead capture
+                await storage.recordAnalytics(businessId, { leadsCaptured: true });
+                // Send webhook event
+                await sendWebhookEvent(businessId, 'new_lead', newLead);
                 res.status(201).json({ success: true, lead: newLead });
             } else {
                 res.status(404).json({ success: false, error: 'Business not found' });
