@@ -266,7 +266,7 @@
                     }
                     addMessage(data.response, 'ai');
                     // Check for human help needed
-                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further/i.test(data.response);
+                    const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|contact\s+form|complete the contact form below/i.test(data.response);
                     if (data.needsHumanHelp || hasHumanKeywords) {
                         setTimeout(() => showLeadForm(), 500);
                     }

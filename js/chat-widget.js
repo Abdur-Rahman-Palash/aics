@@ -391,7 +391,7 @@ class AICSChatWidget {
                 }
                 this.addMessage(data.response, 'ai');
                 // Check either the flag or look for keywords in the response
-                const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form/i.test(data.response);
+                const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form|complete the contact form below/i.test(data.response);
                 if (data.needsHumanHelp || hasHumanKeywords) {
                     setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
                 }
