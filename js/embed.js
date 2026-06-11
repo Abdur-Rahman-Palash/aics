@@ -72,6 +72,8 @@
         let showingLeadForm = false;
         let conversationId = null;
         let visitor = {};
+        let justSubmittedLeadForm = false;
+        let lastLeadFormMessage = '';
 
         // Create Elements
         const floatBtn = document.createElement('button');
@@ -213,6 +215,14 @@
         function stopDrag() {
             isDragging = false;
         }
+        
+        function isMessageRelevant(message, formMessage) {
+            const normalizeText = (text) => text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+            const messageWords = normalizeText(message);
+            const formWords = normalizeText(formMessage);
+            const commonWords = messageWords.filter(word => formWords.includes(word));
+            return commonWords.length > 0;
+        }
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
             typingDiv.id = 'aics-typing';
@@ -235,6 +245,21 @@
         async function sendMessage() {
             const message = inputField.value.trim();
             if (!message) return;
+            
+            // Check if user just submitted a lead form
+            if (justSubmittedLeadForm) {
+                const relevant = isMessageRelevant(message, lastLeadFormMessage);
+                if (!relevant) {
+                    // Add user message
+                    addMessage(message, 'user');
+                    inputField.value = '';
+                    // Show the required response
+                    addMessage('It looks like your question is not related to the form you submitted. Please ask a question relevant to your request so I can assist you better.', 'ai');
+                    return;
+                }
+                // Reset the flag if message is relevant
+                justSubmittedLeadForm = false;
+            }
             
             // Add user message
             addMessage(message, 'user');
@@ -405,6 +430,8 @@
                     formDiv.innerHTML = '<div>Thank you! We\'ve received your request and will get back to you soon.</div>';
                     
                     showingLeadForm = false;
+                    justSubmittedLeadForm = true;
+                    lastLeadFormMessage = message;
                     inputField.disabled = false;
                     sendBtn.disabled = false;
                 } else {
