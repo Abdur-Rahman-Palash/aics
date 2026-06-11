@@ -356,9 +356,12 @@ module.exports = async (req, res) => {
                             }
                         }
 
-                        // Check if AI response mentions escalation
-                        const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form/i.test(aiResponse);
+                        // Check if AI response mentions escalation or contact-form fallback
+                        const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form|complete the contact form below/i.test(aiResponse);
                         if (hasHumanKeywords) {
+                            needsHumanHelp = true;
+                        }
+                        if (/please complete the contact form below/i.test(aiResponse)) {
                             needsHumanHelp = true;
                         }
                     } else {

@@ -92,7 +92,11 @@
                 <div class="aics-message ai">Hi there! 👋 How can I help you today?</div>
             </div>
             <div class="aics-chat-input">
-                <button class="aics-file-btn" id="aics-file-btn" style="background: #667eea; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; border: none; cursor: pointer; font-size: 18px;">📎</button>
+                <button class="aics-file-btn" id="aics-file-btn" aria-label="Upload file" style="background: #667eea; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; border: none; cursor: pointer; font-size: 18px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                        <path d="M16.5 6.5L7.5 15.5C6.94772 16.0523 6.94772 16.9477 7.5 17.5C8.05228 18.0523 8.94772 18.0523 9.5 17.5L18.5 8.5C19.8807 7.11929 19.8807 4.88071 18.5 3.5C17.1193 2.11929 14.8807 2.11929 13.5 3.5L5.5 11.5C3.11929 13.8807 3.11929 17.1193 5.5 19.5C7.88071 21.8807 11.1193 21.8807 13.5 19.5L20.5 12.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
                 <input type="file" id="aics-file-input" style="display: none" accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.xml,.json,.md,.rtf">
                 <input type="text" id="aics-input" placeholder="Type your message...">
                 <button class="aics-send-btn" id="aics-send">➤</button>
