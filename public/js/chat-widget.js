@@ -400,9 +400,7 @@ class AICSChatWidget {
                     setTimeout(() => this.showLeadForm(), 500); // Show lead form after a short delay
                 }
             } else {
-                // If something went wrong, show lead form instead of error message
-                this.addMessage("I'm sorry, I can't confidently answer that question. Would you like to leave your contact details so our team can get back to you?", 'ai');
-                setTimeout(() => this.showLeadForm(), 500);
+                this.addMessage('Sorry, something went wrong. Please try again.', 'ai');
             }
         } catch (error) {
             this.hideTypingIndicator();
@@ -512,15 +510,12 @@ class AICSChatWidget {
 
     hideTypingIndicator() {
         const typing = this.chatContainer.querySelector('#aics-typing');
-        if (typing) {
-            typing.remove();
-        }
+        if (typing) { typing.remove(); }
     }
 
     scrollToBottom() {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
-
 
 
     showLeadForm() {

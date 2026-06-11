@@ -14,6 +14,14 @@
         const scriptSrc = scriptTag ? scriptTag.src : null;
         const apiOrigin = scriptSrc ? new URL(scriptSrc).origin : window.location.origin;
 
+        if (!businessId) {
+            const warning = document.createElement('div');
+            warning.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index:10000; max-width: 300px; padding: 16px; background: #ffe5e5; color: #a00; border: 1px solid #f5c2c2; border-radius: 12px; font-family: sans-serif; font-size: 14px;';
+            warning.textContent = 'AICS embed requires a valid data-business-id attribute on the script tag.';
+            document.body.appendChild(warning);
+            return;
+        }
+
         // Inject Styles
         const css = `
             .aics-float-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); font-size: 24px; z-index: 10000; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -32,11 +40,6 @@
             .aics-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
             .aics-close-btn:active { transform: scale(0.9); }
             .aics-chat-messages { flex: 1; min-height: 0; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
-            .aics-suggested-header { font-size: 13px; color: #666; padding: 16px 16px 0 16px; margin: 0; background: #f5f7fa; flex-shrink: 0; min-width: 0; }
-            .aics-suggested-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 0 16px 16px 16px; background: #f5f7fa; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; min-width: 0; }
-            .aics-suggested-btn { background: white; border: 1px solid #667eea; color: #667eea; padding: 8px 12px; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; }
-            .aics-suggested-btn:hover { background: #667eea; color: white; }
-            .aics-suggested-btn:active { transform: scale(0.95); }
             .aics-message { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word; word-break: break-word; }
             .aics-message.ai { background: white; color: #333; border-bottom-left-radius: 4px; align-self: flex-start; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
             .aics-message.user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
@@ -209,13 +212,6 @@
         
         function stopDrag() {
             isDragging = false;
-        }
-        function addMessage(text, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `aics-message ${type}`;
-            messageDiv.textContent = text;
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
