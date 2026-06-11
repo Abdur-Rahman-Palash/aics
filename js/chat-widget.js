@@ -304,7 +304,8 @@ class AICSChatWidget {
     addMessage(text, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `aics-message ${type}`;
-        messageDiv.textContent = text;
+        // Replace newlines with <br> to preserve formatting
+        messageDiv.innerHTML = text.replace(/\n/g, '<br>');
         this.messagesContainer.appendChild(messageDiv);
         this.scrollToBottom();
     }

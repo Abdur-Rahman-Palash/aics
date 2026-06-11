@@ -306,12 +306,13 @@ class AICSChatWidget {
     }
 
     addMessage(text, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `aics-message ${type}`;
-        messageDiv.textContent = text;
-        this.messagesContainer.appendChild(messageDiv);
-        this.scrollToBottom();
-    }
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `aics-message ${type}`;
+    // Replace newlines with <br> to preserve formatting
+    messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+    this.messagesContainer.appendChild(messageDiv);
+    this.scrollToBottom();
+  }
 
     showTypingIndicator() {
         const typingDiv = document.createElement('div');

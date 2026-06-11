@@ -2,7 +2,7 @@
 
 **Sell more, support less.**
 
-AICS is a white-label AI customer support and lead capture app you can embed on any website in minutes. It is built for small businesses, agencies, and developers, and is ready to deploy on Render.com right now.
+AICS is a white-label AI customer support and lead capture app you can embed on any website in minutes. It is built for small businesses, agencies, and developers
 
 ---
 
