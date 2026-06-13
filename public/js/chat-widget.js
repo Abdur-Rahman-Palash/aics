@@ -27,6 +27,15 @@ class AICSChatWidget {
         const scriptTag = scriptTags[scriptTags.length - 1];
         apiOrigin = scriptTag ? new URL(scriptTag.src).origin : window.location.origin;
         
+        // Inject widget stylesheet dynamically
+        if (!document.getElementById('aics-widget-styles')) {
+            const cssLink = document.createElement('link');
+            cssLink.id = 'aics-widget-styles';
+            cssLink.rel = 'stylesheet';
+            cssLink.href = `${apiOrigin}/css/chat-widget.css`;
+            document.head.appendChild(cssLink);
+        }
+
         this.widgetSettings = {
         title: 'AI Support',
         primaryColor: '#667eea',
