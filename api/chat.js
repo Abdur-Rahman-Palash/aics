@@ -7,6 +7,7 @@ const LangChainIntegration = require('../lib/langchain');
 const getStorage = require('../lib/storage');
 const config = require('../lib/config');
 const { sendWebhookEvent } = require('../lib/webhooks');
+const { sendEscalationAlert } = require('../lib/alerts');
 
 // Initialize services once when the module loads
 let storage;
@@ -159,10 +160,10 @@ module.exports = async (req, res) => {
 
     try {
         const startTime = Date.now();
-        let { message, file, businessId, conversationId, visitor } = req.body;
+        let { message, file, businessId, conversationId, visitor, toolCallId, toolName, toolResult } = req.body;
 
-        if (!message && !file) {
-            return res.status(400).json({ error: 'Message or file is required' });
+        if (!message && !file && !toolCallId) {
+            return res.status(400).json({ error: 'Message, file, or toolCallId is required' });
         }
 
         // Get business from storage if ID is provided
@@ -181,8 +182,27 @@ module.exports = async (req, res) => {
             }
         }
 
+        // Handle toolResult if submitted by client
+        if (toolCallId && toolName && toolResult) {
+            const toolMessageData = {
+                role: 'tool',
+                name: toolName,
+                toolCallId: toolCallId,
+                content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
+            };
+            if (conversation && businessId) {
+                await storage.addMessageToConversation(businessId, conversation.id, toolMessageData);
+                // Reload conversation history
+                conversation = await storage.getConversation(businessId, conversation.id);
+            }
+            // Use placeholder message for vector search / processing if no text message was sent
+            if (!message) {
+                message = `[Tool result for ${toolName}]`;
+            }
+        }
+
         // First, try to find a matching FAQ from storage (db.json) directly
-        const directMatch = message ? findMatchingFAQFromStorage(message, business) : null;
+        const directMatch = message && !toolCallId ? findMatchingFAQFromStorage(message, business) : null;
 
         // Build context - start with empty
         let contextParts = [];
@@ -287,10 +307,35 @@ module.exports = async (req, res) => {
             // Only true if BOTH similarity is low AND classification says unrelated AND not a greeting
             const humanTransferMessage = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
             let needsHumanHelp = false;
+            let handoffReason = null;
+
             if (!greeting && !hasRelevantSimilarity && !isQuestionRelated) {
                 needsHumanHelp = true;
+                handoffReason = "Low confidence or off-topic question";
             }
-            console.log('[CHAT] needsHumanHelp:', needsHumanHelp);
+
+            // Anger/Frustration detection in user message
+            const userLower = message.toLowerCase();
+            const isAngry = /angry|terrible|horrible|useless|worst|garbage|rubbish|scam|hate|frustrated|nonsense|stupid|human|person|agent|representative|manager|speak\s+to\s+someone/i.test(userLower);
+            if (isAngry) {
+                needsHumanHelp = true;
+                handoffReason = "User anger/frustration keywords detected";
+            }
+
+            // Repetition detection
+            if (conversation && conversation.messages) {
+                const userMsgs = conversation.messages.filter(m => m.role === 'user');
+                if (userMsgs.length >= 2) {
+                    const lastMsg = userMsgs[userMsgs.length - 1].content;
+                    const secondLastMsg = userMsgs[userMsgs.length - 2].content;
+                    if (message === lastMsg && message === secondLastMsg) {
+                        needsHumanHelp = true;
+                        handoffReason = "Repetitive user queries detected";
+                    }
+                }
+            }
+
+            console.log('[CHAT] needsHumanHelp:', needsHumanHelp, 'Reason:', handoffReason);
 
             // ─── Step 5: Generate AI response ───
             try {
@@ -328,8 +373,8 @@ module.exports = async (req, res) => {
                     confidenceScore = 1.0;
                     needsHumanHelp = false;
 
-                } else if (contextParts.length > 0) {
-                    // Context found — use LangChain → fallback to Gemini → fallback to keyword
+                } else {
+                    // Context found or general query — use LangChain (Groq / tool calling enabled)
                     if (config.huggingface.apiKey) {
                         let conversationHistory = [];
                         if (conversation && conversation.messages) {
@@ -338,17 +383,90 @@ module.exports = async (req, res) => {
 
                         try {
                             console.log('[CHAT] Calling langchain.generateResponse');
-                            aiResponse = await langchain.generateResponse(
-                                message,
+                            let llmResult = await langchain.generateResponse(
+                                message || '',
                                 context,
                                 conversationHistory
                             );
-                            console.log('[CHAT] langchain.generateResponse returned:', aiResponse);
+                            console.log('[CHAT] First llmResult:', JSON.stringify(llmResult, null, 2));
+                            
+                            // ALWAYS use the LLM's content response if it's available
+                            if (llmResult.content && llmResult.content.trim().length > 0) {
+                                aiResponse = llmResult.content;
+                            } else if (llmResult.isToolCall) {
+                                const toolCalls = llmResult.toolCalls;
+                                const validTools = ['searchProducts', 'bookAppointment', 'trackOrder', 'fillForm', 'showBookingForm', 'showContactForm', 'showFeedbackForm'];
+                                const toolResults = [];
+                                let hasInvalidTool = false;
+                                
+                                for (const toolCall of toolCalls) {
+                                    const toolName = toolCall.function.name;
+                                    const toolArgs = JSON.parse(toolCall.function.arguments);
+                                    
+                                    let toolResult = null;
+                                    
+                                    if (!validTools.includes(toolName)) {
+                                        console.warn(`[CHAT] Invalid tool call: ${toolName}`);
+                                        toolResult = { error: `Tool '${toolName}' is not available. Please ask another question.` };
+                                        hasInvalidTool = true;
+                                    } else {
+                                        try {
+                                            if (toolName === 'searchProducts') {
+                                                toolResult = await storage.searchProducts(businessId, toolArgs.query, toolArgs.maxBudget);
+                                            } else if (toolName === 'bookAppointment') {
+                                                toolResult = await storage.addBooking(businessId, {
+                                                    visitor: visitor,
+                                                    dateTime: toolArgs.dateTime,
+                                                    name: toolArgs.name,
+                                                    notes: toolArgs.notes
+                                                });
+                                            } else if (toolName === 'trackOrder') {
+                                                toolResult = await storage.getOrder(businessId, toolArgs.orderId);
+                                            } else if (toolName === 'fillForm') {
+                                                toolResult = await storage.addFormSubmission(businessId, {
+                                                    formId: toolArgs.formId,
+                                                    data: toolArgs.data,
+                                                    visitor: visitor
+                                                });
+                                            } else {
+                                                toolResult = { success: true, message: `${toolName} tool available for client-side execution` };
+                                            }
+                                        } catch (toolError) {
+                                            console.error(`[CHAT] Error executing tool ${toolName}:`, toolError);
+                                            toolResult = { error: toolError.message };
+                                        }
+                                    }
+                                    
+                                    toolResults.push({
+                                        toolCallId: toolCall.id,
+                                        toolName: toolName,
+                                        result: toolResult
+                                    });
+                                    
+                                    // Add tool message to conversation
+                                    if (conversation && businessId) {
+                                        await storage.addMessageToConversation(businessId, conversation.id, {
+                                            role: 'tool',
+                                            name: toolName,
+                                            toolCallId: toolCall.id,
+                                            content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
+                                        });
+                                    }
+                                }
+                                
+                                if (hasInvalidTool) {
+                                    aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below.";
+                                } else {
+                                    // Just use a simple success message instead of calling LLM again
+                                    aiResponse = 'Action completed successfully!';
+                                }
+                            } else {
+                                aiResponse = llmResult.content;
+                            }
                         } catch (langchainError) {
                             console.warn('[CHAT] Langchain failed, falling back to direct gemini.js', langchainError);
                             try {
                                 aiResponse = await gemini.generateResponse(message, context);
-                                console.log('[CHAT] Direct gemini.generateResponse returned:', aiResponse);
                             } catch (geminiError) {
                                 console.warn('[CHAT] Gemini API failed, using friendly fallback:', geminiError);
                                 aiResponse = generateFriendlyFallbackResponse(message, contextParts);
@@ -360,19 +478,15 @@ module.exports = async (req, res) => {
                         const hasHumanKeywords = /human|escalate|talk\s+to|contact\s+support|assist\s+further|can't help|don't know|don't have information|contact\s+form|complete the contact form below/i.test(aiResponse);
                         if (hasHumanKeywords) {
                             needsHumanHelp = true;
-                        }
-                        if (/please complete the contact form below/i.test(aiResponse)) {
-                            needsHumanHelp = true;
+                            if (!handoffReason) handoffReason = "AI recommended human support";
                         }
                     } else {
-                        aiResponse = "Here's what I found that might help:\n" + contextParts[0].substring(0, 500);
-                        needsHumanHelp = false;
+                        aiResponse = contextParts.length > 0 
+                            ? "Here's what I found that might help:\n" + contextParts[0].substring(0, 500)
+                            : "I'm sorry, I can only assist with questions related to this website and its services.";
+                        needsHumanHelp = true;
+                        if (!handoffReason) handoffReason = "AI service fallback triggered";
                     }
-
-                } else {
-                    // No context at all
-                    aiResponse = "I'm sorry, but I can only assist with questions related to this website and its services. If you need further assistance, please complete the contact form below. Once your request is submitted, our team will review it and send a response to your email. You may also receive an instant acknowledgment message confirming that your request has been successfully submitted.";
-                    needsHumanHelp = true;
                 }
 
             } catch (error) {
@@ -435,6 +549,10 @@ module.exports = async (req, res) => {
                 await storage.updateConversation(businessId, conversation.id, {
                     status: 'pending'
                 });
+
+                // Trigger smart handoff notifications asynchronously
+                sendEscalationAlert(businessId, conversation.id, handoffReason || "AI escalation keyword triggered")
+                    .catch(err => console.error('[CHAT] Handoff alert error:', err));
             }
 
             // Send webhook event for new message
@@ -445,6 +563,15 @@ module.exports = async (req, res) => {
                 needsHumanHelp,
                 confidence: confidenceScore
             });
+
+            // Trigger webhook event for human requested
+            if (needsHumanHelp) {
+                await sendWebhookEvent(businessId, 'human_requested', {
+                    conversationId: conversation.id,
+                    reason: handoffReason || "AI escalation keyword triggered",
+                    visitor: conversation.visitor
+                });
+            }
         }
 
         return res.status(200).json({

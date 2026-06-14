@@ -12,8 +12,30 @@ const getStorage = require('./lib/storage');
 const { doubleCsrf } = require('csrf-csrf');
 const nodemailer = require('nodemailer');
 const compression = require('compression');
+const cors = require('cors');
 
 let storage;
+
+// Live active visitor tracking map
+const activeVisitors = new Map();
+
+function getActiveVisitorsForBusiness(businessId) {
+    const list = [];
+    for (const [socketId, data] of activeVisitors.entries()) {
+        if (data.businessId === businessId) {
+            list.push({
+                socketId,
+                url: data.url,
+                title: data.title,
+                referrer: data.referrer,
+                userAgent: data.userAgent,
+                ip: data.ip,
+                duration: Math.floor((Date.now() - data.connectedAt) / 1000)
+            });
+        }
+    }
+    return list;
+}
 
 // Email notification function
 async function sendLeadNotification(business, lead) {
@@ -94,10 +116,16 @@ const businessFaqsHandler = require('./api/businesses/[id]/faqs');
 const businessWidgetHandler = require('./api/businesses/[id]/widget');
 const businessWebsiteHandler = require('./api/businesses/[id]/website');
 const businessPdfHandler = require('./api/businesses/[id]/pdf');
+const businessAgentsHandler = require('./api/businesses/[id]/agents');
+const businessProductsHandler = require('./api/businesses/[id]/products');
+const businessTriggersHandler = require('./api/businesses/[id]/triggers');
+const businessTriggerItemHandler = require('./api/businesses/[id]/triggers/[triggerId]');
+const { trainWebsite } = require('./lib/training');
 const QdrantManager = require('./lib/qdrant');
 const HuggingFaceAI = require('./lib/huggingface');
 
 const app = express();
+
 // Trust proxy (for Render HTTPS)
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
@@ -108,6 +136,12 @@ app.use(compression());
 
 // Check for default session secret in production
 const isProduction = process.env.NODE_ENV === 'production';
+
+// CORS middleware (allow all origins for development, restrict in production)
+app.use(cors({
+    origin: isProduction ? false : true,
+    credentials: true
+}));
 if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'your-secret-key-change-this-in-production')) {
     console.warn('WARNING: Using default or missing SESSION_SECRET in production! This is a security risk. Please set a strong SESSION_SECRET in your environment variables.');
 }
@@ -211,6 +245,7 @@ app.use('/api', (req, res, next) => {
     const isStateChanging = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
     // Exclude chat, leads, verify, and auth endpoints for now
     const isExcluded = req.path === '/chat' || 
+                      req.path === '/api/chat' || 
                       req.path.match(/^\/businesses\/[^/]+\/leads$/) ||
                       req.path.match(/^\/businesses\/[^/]+\/verify$/) ||
                       req.path.startsWith('/auth/');
@@ -382,6 +417,48 @@ app.all('/api/businesses/:id/website', (req, res) => {
 app.all('/api/businesses/:id/pdf', (req, res) => {
     req.query.id = req.params.id;
     businessPdfHandler(req, res);
+});
+app.all('/api/businesses/:id/agents', (req, res) => {
+    req.query.id = req.params.id;
+    businessAgentsHandler(req, res);
+});
+app.all('/api/businesses/:id/products', async (req, res) => {
+    // Debug logging for incoming product requests
+    try {
+        console.log('[/api/businesses/:id/products] Incoming request', {
+            method: req.method,
+            params: req.params,
+            // Don't log full body in production; helpful locally for debugging
+            bodyPreview: req.body ? (typeof req.body === 'object' ? Object.keys(req.body) : String(req.body)) : null,
+            sessionUserId: req.session?.userId || null
+        });
+
+        req.query.id = req.params.id;
+
+        if (storage) {
+            try {
+                const b = await storage.getBusiness(req.params.id, req.session?.userId);
+                console.log('[/api/businesses/:id/products] business exists:', !!b, 'businessId:', req.params.id);
+            } catch (err) {
+                console.error('[/api/businesses/:id/products] error checking business:', err && err.message ? err.message : err);
+            }
+        } else {
+            console.log('[/api/businesses/:id/products] storage not initialized yet');
+        }
+    } catch (err) {
+        console.error('[/api/businesses/:id/products] logging error:', err);
+    }
+
+    businessProductsHandler(req, res);
+});
+app.all('/api/businesses/:id/triggers', (req, res) => {
+    req.query.id = req.params.id;
+    businessTriggersHandler(req, res);
+});
+app.all('/api/businesses/:id/triggers/:triggerId', (req, res) => {
+    req.query.id = req.params.id;
+    req.query.triggerId = req.params.triggerId;
+    businessTriggerItemHandler(req, res);
 });
 
 // Verification endpoint
@@ -783,7 +860,334 @@ app.put('/api/businesses/:id/google-sheets', async (req, res) => {
     }
 });
 
+// Conversations extended - assign, priority, internal notes
+app.put('/api/businesses/:id/conversations/:conversationId/assign', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const { assigneeId } = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedConversation = await storage.assignConversation(businessId, conversationId, assigneeId);
+        if (updatedConversation) {
+            res.status(200).json({ success: true, conversation: updatedConversation });
+        } else {
+            res.status(404).json({ success: false, error: 'Conversation not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
 
+app.put('/api/businesses/:id/conversations/:conversationId/priority', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const { priority } = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedConversation = await storage.updateConversation(businessId, conversationId, { priority });
+        if (updatedConversation) {
+            res.status(200).json({ success: true, conversation: updatedConversation });
+        } else {
+            res.status(404).json({ success: false, error: 'Conversation not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Conversation Notes endpoints
+app.get('/api/businesses/:id/conversations/:conversationId/notes', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const notes = await storage.getConversationNotes(businessId, conversationId);
+        res.status(200).json({ success: true, notes });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/businesses/:id/conversations/:conversationId/notes', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId } = req.params;
+        const { content } = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const note = await storage.addConversationNote(businessId, conversationId, {
+            content,
+            authorId: req.session.userId
+        });
+        res.status(201).json({ success: true, note });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/businesses/:id/conversations/:conversationId/notes/:noteId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, conversationId, noteId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const deleted = await storage.deleteConversationNote(businessId, conversationId, noteId);
+        if (deleted) {
+            res.status(200).json({ success: true });
+        } else {
+            res.status(404).json({ success: false, error: 'Note not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Bookings endpoints
+app.get('/api/businesses/:id/bookings', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const bookings = await storage.getBookings(businessId);
+        res.status(200).json({ success: true, bookings });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/bookings/:bookingId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, bookingId } = req.params;
+        const updates = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedBooking = await storage.updateBooking(businessId, bookingId, updates);
+        if (updatedBooking) {
+            res.status(200).json({ success: true, booking: updatedBooking });
+        } else {
+            res.status(404).json({ success: false, error: 'Booking not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Orders endpoints
+app.get('/api/businesses/:id/orders', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const orders = await storage.getOrders(businessId);
+        res.status(200).json({ success: true, orders });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.get('/api/businesses/:id/orders/:orderId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, orderId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const order = await storage.getOrder(businessId, orderId);
+        if (order) {
+            res.status(200).json({ success: true, order });
+        } else {
+            res.status(404).json({ success: false, error: 'Order not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/businesses/:id/orders', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId } = req.params;
+        const orderData = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const order = await storage.addOrder(businessId, orderData);
+        res.status(201).json({ success: true, order });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/orders/:orderId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, orderId } = req.params;
+        const updates = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedOrder = await storage.updateOrder(businessId, orderId, updates);
+        if (updatedOrder) {
+            res.status(200).json({ success: true, order: updatedOrder });
+        } else {
+            res.status(404).json({ success: false, error: 'Order not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Knowledge Base endpoints
+app.get('/api/businesses/:id/knowledge-base', async (req, res) => {
+    try {
+        const { id: businessId } = req.params;
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const articles = await storage.getKnowledgeBaseArticles(businessId);
+        res.status(200).json({ success: true, articles });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.get('/api/businesses/:id/knowledge-base/:articleId', async (req, res) => {
+    try {
+        const { id: businessId, articleId } = req.params;
+        const business = await storage.getBusiness(businessId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const article = await storage.getKnowledgeBaseArticle(businessId, articleId);
+        if (article) {
+            res.status(200).json({ success: true, article });
+        } else {
+            res.status(404).json({ success: false, error: 'Article not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/businesses/:id/knowledge-base', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId } = req.params;
+        const articleData = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const article = await storage.addKnowledgeBaseArticle(businessId, articleData);
+        res.status(201).json({ success: true, article });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.put('/api/businesses/:id/knowledge-base/:articleId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, articleId } = req.params;
+        const updates = req.body;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const updatedArticle = await storage.updateKnowledgeBaseArticle(businessId, articleId, updates);
+        if (updatedArticle) {
+            res.status(200).json({ success: true, article: updatedArticle });
+        } else {
+            res.status(404).json({ success: false, error: 'Article not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/businesses/:id/knowledge-base/:articleId', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    try {
+        const { id: businessId, articleId } = req.params;
+        const business = await storage.getBusiness(businessId, req.session.userId);
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+        const deleted = await storage.deleteKnowledgeBaseArticle(businessId, articleId);
+        if (deleted) {
+            res.status(200).json({ success: true });
+        } else {
+            res.status(404).json({ success: false, error: 'Article not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// Translation endpoint
+app.post('/api/translate', async (req, res) => {
+    try {
+        const { text, fromLang, toLang } = req.body;
+        const translatedText = await storage.translateText(text, fromLang, toLang);
+        res.status(200).json({ success: true, translatedText });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
 
 // Serve static files
 app.get('/', (req, res) => {
@@ -873,6 +1277,40 @@ async function startServer() {
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {
+    console.log('[Socket.IO] Client connected:', socket.id);
+
+    // Admin joins business admin room
+    socket.on('join-admin', (businessId) => {
+        console.log(`[Socket.IO] Admin joined business room: business_admin_${businessId}`);
+        socket.join(`business_admin_${businessId}`);
+        // Immediately send active visitor list
+        socket.emit('active-visitors-list', getActiveVisitorsForBusiness(businessId));
+    });
+
+    // Visitor heartbeat / page activity
+    socket.on('visitor-active', (data) => {
+        if (!data || !data.businessId) return;
+        
+        const ip = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+        
+        const existing = activeVisitors.get(socket.id);
+        const connectedAt = existing ? existing.connectedAt : Date.now();
+        
+        activeVisitors.set(socket.id, {
+            businessId: data.businessId,
+            url: data.url || '',
+            title: data.title || '',
+            referrer: data.referrer || '',
+            userAgent: data.userAgent || '',
+            ip: ip,
+            connectedAt: connectedAt,
+            lastPing: Date.now()
+        });
+
+        // Broadcast to admins
+        io.to(`business_admin_${data.businessId}`).emit('active-visitors-list', getActiveVisitorsForBusiness(data.businessId));
+    });
+
     socket.on('send message', async (data) => {
       try {
         console.log('[Socket.IO] Received message:', data);
@@ -913,12 +1351,126 @@ async function startServer() {
         });
       }
     });
+
+    // Clean up on disconnect
+    socket.on('disconnect', () => {
+        console.log('[Socket.IO] Client disconnected:', socket.id);
+        const data = activeVisitors.get(socket.id);
+        if (data) {
+            activeVisitors.delete(socket.id);
+            // Broadcast updated list to admins
+            io.to(`business_admin_${data.businessId}`).emit('active-visitors-list', getActiveVisitorsForBusiness(data.businessId));
+        }
+        socket.removeAllListeners();
+    });
   });
+
+  // Idle visitor socket cleanup (run every 1 minute)
+  setInterval(() => {
+      const now = Date.now();
+      for (const [socketId, data] of activeVisitors.entries()) {
+          if (now - data.lastPing > 5 * 60 * 1000) { // 5 minutes
+              const clientSocket = io.sockets.sockets.get(socketId);
+              if (clientSocket) {
+                  console.log(`[Socket] Disconnecting idle visitor socket: ${socketId}`);
+                  clientSocket.disconnect(true);
+              }
+              activeVisitors.delete(socketId);
+              io.to(`business_admin_${data.businessId}`).emit('active-visitors-list', getActiveVisitorsForBusiness(data.businessId));
+          }
+      }
+  }, 60 * 1000);
+
+  // Start the background website retraining scheduler
+  startAutoRetrainingScheduler();
+
+  // Start the conversation archiving scheduler
+  startConversationArchivingScheduler();
 
   server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
 }
+
+// Background scheduler for automatic website retraining (runs every 6 hours)
+function startAutoRetrainingScheduler() {
+  console.log('[Scheduler] Initializing auto website retraining scheduler...');
+  
+  // Run once every 6 hours
+  const intervalMs = 6 * 60 * 60 * 1000;
+  
+  const runRetraining = async () => {
+    try {
+      console.log('[Scheduler] Checking for websites that need retraining...');
+      if (!storage) {
+        return;
+      }
+      
+      const websites = await storage.getWebsitesNeedRetraining();
+      if (websites.length === 0) {
+        console.log('[Scheduler] No websites require retraining at this time.');
+        return;
+      }
+      
+      console.log(`[Scheduler] Found ${websites.length} website(s) requiring retraining.`);
+      
+      for (const ws of websites) {
+        console.log(`[Scheduler] Starting retraining for business: ${ws.businessId}, website: ${ws.url}`);
+        
+        await storage.updateKnowledgeSourceStatus(ws.businessId, ws.websiteId, 'training');
+        
+        try {
+          const result = await trainWebsite(ws.businessId, ws.url, ws.qdrantCollection);
+          console.log(`[Scheduler] Retraining success for ${ws.url}:`, result);
+          
+          await storage.updateKnowledgeSourceStatus(ws.businessId, ws.websiteId, 'completed', {
+            lastTrainedAt: new Date().toISOString(),
+            chunksCount: result.chunksCount
+          });
+        } catch (err) {
+          console.error(`[Scheduler] Retraining failed for ${ws.url}:`, err);
+          await storage.updateKnowledgeSourceStatus(ws.businessId, ws.websiteId, 'failed', {
+            error: err.message
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[Scheduler] Error in auto retraining scheduler run:', error);
+    }
+  };
+
+  // Run 30 seconds after startup, then periodically
+  setTimeout(runRetraining, 30000);
+  setInterval(runRetraining, intervalMs);
+}
+
+// Background scheduler for automatic conversation archiving (runs once every 24 hours)
+function startConversationArchivingScheduler() {
+  console.log('[Scheduler] Initializing conversation archiving scheduler...');
+  
+  // Run once immediately on start after 10 seconds, then every 24 hours
+  setTimeout(async () => {
+    try {
+      console.log('[Scheduler] Running conversation archiving job...');
+      const archivedCount = await storage.archiveConversations();
+      console.log(`[Scheduler] Conversation archiving completed. Archived ${archivedCount} conversations.`);
+    } catch (error) {
+      console.error('[Scheduler] Error running conversation archiving job:', error);
+    }
+  }, 10000);
+
+  setInterval(async () => {
+    try {
+      console.log('[Scheduler] Running conversation archiving job...');
+      const archivedCount = await storage.archiveConversations();
+      console.log(`[Scheduler] Conversation archiving completed. Archived ${archivedCount} conversations.`);
+    } catch (error) {
+      console.error('[Scheduler] Error running conversation archiving job:', error);
+    }
+  }, 24 * 60 * 60 * 1000);
+}
+
+
 
 if (require.main === module) {
   startServer();

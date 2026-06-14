@@ -1,201 +1,181 @@
-# 🚀 AICS — AI Customer Support & Lead Capture SaaS
+﻿# 🚀 AICS — AI Customer Support & Lead Capture Platform
 
-**Sell more, support less.**
-
-AICS is a white-label AI customer support and lead capture app you can embed on any website in minutes. Perfect for small businesses, agencies, and developers!
+AICS is a white-label customer support and lead capture application that can be embedded on any website. It combines AI-powered chat, visitor triggers, lead scoring, conversation management, and a business dashboard with product catalog and team tools.
 
 ---
 
-## 📖 Table of Contents
-- [What is AICS?](#-what-is-aics)
-- [Who is it for?](#-who-is-it-for)
-- [Key Features](#-key-features)
-- [How it Works](#-how-it-works)
-  - [1. AI Chatbot](#1-ai-chatbot)
-  - [2. Human Inbox](#2-human-inbox)
-  - [3. Proactive Triggers](#3-proactive-triggers)
-  - [4. Canned Responses](#4-canned-responses)
-- [Tech Stack](#-tech-stack)
-- [How to Deploy](#-how-to-deploy)
-  - [Deploy to Render](#deploy-to-render)
-  - [Run Locally](#run-locally)
-- [How to Embed the Widget](#-how-to-embed-the-widget)
-- [Roadmap](#-roadmap)
-- [License](#-license)
-- [Need Help?](#-need-help)
+## 📌 What AICS Does
+AICS helps businesses:
+- answer customer questions automatically through a website widget
+- capture new leads when support falls short
+- route conversations into an admin dashboard
+- customize the widget appearance and behavior
+- manage FAQs, products, triggers, and webhooks
 
 ---
 
-## 🔍 What is AICS?
-AICS combines an AI-powered chatbot, lead capture, and a human inbox into one product:
-- Train the AI on your website, PDFs, and FAQs
-- Automatically capture and score leads
-- Get alerts for new leads and escalations
-- Review and respond to conversations from a dashboard
-- Fully customize the widget to match your brand
+## 🌟 Core Features
+
+### 1. AI Chat & Lead Capture
+- Visitor-facing chatbot for answering questions
+- Uses training data from FAQs, website content, and PDF uploads
+- Captures lead contact details and stores them for follow up
+- Tracks lead score and status for business review
+
+### 2. Business Dashboard
+- View and manage all businesses tied to your account
+- Update widget settings, products, FAQs, triggers, and webhook integrations
+- Review conversations, leads, and analytics in a single place
+- Export leads and conversations to CSV for reporting
+
+### 3. Product Catalog
+- Add product items from the dashboard
+- Store product name, description, price, image URL, and link URL
+- Remove products from the business catalog when needed
+
+### 4. Proactive Widget Triggers
+- Trigger chat widget behavior based on visitor actions
+- Support timed triggers and scroll-depth triggers
+- Customize trigger messages and widget entry
+
+### 5. Authentication & Security
+- Signup, login, logout, and current-user APIs
+- Secured dashboard access with sessions and CSRF protection
+- Cookie-based session storage with optional production security settings
+
+### 6. Optional AI + Search Integrations
+- Google Gemini support for AI responses
+- Hugging Face inference support
+- Qdrant vector search integration for smarter knowledge retrieval
+- Optional Neon PostgreSQL storage for production
 
 ---
 
-## 👥 Who is it for?
-- **Small businesses**: Get 24/7 customer support without hiring extra staff
-- **Agencies**: Offer branded support bots to your clients
-- **Developers**: Build a white-label chatbot and lead capture solution
-- **Sales teams**: Convert more website visitors into qualified leads
+## 🧩 Project Structure
+
+- `server.js` — main Express server, route registration, middleware, and scheduler jobs
+- `api/` — backend route handlers for auth, businesses, chat, FAQs, leads, products, triggers, and widget config
+- `public/` — dashboard pages, auth pages, embedded widget client scripts, and static assets
+- `lib/` — storage, AI connectors, training helpers, webhooks, and utility modules
+- `data/db.json` — local JSON storage for development
+- `render.yaml` — Render deployment configuration
 
 ---
 
-## ✨ Key Features
-Let's break down the most important features:
-
-### 🤖 AI Chatbot
-- Answers customer questions instantly using your training data
-- Supports multiple languages
-- Lets users upload images, PDFs, and documents
-- Remembers conversation history
-- Shows a lead form when it can't answer a question
-
-### 📥 Human Inbox
-- Review all conversations in one place
-- Filter by status (Open, Pending, Closed)
-- Assign conversations to team members
-- Add tags and internal notes
-- Continue conversations with customers directly from the dashboard
-- Real-time updates when new messages arrive
-
-### ⚡ Proactive Triggers
-- Automatically open the chat widget based on visitor behavior
-- **Time on page**: Show a message after a visitor spends X seconds on your site
-- **Scroll depth**: Show a message after a visitor scrolls X% down your page
-- Create custom triggers with your own messages
-
-### 📝 Canned Responses
-- Save and reuse common responses to save time
-- Organize responses for quick access
-- Use them in the Human Inbox
-
-### 📊 Analytics & Reporting
-- Track leads captured, messages sent, resolutions, and more
-- See daily usage trends
-- Find knowledge gaps from unanswered questions
-- Export leads and conversations to CSV
-
-### 🎨 Customization
-- Change widget colors, title, and avatar to match your brand
-- Fully white-label for your clients
+## ⚙️ Supported APIs
+AICS exposes backend routes for:
+- `/api/auth/*` — signup, login, logout, session check
+- `/api/businesses` — manage businesses
+- `/api/businesses/:id` — get/update/delete a business
+- `/api/businesses/:id/faqs` — business FAQ management
+- `/api/businesses/:id/products` — product catalog management
+- `/api/businesses/:id/leads` — lead capture and retrieval
+- `/api/businesses/:id/conversations` — conversation listing and updates
+- `/api/businesses/:id/triggers` — visitor trigger configuration
+- `/api/businesses/:id/widget` — widget settings and branding
+- `/api/businesses/:id/pdf` — upload PDF content for training
+- `/api/upload-faqs` — upload FAQ records
+- `/api/businesses/:id/webhooks` — webhook registration and updates
+- `/api/businesses/:id/export/:type` — CSV exporting (leads or conversations)
 
 ---
 
-## 🛠️ Tech Stack
-- **Backend**: Node.js + Express
-- **AI**: Google Gemini, Hugging Face, Groq, LangChain
-- **Vector Search**: Qdrant
-- **Database**: Local JSON storage or Neon PostgreSQL
-- **Frontend**: Vanilla JavaScript + CSS
-- **Deployment**: Render.com (render.yaml included)
+## 🚀 Run Locally
+
+### Prerequisites
+- Node.js v16 or later
+- Git
+
+### Install
+```bash
+git clone https://github.com/Abdur-Rahman-Palash/aics.git
+cd aics
+npm install
+cp .env.example .env
+```
+
+### Start the app
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
 
 ---
 
-## 🚀 How to Deploy
+## 🔧 Environment Configuration
+Copy `.env.example` to `.env`, then configure values for your environment.
+
+### Required values
+- `SESSION_SECRET` — secure key for session cookies
+
+### Common optional values
+- `PORT` — server port (default: `3000`)
+- `NODE_ENV` — `development` or `production`
+- `DATABASE_URL` — optional Neon/PostgreSQL connection string
+- `GEMINI_API_KEY` — optional Google Gemini API key
+- `HUGGINGFACE_API_KEY` — optional Hugging Face key
+- `GROQ_API_KEY` — optional Groq key
+- `QDRANT_URL` / `QDRANT_API_KEY` — optional Qdrant vector search settings
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — optional email alert configuration
+
+### Important Notes
+- If `DATABASE_URL` is not set, the app falls back to local JSON storage (`data/db.json`).
+- Set `NODE_ENV=production` in production to enable secure cookies.
+- Never commit API keys or secrets to version control.
+
+---
+
+## 🌍 Deploying
 
 ### Deploy to Render
-AICS is ready to deploy on Render in minutes!
+1. Create a Render web service
+2. Use `npm install` as the build command
+3. Use `npm start` as the start command
+4. Add environment variables in Render
+5. Deploy the service
 
-1. **Fork this repo**: Use GitHub's fork button
-2. **Create a Render account**: Free tier works great to get started
-3. **Create a new web service**:
-   - Runtime: Node.js
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-4. **Configure environment variables** in Render's dashboard:
-   ```env
-   PORT=3000
-   NODE_ENV=production
-   SESSION_SECRET=your-long-random-secret
-   GEMINI_API_KEY=your-google-gemini-api-key (optional)
-   HUGGINGFACE_API_KEY=your-huggingface-api-key (optional - for embeddings)
-   GROQ_API_KEY=your-groq-api-key (optional - for LLM responses)
-   QDRANT_URL=https://your-qdrant-cluster-url (optional - better search)
-   QDRANT_API_KEY=your-qdrant-api-key (optional)
-   SMTP_HOST=your-smtp-host (optional - for email alerts)
-   SMTP_PORT=587
-   SMTP_SECURE=false
-   SMTP_USER=your-smtp-username
-   SMTP_PASS=your-smtp-password
-   SMTP_FROM=noreply@yourdomain.com
-   ```
-5. **Deploy**: Save and deploy your service!
-
-### Run Locally
-Want to test or develop locally?
-
-1. Install Node.js v16 or later
-2. Clone the repository
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Copy `.env.example` to `.env` and update values
-5. Start the app:
-   ```bash
-   npm run dev
-   ```
-6. Open `http://localhost:3000`
+### Deploy to Vercel
+1. Connect the repo to Vercel
+2. Use `npm install` and `npm start`
+3. Set environment variables in Vercel
 
 ---
 
-## 🌐 How to Embed the Widget
-Once your AICS instance is deployed, add this script to your website to embed the chatbot!
+## 🌐 Embed the Widget
+Embed the chat widget on any website using the widget loader.
 
-### Basic Embed
 ```html
-<script src="https://your-aics-instance.onrender.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
+<script src="https://your-aics-instance.com/js/embed.js" data-business-id="YOUR_BUSINESS_ID"></script>
 ```
 
-### Customized Embed
+Customize widget settings:
+
 ```html
-<script src="https://your-aics-instance.onrender.com/js/embed.js"
+<script src="https://your-aics-instance.com/js/embed.js"
   data-business-id="YOUR_BUSINESS_ID"
-  data-widget-title="My Awesome Support"
+  data-widget-title="Support"
   data-widget-color="#667eea"
-  data-widget-avatar="🤖"></script>
+  data-widget-avatar="🤖"
+  data-widget-position="bottom-right"></script>
 ```
 
 ---
 
-## 📈 Roadmap
-
-### ✅ Done
-- Human Inbox with conversation management
-- Lead Scoring (Hot/Warm/Cold)
-- Email notifications for new leads
-- Webhooks for Zapier, Make, n8n
-- Advanced analytics dashboard
-- Knowledge gap detection
-- CSV export for leads and conversations
-- File attachments (images, PDFs, docs)
-- Conversation history persistence
-- Canned Responses
-- Conversation Tags & Assignment
-- Proactive Chat Triggers
-- Multi-language support (15+ languages)
-- Agent Collaboration Notes
-- Neon PostgreSQL integration
-
-### 🔄 Upcoming
-- SMS notifications
-- SSO integration
-- More database options out of the box
+## 💡 Why AICS?
+AICS offers a fast, flexible support solution:
+- embedded AI assistant for websites
+- built-in lead capture and scoring
+- admin dashboard for conversation and product management
+- optional production database support with Neon
+- extensible integrations for AI and vector search
 
 ---
 
 ## 📄 License
-MIT License - use it commercially!
+MIT License
 
 ---
 
 ## 🙋 Need Help?
-Open an issue on GitHub or reach out if you need assistance.
-
----
-
-Made with ❤️ for builders and businesses everywhere.
+Open an issue or reach out for assistance with setup or deployment.

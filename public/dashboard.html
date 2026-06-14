@@ -406,29 +406,37 @@
             html += '<button class="sidebar-item active" onclick="switchTab(\'' + business.id + '\', \'knowledge\')">📚 Knowledge Sources</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'unanswered\')">❓ Unanswered Questions</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'canned-responses\')">📝 Canned Responses</button>';
-    html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'triggers\')">⚡ Proactive Triggers</button>';
-            html += '</div>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'triggers\')">⚡ Proactive Triggers</button>';
+            html += '</div>'; // close Train group
+            
             // Manage group
             html += '<div class="sidebar-group">';
             html += '<div class="sidebar-group-title">Manage</div>';
-            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'inbox\')">� Human Inbox</button>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'inbox\')"> Human Inbox</button>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'live-visitors\')">🟢 Live Visitors</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'leads\')">👥 Leads</button>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'products\')">🛍️ Product Catalog</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'analytics\')">📊 Analytics</button>';
-            html += '</div>';
+            html += '</div>'; // close Manage group
+            
             // Integrate group
             html += '<div class="sidebar-group">';
             html += '<div class="sidebar-group-title">Integrate</div>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'webhooks\')">🔌 Webhooks</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'google-sheets\')">📊 Google Sheets</button>';
-            html += '</div>';
+            html += '</div>'; // close Integrate group
+            
             // Setup group
             html += '<div class="sidebar-group">';
             html += '<div class="sidebar-group-title">Setup</div>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'settings\')">⚙️ Settings</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'widget\')">🎨 Widget</button>';
+            html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'agents\')">👥 Team / Agents</button>';
             html += '<button class="sidebar-item" onclick="switchTab(\'' + business.id + '\', \'embed\')">🔗 Embed</button>';
-            html += '</div>';
-            html += '</div>';
+            html += '</div>'; // close Setup group
+            
+            html += '</div>'; // close business-sidebar
+            
             // Content area
             html += '<div class="business-content">';
             
@@ -672,6 +680,65 @@
                 });
             } else {
                 html += '<p style="color:#666;text-align:center;padding:48px;">No leads yet. Start chatting to capture some!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            // Products Catalog Tab Content
+            html += '<div class="tab-content" id="tab-' + business.id + '-products">';
+            html += '<h3>Product Catalog (' + (business.products?.length || 0) + ')</h3>';
+            html += '<div style="margin-bottom: 24px; background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+            html += '<h4 style="margin-bottom: 16px;">Add New Product</h4>';
+            html += '<form id="add-product-form-' + business.id + '" onsubmit="event.preventDefault(); addProduct(\'' + business.id + '\');">';
+            html += '<div class="form-group">';
+            html += '<label>Product Name*</label>';
+            html += '<input type="text" id="prod-name-' + business.id + '" required placeholder="e.g. 5-Day Paris Tour">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Description</label>';
+            html += '<textarea id="prod-desc-' + business.id + '" rows="2" placeholder="Describe the product/service..."></textarea>';
+            html += '</div>';
+            html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">';
+            html += '<div class="form-group">';
+            html += '<label>Price ($)*</label>';
+            html += '<input type="number" id="prod-price-' + business.id + '" required min="0" value="0">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Image URL (optional)</label>';
+            html += '<input type="url" id="prod-image-' + business.id + '" placeholder="https://example.com/image.jpg">';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Product Link/URL (optional)</label>';
+            html += '<input type="url" id="prod-link-' + business.id + '" placeholder="https://example.com/paris-tour">';
+            html += '</div>';
+            html += '<button type="submit" class="btn btn-primary">Add Product</button>';
+            html += '</form>';
+            html += '</div>';
+
+            html += '<div id="products-list-' + business.id + '" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">';
+            const products = business.products || [];
+            if (products.length > 0) {
+                products.forEach(product => {
+                    html += '<div class="product-item" style="border:1px solid #e0e0e0; border-radius:12px; padding:16px; background:white; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,0.04);">';
+                    html += '<div>';
+                    if (product.imageUrl) {
+                        html += '<img src="' + product.imageUrl + '" style="width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:12px;" onerror="this.style.display=\'none\';">';
+                    }
+                    html += '<h4 style="margin:0 0 8px; color:#111; font-size:16px;">' + product.name + '</h4>';
+                    html += '<p style="margin:0 0 8px; color:#666; font-size:13px; line-height:1.4;">' + (product.description || 'No description') + '</p>';
+                    html += '<p style="margin:0 0 12px; font-weight:700; color:#7c3aed; font-size:18px;">$' + Number(product.price).toFixed(2) + '</p>';
+                    html += '</div>';
+                    html += '<div style="display:flex; gap:8px; align-items:center; border-top:1px solid #eee; padding-top:12px; margin-top:auto;">';
+                    if (product.linkUrl) {
+                        html += '<a href="' + product.linkUrl + '" target="_blank" class="btn btn-secondary btn-small" style="text-decoration:none; text-align:center; flex:1;">View Details</a>';
+                    }
+                    html += '<button onclick="deleteProduct(\'' + business.id + '\', \'' + product.id + '\')" class="btn btn-danger btn-small" style="padding: 8px 12px;">Delete</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<div style="grid-column: 1 / -1; color:#666; text-align:center; padding:48px; border:1px dashed #e0e0e0; border-radius:12px; background:white;">No products in catalog yet. Add some above to enable website database search for the AI agent!</div>';
             }
             html += '</div>';
             html += '</div>';
@@ -1009,7 +1076,7 @@
             html += '<div class="form-group">';
             html += '<label>Widget Title</label>';
             html += '<input type="text" id="widget-title-' + business.id + '" value="' + (business.widgetSettings?.title || 'AI Support') + '">';
-            html += '</div>';
+html += '</div>';
             html += '<div class="form-group">';
             html += '<label>Primary Color</label>';
             html += '<div class="color-picker-wrapper">';
@@ -1020,6 +1087,22 @@
             html += '<div class="form-group">';
             html += '<label>Avatar Emoji</label>';
             html += '<input type="text" id="widget-avatar-' + business.id + '" value="' + (business.widgetSettings?.avatar || '🤖') + '">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Slack Webhook URL (for human escalation alerts)</label>';
+            html += '<input type="url" id="widget-slack-' + business.id + '" value="' + (business.widgetSettings?.slackWebhookUrl || '') + '" placeholder="https://hooks.slack.com/services/...">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>WhatsApp Link / Phone Number</label>';
+            html += '<input type="text" id="widget-whatsapp-' + business.id + '" value="' + (business.widgetSettings?.whatsappUrl || '') + '" placeholder="e.g., https://wa.me/1234567890">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Telegram Link / Username</label>';
+            html += '<input type="text" id="widget-telegram-' + business.id + '" value="' + (business.widgetSettings?.telegramUrl || '') + '" placeholder="e.g., https://t.me/username">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Messenger Link</label>';
+            html += '<input type="text" id="widget-messenger-' + business.id + '" value="' + (business.widgetSettings?.messengerUrl || '') + '" placeholder="e.g., https://m.me/pageusername">';
             html += '</div>';
             html += '<button type="submit" class="btn btn-primary">Save Settings</button>';
             html += '</form>';
@@ -1045,6 +1128,53 @@
             html += '</div>';
             html += '</div>';
             
+            html += '</div>'; // close embed tab
+            
+            // Live Visitors Tab
+            html += '<div class="tab-content" id="tab-' + business.id + '-live-visitors">';
+            html += '<h3>🟢 Live Visitors</h3>';
+            html += '<p style="color:#666; margin-bottom:16px;">See active visitors on your website in real-time.</p>';
+            html += '<div style="overflow-x:auto;">';
+            html += '<table class="leads-table" style="width:100%; border-collapse:collapse;">';
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th>Page URL</th>';
+            html += '<th>Page Title</th>';
+            html += '<th>Referrer</th>';
+            html += '<th>Browser</th>';
+            html += '<th>IP Address</th>';
+            html += '<th>Duration</th>';
+            html += '</tr>';
+            html += '</thead>';
+            html += '<tbody id="live-visitors-body-' + business.id + '">';
+            html += '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">Waiting for active visitors...</td></tr>';
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            html += '</div>';
+
+            // Team / Agents Tab
+            html += '<div class="tab-content" id="tab-' + business.id + '-agents">';
+            html += '<h3>👥 Team / Agents</h3>';
+            html += '<p style="color:#666; margin-bottom:16px;">Add team members to help manage customer conversations. They can sign in and manage this business.</p>';
+            html += '<form id="invite-agent-form-' + business.id + '" onsubmit="inviteAgent(event, \'' + business.id + '\')" style="margin-bottom:24px; display:flex; gap:8px;">';
+            html += '<input type="email" id="invite-agent-email-' + business.id + '" placeholder="agent@example.com" required style="flex:1; padding:10px 16px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px;" />';
+            html += '<button type="submit" class="btn btn-primary">Invite Agent</button>';
+            html += '</form>';
+            html += '<div style="overflow-x:auto;">';
+            html += '<table class="leads-table" style="width:100%; border-collapse:collapse;">';
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th>Name</th>';
+            html += '<th>Email</th>';
+            html += '<th>Actions</th>';
+            html += '</tr>';
+            html += '</thead>';
+            html += '<tbody id="agents-list-body-' + business.id + '">';
+            html += '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">Loading team members...</td></tr>';
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
             html += '</div>';
             
             html += '</div>'; // close business-content
@@ -1065,6 +1195,10 @@
                 selectedBusinessId = null;
             } else {
                 selectedBusinessId = businessId;
+                socket.emit('join-admin', businessId);
+                setTimeout(() => {
+                    loadAgents(businessId);
+                }, 100);
             }
             renderBusinessList();
         }
@@ -1353,6 +1487,56 @@
             }
         }
 
+        async function addProduct(businessId) {
+            const name = document.getElementById('prod-name-' + businessId).value;
+            const description = document.getElementById('prod-desc-' + businessId).value;
+            const price = document.getElementById('prod-price-' + businessId).value;
+            const imageUrl = document.getElementById('prod-image-' + businessId).value;
+            const linkUrl = document.getElementById('prod-link-' + businessId).value;
+
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, price, imageUrl, linkUrl })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Product added successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error adding product: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error adding product', 'error');
+            }
+        }
+
+        async function deleteProduct(businessId, productId) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/products', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Product deleted successfully!', 'success');
+                    loadBusinesses();
+                } else {
+                    showMessage('Error deleting product: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting product', 'error');
+            }
+        }
+
         async function updateLeadStatus(businessId, leadId, status) {
             try {
                 const response = await fetchWithCsrf('/api/businesses/' + businessId + '/leads/' + leadId, {
@@ -1386,7 +1570,11 @@
             const settings = {
                 title: document.getElementById('widget-title-' + businessId).value,
                 primaryColor: document.getElementById('widget-color-' + businessId).value,
-                avatar: document.getElementById('widget-avatar-' + businessId).value
+                avatar: document.getElementById('widget-avatar-' + businessId).value,
+                slackWebhookUrl: document.getElementById('widget-slack-' + businessId).value,
+                whatsappUrl: document.getElementById('widget-whatsapp-' + businessId).value,
+                telegramUrl: document.getElementById('widget-telegram-' + businessId).value,
+                messengerUrl: document.getElementById('widget-messenger-' + businessId).value
             };
             
             try {
@@ -2115,6 +2303,126 @@
                 fileInput.files = files;
                 uploadPdfs({ target: { files } }, businessId);
             }, false);
+        }
+
+        // Live Active Visitors Real-time Handling
+        socket.on('active-visitors-list', (list) => {
+            if (!selectedBusinessId) return;
+            const tbody = document.getElementById('live-visitors-body-' + selectedBusinessId);
+            if (!tbody) return;
+            
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">Waiting for active visitors...</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            list.forEach(v => {
+                let userAgentClean = 'Browser';
+                if (v.userAgent.includes('Chrome')) userAgentClean = 'Chrome';
+                else if (v.userAgent.includes('Safari') && !v.userAgent.includes('Chrome')) userAgentClean = 'Safari';
+                else if (v.userAgent.includes('Firefox')) userAgentClean = 'Firefox';
+                else if (v.userAgent.includes('Edge')) userAgentClean = 'Edge';
+                
+                let pathStr = v.url;
+                try {
+                    pathStr = new URL(v.url).pathname;
+                } catch(e) {}
+                
+                let refStr = 'Direct';
+                if (v.referrer) {
+                    try {
+                        refStr = new URL(v.referrer).hostname;
+                    } catch(e) {
+                        refStr = v.referrer;
+                    }
+                }
+                
+                html += '<tr>';
+                html += '<td><a href="' + v.url + '" target="_blank" style="color:#667eea; text-decoration:none;">' + pathStr + '</a></td>';
+                html += '<td>' + (v.title || 'Untitled') + '</td>';
+                html += '<td>' + refStr + '</td>';
+                html += '<td>' + userAgentClean + '</td>';
+                html += '<td>' + (v.ip || 'Unknown') + '</td>';
+                html += '<td>' + v.duration + 's</td>';
+                html += '</tr>';
+            });
+            tbody.innerHTML = html;
+        });
+
+        // Team / Agent Management functions
+        async function loadAgents(businessId) {
+            try {
+                const response = await fetch('/api/businesses/' + businessId + '/agents', { credentials: 'include' });
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('agents-list-body-' + businessId);
+                    if (!tbody) return;
+                    
+                    if (!data.agents || data.agents.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">No other agents added yet.</td></tr>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.agents.forEach(agent => {
+                        html += '<tr>';
+                        html += '<td>' + agent.name + '</td>';
+                        html += '<td>' + agent.email + '</td>';
+                        html += '<td><button class="btn btn-danger btn-small" onclick="removeAgent(\'' + businessId + '\', \'' + agent.id + '\')">Remove</button></td>';
+                        html += '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading agents:', error);
+            }
+        }
+        
+        async function inviteAgent(event, businessId) {
+            event.preventDefault();
+            const emailInput = document.getElementById('invite-agent-email-' + businessId);
+            const email = emailInput.value.trim();
+            if (!email) return;
+            
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/agents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Agent added successfully!', 'success');
+                    emailInput.value = '';
+                    loadAgents(businessId);
+                } else {
+                    showMessage('Error adding agent: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error inviting agent', 'error');
+            }
+        }
+        
+        async function removeAgent(businessId, agentId) {
+            if (!confirm('Are you sure you want to remove this agent?')) return;
+            
+            try {
+                const response = await fetchWithCsrf('/api/businesses/' + businessId + '/agents', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Agent removed successfully!', 'success');
+                    loadAgents(businessId);
+                } else {
+                    showMessage('Error removing agent: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error removing agent', 'error');
+            }
         }
 
         // Initialize
